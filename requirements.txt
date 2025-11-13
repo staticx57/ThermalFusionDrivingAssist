@@ -1,0 +1,24 @@
+# FLIR Boson Thermal Road Monitor - Dependencies
+# Optimized for NVIDIA Jetson Orin
+
+# Core computer vision
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Deep learning and object detection
+ultralytics>=8.0.0  # YOLOv8 with TensorRT support
+torch>=2.0.0  # Should be pre-installed on Jetson
+torchvision>=0.15.0
+
+# System monitoring
+psutil>=5.9.0
+
+# Jetson-specific monitoring (optional but recommended)
+# Install with: sudo pip3 install jetson-stats
+# jetson-stats>=4.2.0
+
+# TensorRT (pre-installed on Jetson)
+# nvidia-tensorrt
+
+# Additional utilities
+Pillow>=10.0.0

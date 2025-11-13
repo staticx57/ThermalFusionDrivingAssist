@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(chmod:*)",
+      "Read(//dev/**)",
+      "Read(//etc/**)",
+      "Read(//usr/local/**)",
+      "Bash(dpkg:*)",
+      "Bash(pip3 uninstall:*)",
+      "Bash(wget:*)",
+      "Bash(pip3 install:*)",
+      "Bash(sudo apt-get install:*)",
+      "Read(//usr/**)",
+      "Bash(export:*)",
+      "Bash(timeout 30 python3 main.py)",
+      "Bash(timeout 15 python3 main.py)",
+      "Bash(timeout 10 python3 main.py)",
+      "Bash(timeout 15 python3:*)",
+      "Bash(timeout 10 python3:*)",
+      "Bash(echo $DISPLAY)",
+      "Bash(nvidia-smi:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 30 python3:*)",
+      "Bash(timeout 60 python3:*)",
+      "Read(//tmp/**)",
+      "Bash(killall:*)",
+      "Bash(timeout 20 python3 main_vpi.py --detection-mode model --model yolov8n.pt)",
+      "Bash(ldconfig:*)",
+      "Bash(pip3 list:*)",
+      "WebSearch",
+      "WebFetch(domain:forums.developer.nvidia.com)",
+      "Read(//home/michael/**)",
+      "Bash(timeout 45 python3:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
