@@ -1,7 +1,7 @@
 """
 Enhanced Real-Time Driver GUI with Multi-View Support and Smart Alerts
 Optimized for low-latency display on Jetson Orin and x86-64 workstations
-Features: Thermal/RGB/Fusion views, smart proximity alerts, directional warnings
+Features: Thermal/RGB/Fusion views, smart proximity alerts, directional warnings, dynamic theming
 """
 import cv2
 import numpy as np
@@ -12,6 +12,7 @@ from datetime import datetime
 
 from object_detector import Detection
 from road_analyzer import Alert, AlertLevel
+from config import get_config
 
 
 class ViewMode:
@@ -40,32 +41,14 @@ class DriverGUI:
         self.view_mode = ViewMode.THERMAL_ONLY  # Default to thermal
         self.developer_mode = False  # Start in simple mode (default)
 
-        # Modern color scheme
-        self.colors = {
-            'critical': (30, 30, 255),    # Red
-            'warning': (0, 180, 255),     # Orange
-            'info': (255, 220, 0),        # Cyan
-            'success': (100, 255, 100),   # Green
-            'text': (255, 255, 255),      # White
-            'text_dim': (200, 200, 200),  # Dim white
-            'bg': (0, 0, 0),              # Black
-            'panel_bg': (35, 35, 45),     # Dark blue-gray
-            'panel_accent': (45, 50, 65), # Lighter blue-gray
+        # Get config instance
+        self.config = get_config()
 
-            # Button colors
-            'button_bg': (40, 45, 55),
-            'button_inactive': (50, 50, 60),
-            'button_hover': (65, 70, 90),
-            'button_active': (20, 180, 100),  # Green
-            'button_active_alt': (100, 150, 255),  # Blue
+        # Load colors from config (theme-aware)
+        self.colors = self.config.get_theme_colors()
 
-            # Smart alert colors (pulsing)
-            'danger_pulse': (0, 0, 255),     # Red pulse for critical
-            'warning_pulse': (0, 165, 255),  # Orange pulse for warnings
-            'accent_cyan': (255, 200, 50),
-            'accent_green': (100, 255, 150),
-            'accent_purple': (200, 100, 255),
-        }
+        # Track current theme to detect changes
+        self.current_theme = self.config.get('theme', 'dark')
 
         # UI dimensions
         self.alert_panel_height = int(150 * scale_factor)
@@ -107,6 +90,26 @@ class DriverGUI:
             self.view_mode = mode
         else:
             print(f"Invalid view mode: {mode}")
+
+    def update_theme(self, rgb_frame: Optional[np.ndarray] = None):
+        """
+        Update theme colors if theme has changed
+
+        Args:
+            rgb_frame: RGB frame for ambient light detection
+        """
+        # Get active theme (considering time/ambient/override)
+        active_theme = self.config.get_active_theme(rgb_frame)
+
+        # Update colors if theme changed
+        if active_theme != self.current_theme:
+            self.current_theme = active_theme
+            self.config.set('theme', active_theme, save=False)
+            self.colors = self.config.get_theme_colors()
+            # Note: Don't log every change, only significant ones
+            if self.config.get('theme_override') is None:
+                # Only log when auto-switching (not manual override)
+                pass  # Silent theme updates
 
     def create_window(self, fullscreen: bool = False, window_width: int = None, window_height: int = None):
         """Create display window"""
@@ -416,6 +419,7 @@ class DriverGUI:
                                    audio_enabled: bool = True,
                                    show_info: bool = False,
                                    thermal_available: bool = True,
+                                   rgb_available: bool = False,
                                    detection_count: int = 0,
                                    lidar_available: bool = False) -> np.ndarray:
         """
@@ -446,6 +450,9 @@ class DriverGUI:
         Returns:
             Rendered frame with controls
         """
+        # Update theme (auto-switching based on time/ambient light)
+        self.update_theme(rgb_frame)
+
         # Render with multi-view support
         canvas = self.render_multi_view(
             thermal_frame, rgb_frame, fusion_frame,
@@ -464,7 +471,7 @@ class DriverGUI:
             'view_mode': self.view_mode,
             'fusion_mode': fusion_mode,
             'fusion_alpha': fusion_alpha,
-            'rgb_available': rgb_frame is not None,
+            'rgb_available': rgb_available,
             'audio_enabled': audio_enabled,
             'show_info': show_info,
             'thermal_available': thermal_available,
@@ -556,6 +563,9 @@ class DriverGUI:
         button_y = top_margin
 
         # ROW 1: Camera and Detection Controls
+        theme_override = self.config.get('theme_override')
+        theme_display = theme_override if theme_override else 'AUTO'
+
         buttons_row1 = [
             ('palette_cycle', f"PAL: {params['palette'].upper()}", 130, None),
             ('yolo_toggle', f"YOLO: {'ON' if params['yolo'] else 'OFF'}", 90,
@@ -565,6 +575,9 @@ class DriverGUI:
             ('device_toggle', f"DEV: {params['device'].upper()}", 100,
              self.colors['button_active'] if params['device'] == 'cuda' else self.colors['button_bg']),
             ('model_cycle', f"MODEL: {params['model'].replace('.pt', '').replace('yolov8', 'V8').upper()}", 110, None),
+            ('theme_toggle', f"THEME: {theme_display[:4].upper()}", 110,
+             self.colors['button_active_alt'] if theme_override else self.colors['button_bg']),
+            ('retry_sensors', "RETRY", 85, self.colors['button_warning']),
         ]
 
         for btn_id, text, width, bg_color in buttons_row1:
@@ -698,9 +711,50 @@ class DriverGUI:
         draw_line("  M - Model", self.colors['accent_green'])
         draw_line("  S - Screenshot", self.colors['accent_green'])
 
+    def _draw_rounded_rectangle(self, canvas: np.ndarray, x: int, y: int, w: int, h: int,
+                                 color: tuple, radius: int, thickness: int = -1):
+        """
+        Draw rounded rectangle (modernized button style v3.4.0)
+
+        Args:
+            canvas: Canvas to draw on
+            x, y: Top-left corner
+            w, h: Width and height
+            color: BGR color tuple
+            radius: Corner radius in pixels
+            thickness: Border thickness (-1 for filled)
+        """
+        # Clamp radius to reasonable size
+        radius = min(radius, min(w, h) // 2)
+
+        if thickness == -1:
+            # Filled rounded rectangle
+            # Draw main rectangles
+            cv2.rectangle(canvas, (x + radius, y), (x + w - radius, y + h), color, -1)
+            cv2.rectangle(canvas, (x, y + radius), (x + w, y + h - radius), color, -1)
+
+            # Draw corner circles
+            cv2.circle(canvas, (x + radius, y + radius), radius, color, -1)
+            cv2.circle(canvas, (x + w - radius, y + radius), radius, color, -1)
+            cv2.circle(canvas, (x + radius, y + h - radius), radius, color, -1)
+            cv2.circle(canvas, (x + w - radius, y + h - radius), radius, color, -1)
+        else:
+            # Border only (outline)
+            # Draw lines
+            cv2.line(canvas, (x + radius, y), (x + w - radius, y), color, thickness)
+            cv2.line(canvas, (x + radius, y + h), (x + w - radius, y + h), color, thickness)
+            cv2.line(canvas, (x, y + radius), (x, y + h - radius), color, thickness)
+            cv2.line(canvas, (x + w, y + radius), (x + w, y + h - radius), color, thickness)
+
+            # Draw corner arcs (using ellipse with limited angles)
+            cv2.ellipse(canvas, (x + radius, y + radius), (radius, radius), 180, 0, 90, color, thickness)
+            cv2.ellipse(canvas, (x + w - radius, y + radius), (radius, radius), 270, 0, 90, color, thickness)
+            cv2.ellipse(canvas, (x + radius, y + h - radius), (radius, radius), 90, 0, 90, color, thickness)
+            cv2.ellipse(canvas, (x + w - radius, y + h - radius), (radius, radius), 0, 0, 90, color, thickness)
+
     def _draw_button_simple(self, canvas: np.ndarray, x: int, y: int, w: int, h: int,
                            text: str, button_id: str, gui_scale: float, bg_color: tuple = None):
-        """Draw a single button (simplified)"""
+        """Draw a single button with modern rounded corners (v3.4.0)"""
         if bg_color is None:
             bg_color = self.colors['button_bg']
 
@@ -708,16 +762,22 @@ class DriverGUI:
 
         is_active = bg_color == self.colors['button_active'] or bg_color == self.colors['button_active_alt']
 
-        # Draw button with transparency
+        # Calculate corner radius (proportional to button height)
+        corner_radius = max(3, int(h * 0.2))  # 20% of button height
+
+        # Draw button background with rounded corners and transparency
         overlay = canvas[y:y+h, x:x+w].copy()
-        button_bg = np.full((h, w, 3), bg_color, dtype=np.uint8)
-        cv2.addWeighted(button_bg, 0.75, overlay, 0.25, 0, overlay)
+        button_layer = np.zeros((h, w, 3), dtype=np.uint8)
+        self._draw_rounded_rectangle(button_layer, 0, 0, w, h, bg_color, corner_radius, -1)
+
+        # Apply transparency blend
+        cv2.addWeighted(button_layer, 0.75, overlay, 0.25, 0, overlay)
         canvas[y:y+h, x:x+w] = overlay
 
-        # Border
+        # Draw border with rounded corners
         border_color = self.colors['accent_green'] if is_active else self.colors['panel_accent']
         border_thickness = max(2, int(2 * gui_scale)) if is_active else max(1, int(1 * gui_scale))
-        cv2.rectangle(canvas, (x, y), (x + w, y + h), border_color, border_thickness)
+        self._draw_rounded_rectangle(canvas, x, y, w, h, border_color, corner_radius, border_thickness)
 
         # Text (centered)
         text_color = self.colors['text'] if is_active else self.colors['text_dim']
