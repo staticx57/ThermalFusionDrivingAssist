@@ -95,6 +95,9 @@ class ThermalRoadMonitorFusion:
         self.buffer_flush_enabled = False
         self.frame_skip_value = 1
 
+        # Debug features
+        self.use_simulated_thermal = False  # Simulated thermal camera for testing
+
         # v3.0 Advanced ADAS state
         self.audio_enabled = getattr(args, 'enable_audio', True)
         self.distance_enabled = getattr(args, 'enable_distance', True)
@@ -142,6 +145,46 @@ class ThermalRoadMonitorFusion:
         self.thermal_connected = False
         self.last_thermal_scan_time = 0
         self.thermal_scan_interval = 3.0  # Scan every 3 seconds
+
+    def _generate_simulated_thermal_frame(self, resolution=(640, 512)) -> np.ndarray:
+        """
+        Generate a simulated thermal frame for debugging without hardware.
+        Creates a synthetic thermal pattern with hot spots and gradients.
+
+        Args:
+            resolution: (width, height) tuple
+
+        Returns:
+            np.ndarray: Simulated 16-bit thermal frame
+        """
+        width, height = resolution
+        frame = np.zeros((height, width), dtype=np.uint16)
+
+        # Base temperature gradient (simulates ground and sky)
+        y_gradient = np.linspace(28000, 26000, height, dtype=np.uint16)[:, np.newaxis]
+        frame += y_gradient
+
+        # Add animated hot spots (simulates vehicles, people, etc.)
+        num_hotspots = 3 + (self.frame_count % 3)  # 3-5 hotspots
+        for i in range(num_hotspots):
+            # Animated position
+            x = int((width * 0.2) + (width * 0.6) * ((self.frame_count * (i + 1) / 100) % 1.0))
+            y = int(height * 0.3) + int(height * 0.4 * (i / num_hotspots))
+
+            # Create Gaussian hot spot
+            size = 40 + (i * 15)
+            y_grid, x_grid = np.ogrid[-y:height-y, -x:width-x]
+            mask = (x_grid*x_grid + y_grid*y_grid) <= (size*size)
+
+            # Add temperature variation (30000-32000 = hot objects)
+            intensity = 30000 + (i * 500) + int(500 * np.sin(self.frame_count / 10))
+            frame[mask] = np.clip(frame[mask] + intensity - 26000, 26000, 32000)
+
+        # Add noise for realism
+        noise = np.random.randint(-200, 200, (height, width), dtype=np.int16)
+        frame = np.clip(frame.astype(np.int32) + noise, 0, 65535).astype(np.uint16)
+
+        return frame
 
     def _try_connect_thermal(self) -> bool:
         """
@@ -730,15 +773,24 @@ class ThermalRoadMonitorFusion:
                     self.thermal_camera = None
                     thermal_frame = None
 
-                # Create placeholder frame if no thermal camera
+                # Create placeholder or simulated frame if no thermal camera
                 if thermal_frame is None:
                     # Use saved resolution or default
                     res = (self.args.width, self.args.height) if hasattr(self, 'args') else (640, 512)
-                    thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)  # Blank thermal frame
 
-                    # DEBUG: Log placeholder dimensions every 30 frames to track variations
-                    if self.frame_count % 30 == 0:
-                        logger.info(f"[DEBUG] Frame {self.frame_count}: Placeholder thermal_frame.shape = {thermal_frame.shape}, res = {res}")
+                    # Use simulated thermal frame if enabled (debug mode)
+                    if getattr(self, 'use_simulated_thermal', False):
+                        thermal_frame = self._generate_simulated_thermal_frame(res)
+                        # Log every 30 frames when using simulation
+                        if self.frame_count % 30 == 0:
+                            logger.debug(f"[SIM] Frame {self.frame_count}: Generated simulated thermal frame {thermal_frame.shape}")
+                    else:
+                        # Blank thermal frame (original behavior)
+                        thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)
+
+                        # DEBUG: Log placeholder dimensions every 30 frames to track variations
+                        if self.frame_count % 30 == 0:
+                            logger.info(f"[DEBUG] Frame {self.frame_count}: Placeholder thermal_frame.shape = {thermal_frame.shape}, res = {res}")
 
                 # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
