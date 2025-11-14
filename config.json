@@ -8,6 +8,7 @@
   "night_start_hour": 19,
   "use_ambient_light": true,
   "ambient_threshold": 100,
+  "ambient_hysteresis": 15,
   "theme_override": "dark",
   "auto_retry_sensors": true,
   "thermal_retry_interval": 3,
