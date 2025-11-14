@@ -1,5 +1,8 @@
 # Qt GUI Architecture - Jetson-Optimized Design
 
+**Implementation Status**: ⚠️ PHASE 1 COMPLETE - Uses processEvents() (needs refactoring)
+**See**: QT_GUI_REFACTORING_NEEDED.md for current limitations and improvement plan
+
 ## Rationale for Qt Transition
 
 **OpenCV Limitations Confirmed**:
