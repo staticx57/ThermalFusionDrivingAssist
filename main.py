@@ -24,6 +24,14 @@ from road_analyzer import RoadAnalyzer
 from view_mode import ViewMode
 from performance_monitor import PerformanceMonitor
 
+# Qt VideoProcessorWorker (Phase 3 multithreading)
+try:
+    from video_worker import VideoProcessorWorker
+    HAS_VIDEO_WORKER = True
+except ImportError:
+    HAS_VIDEO_WORKER = False
+    VideoProcessorWorker = None
+
 # GUI will be imported conditionally based on --use-qt-gui argument
 
 logging.basicConfig(
@@ -393,10 +401,10 @@ class ThermalRoadMonitorFusion:
                 try:
                     from driver_gui_qt import DriverAppWindow
                     logger.info("Using Qt GUI (professional mode)")
-                    self.gui = DriverAppWindow()
+                    self.gui = DriverAppWindow(app=self)  # Pass self reference for button callbacks
                     self.gui_type = 'qt'
                     # Qt GUI will be shown in run() method
-                    logger.info("Qt GUI window created successfully")
+                    logger.info("Qt GUI window created successfully with app reference")
                 except ImportError as e:
                     logger.error(f"PyQt5 import error: {e}")
                     logger.error("Install with: pip3 install -r requirements_qt.txt")
@@ -663,6 +671,27 @@ class ThermalRoadMonitorFusion:
         logger.info("Async detection thread started")
 
         try:
+            # Phase 3: Use QThread worker for Qt GUI (proper multithreading)
+            if self.gui_type == 'qt' and HAS_VIDEO_WORKER:
+                logger.info("Phase 3: Starting VideoProcessorWorker thread...")
+
+                # Create and configure worker thread
+                self.video_worker = VideoProcessorWorker(self)
+                self.gui.connect_worker_signals(self.video_worker)
+
+                # Start worker thread
+                self.video_worker.start()
+                logger.info("VideoProcessorWorker started - entering Qt event loop")
+
+                # Run Qt event loop (blocks until quit)
+                self.qt_app.exec_()
+
+                # Clean shutdown
+                logger.info("Qt event loop exited")
+                self.video_worker.stop()
+                return  # Exit run() method after Qt event loop closes
+
+            # Fallback: Use processEvents() approach (Phase 1) or OpenCV GUI
             while self.running:
                 loop_start = time.time()
 
