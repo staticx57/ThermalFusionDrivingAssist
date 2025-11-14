@@ -393,10 +393,10 @@ class ThermalRoadMonitorFusion:
                 try:
                     from driver_gui_qt import DriverAppWindow
                     logger.info("Using Qt GUI (professional mode)")
-                    self.gui = DriverAppWindow()
+                    self.gui = DriverAppWindow(app=self)  # Pass self reference for button callbacks
                     self.gui_type = 'qt'
                     # Qt GUI will be shown in run() method
-                    logger.info("Qt GUI window created successfully")
+                    logger.info("Qt GUI window created successfully with app reference")
                 except ImportError as e:
                     logger.error(f"PyQt5 import error: {e}")
                     logger.error("Install with: pip3 install -r requirements_qt.txt")

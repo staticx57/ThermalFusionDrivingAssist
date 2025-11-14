@@ -345,13 +345,16 @@ class DriverAppWindow(QMainWindow):
     Handles video display, controls, and application state
     """
 
-    def __init__(self):
+    def __init__(self, app=None):
         super().__init__()
 
         if not PYQT_AVAILABLE:
             raise ImportError("PyQt5 is required. Install with: pip3 install PyQt5")
 
         self.setWindowTitle("Thermal Fusion Driving Assist - Qt Edition")
+
+        # Reference to main application (for button callbacks)
+        self.app = app
 
         # Application state
         self.current_theme = 'dark'
@@ -379,9 +382,8 @@ class DriverAppWindow(QMainWindow):
         # Info panel overlay (on top of video widget)
         self.info_panel = InfoPanel(self.video_widget)
 
-        # Connect control panel signals (will be connected by main.py)
-        # self.control_panel.view_mode_clicked.connect(...)
-        # etc.
+        # Connect control panel signals
+        self._connect_controls()
 
         # Apply initial theme
         self.apply_theme(self.current_theme)
@@ -390,6 +392,125 @@ class DriverAppWindow(QMainWindow):
         self.resize(1280, 960)
 
         logger.info("Qt GUI initialized successfully")
+
+    def set_app(self, app):
+        """Set reference to main application after initialization"""
+        self.app = app
+        logger.info("Application reference set in Qt GUI")
+
+    def _connect_controls(self):
+        """Connect control panel button signals to handlers"""
+        self.control_panel.view_mode_clicked.connect(self._on_view_mode_cycle)
+        self.control_panel.yolo_toggled.connect(self._on_yolo_toggle)
+        self.control_panel.audio_toggled.connect(self._on_audio_toggle)
+        self.control_panel.info_toggled.connect(self._on_info_toggle)
+        self.control_panel.theme_clicked.connect(self._on_theme_toggle)
+        self.control_panel.retry_sensors_clicked.connect(self._on_retry_sensors)
+        logger.info("Control panel signals connected")
+
+    def _on_view_mode_cycle(self):
+        """Cycle through view modes"""
+        if not self.app:
+            return
+
+        view_modes = [ViewMode.THERMAL_ONLY, ViewMode.RGB_ONLY, ViewMode.FUSION,
+                      ViewMode.SIDE_BY_SIDE, ViewMode.PICTURE_IN_PICTURE]
+        current_idx = view_modes.index(self.app.view_mode) if self.app.view_mode in view_modes else 0
+        next_idx = (current_idx + 1) % len(view_modes)
+        self.app.view_mode = view_modes[next_idx]
+        self.set_view_mode(view_modes[next_idx])
+        logger.info(f"View mode changed to: {view_modes[next_idx]}")
+
+    def _on_yolo_toggle(self, enabled: bool):
+        """Toggle YOLO detection"""
+        if not self.app:
+            return
+        self.app.yolo_enabled = enabled
+        logger.info(f"YOLO detection: {'enabled' if enabled else 'disabled'}")
+
+    def _on_audio_toggle(self, enabled: bool):
+        """Toggle audio alerts"""
+        if not self.app:
+            return
+        self.app.audio_enabled = enabled
+        logger.info(f"Audio alerts: {'enabled' if enabled else 'disabled'}")
+
+    def _on_info_toggle(self, show: bool):
+        """Toggle info panel"""
+        self.show_info_panel = show
+        self.toggle_info_panel(show)
+        logger.info(f"Info panel: {'shown' if show else 'hidden'}")
+
+    def _on_theme_toggle(self):
+        """Cycle through themes"""
+        themes = ['dark', 'light', 'auto']
+        current_idx = themes.index(self.current_theme) if self.current_theme in themes else 0
+        next_idx = (current_idx + 1) % len(themes)
+        self.apply_theme(themes[next_idx])
+        logger.info(f"Theme changed to: {themes[next_idx]}")
+
+    def _on_retry_sensors(self):
+        """Retry sensor connections"""
+        if not self.app:
+            return
+        logger.info("Retry sensors requested from GUI")
+        # Reset scan timers to force immediate retry
+        self.app.last_thermal_scan_time = 0
+        if hasattr(self.app, 'frame_count'):
+            self.app.frame_count = 0  # Trigger RGB retry on next frame
+
+    def keyPressEvent(self, event):
+        """Handle keyboard shortcuts"""
+        key = event.key()
+
+        if key == Qt.Key_Q or key == Qt.Key_Escape:
+            # Quit
+            if self.app:
+                self.app.running = False
+            self.close()
+
+        elif key == Qt.Key_V:
+            # Cycle view mode
+            self._on_view_mode_cycle()
+
+        elif key == Qt.Key_Y:
+            # Toggle YOLO
+            if self.app:
+                self.app.yolo_enabled = not self.app.yolo_enabled
+                self.control_panel.set_yolo_enabled(self.app.yolo_enabled)
+
+        elif key == Qt.Key_A:
+            # Toggle audio
+            if self.app:
+                self.app.audio_enabled = not self.app.audio_enabled
+                self.control_panel.set_audio_enabled(self.app.audio_enabled)
+
+        elif key == Qt.Key_I:
+            # Toggle info panel
+            self.show_info_panel = not self.show_info_panel
+            self.toggle_info_panel(self.show_info_panel)
+
+        elif key == Qt.Key_T:
+            # Cycle theme
+            self._on_theme_toggle()
+
+        elif key == Qt.Key_D:
+            # Toggle detections display
+            if self.app:
+                self.app.show_detections = not self.app.show_detections
+                logger.info(f"Show detections: {self.app.show_detections}")
+
+        elif key == Qt.Key_R:
+            # Retry sensors
+            self._on_retry_sensors()
+
+        elif key == Qt.Key_F:
+            # Toggle fullscreen
+            self.toggle_fullscreen()
+
+        else:
+            # Pass to parent
+            super().keyPressEvent(event)
 
     def apply_theme(self, theme_name: str):
         """Apply color theme"""
