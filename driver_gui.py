@@ -303,6 +303,7 @@ class DriverGUI:
             Rendered frame
         """
         # Select display frame based on view mode
+        # IMPORTANT: Keep canvas size CONSISTENT to prevent jitter
         if self.view_mode == ViewMode.THERMAL_ONLY:
             display_frame = thermal_frame
         elif self.view_mode == ViewMode.RGB_ONLY:
@@ -310,14 +311,19 @@ class DriverGUI:
         elif self.view_mode == ViewMode.FUSION:
             display_frame = fusion_frame if fusion_frame is not None else thermal_frame
         elif self.view_mode == ViewMode.SIDE_BY_SIDE:
+            # ALWAYS create double-width canvas (prevents jitter from RGB connect/disconnect)
+            h, w = thermal_frame.shape[:2]
             if rgb_frame is not None:
                 # Ensure same height
-                h = thermal_frame.shape[0]
                 if rgb_frame.shape[0] != h:
                     rgb_frame = cv2.resize(rgb_frame, (rgb_frame.shape[1], h))
-                display_frame = np.hstack([thermal_frame, rgb_frame])
             else:
-                display_frame = thermal_frame
+                # Create placeholder RGB frame (same size as thermal)
+                if len(thermal_frame.shape) == 3:
+                    rgb_frame = np.zeros((h, w, 3), dtype=thermal_frame.dtype)
+                else:
+                    rgb_frame = np.zeros((h, w), dtype=thermal_frame.dtype)
+            display_frame = np.hstack([thermal_frame, rgb_frame])
         elif self.view_mode == ViewMode.PICTURE_IN_PICTURE:
             if rgb_frame is not None and thermal_frame is not None:
                 display_frame = self._create_pip(thermal_frame, rgb_frame)
@@ -333,6 +339,19 @@ class DriverGUI:
         frame_scaled = cv2.resize(display_frame, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
 
         canvas = frame_scaled.copy()
+
+        # DEBUG: Log canvas dimensions periodically (every 30 frames)
+        if hasattr(self, '_debug_frame_count'):
+            self._debug_frame_count += 1
+        else:
+            self._debug_frame_count = 0
+            # Log OpenCV backend once at startup
+            backend_name = cv2.videoio_registry.getBackendName(cv2.CAP_ANY)
+            print(f"[DEBUG] OpenCV Window Backend: {backend_name}")
+
+        if self._debug_frame_count % 30 == 0:
+            print(f"[DEBUG] Frame {self._debug_frame_count}: Canvas.shape = {canvas.shape}, "
+                  f"orig = {orig_w}x{orig_h}, scaled = {scaled_w}x{scaled_h}, scale_factor = {self.scale_factor}")
 
         # Update proximity zones for smart alerts
         self._update_proximity_zones(detections, orig_w)
@@ -501,6 +520,11 @@ class DriverGUI:
         top_margin = int(45 * gui_scale)
         left_margin = int(15 * gui_scale)
 
+        # DEBUG: Log button positioning calculations periodically
+        if hasattr(self, '_debug_frame_count') and self._debug_frame_count % 30 == 0:
+            print(f"[DEBUG] Button calc: gui_scale={gui_scale}, button_spacing={button_spacing}, "
+                  f"top_margin={top_margin}, left_margin={left_margin}")
+
         self.control_buttons = {}
 
         if self.developer_mode:
@@ -549,6 +573,11 @@ class DriverGUI:
         for btn_id, text, width, bg_color in buttons:
             self._draw_button_simple(canvas, current_x, button_y, width,
                                     button_height, text, btn_id, gui_scale, bg_color)
+
+            # DEBUG: Log button X positions for first button periodically
+            if btn_id == 'view_mode_cycle' and hasattr(self, '_debug_frame_count') and self._debug_frame_count % 30 == 0:
+                print(f"[DEBUG] Button '{btn_id}' position: x={current_x}, y={button_y}, width={width}")
+
             current_x += width + button_spacing
 
     def _draw_developer_controls(self, canvas: np.ndarray, params: dict,

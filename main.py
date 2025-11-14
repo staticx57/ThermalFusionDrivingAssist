@@ -665,6 +665,10 @@ class ThermalRoadMonitorFusion:
                     res = (self.args.width, self.args.height) if hasattr(self, 'args') else (640, 512)
                     thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)  # Blank thermal frame
 
+                    # DEBUG: Log placeholder dimensions every 30 frames to track variations
+                    if self.frame_count % 30 == 0:
+                        logger.info(f"[DEBUG] Frame {self.frame_count}: Placeholder thermal_frame.shape = {thermal_frame.shape}, res = {res}")
+
                 # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
                 if self.rgb_available and self.rgb_camera:
