@@ -1,5 +1,118 @@
 # ThermalFusionDrivingAssist - Changelog
 
+## [v3.4.0] - 2025-11-14 - Configuration System, Theme Switching & Sensor Auto-Retry
+
+### Added - Configuration System
+- **File: `config.py`** (NEW - 401 lines)
+  - Persistent JSON-based configuration storage
+  - Default configuration with sensible defaults
+  - Load/save configuration between sessions
+  - Get/set/update configuration values
+  - Reset to defaults functionality
+  - Singleton pattern via `get_config()` global function
+
+### Added - Intelligent Theme Switching
+- **Auto Theme Switching System**:
+  - **Time-Based**: Automatically switch between light (7 AM - 7 PM) and dark (7 PM - 7 AM) themes
+  - **Ambient Light Detection**: Use RGB camera brightness to determine theme (threshold: 0-255)
+  - **Manual Override**: User can force specific theme (AUTO → DARK → LIGHT → AUTO)
+  - **Priority System**: Manual override > Ambient light > Time-based > Configured theme
+- **File: `config.py`** - Theme Methods:
+  - `get_theme_from_time()`: Time-based theme determination
+  - `get_theme_from_ambient(rgb_frame)`: Ambient light-based theme
+  - `get_active_theme(rgb_frame)`: Intelligent theme selection with priority
+  - `set_theme_override(override)`: Manual theme control
+  - `get_theme_colors()`: Dynamic color scheme (dark/light)
+- **Theme Color Schemes**:
+  - **Dark Theme**: Optimized for night driving (default)
+  - **Light Theme**: Optimized for daytime driving
+  - Both themes include critical, warning, info, success colors
+  - Panel backgrounds, button states, accent colors
+
+### Added - Sensor Auto-Retry Logic
+- **Intelligent Sensor Reconnection** (v3.4.0):
+  - Automatic retry when fusion mode enabled (FUSION, SIDE_BY_SIDE, PICTURE_IN_PICTURE)
+  - Configurable retry intervals:
+    - Aggressive: 100 frames (~3s at 30fps) when fusion mode active
+    - Standard: 300 frames (~10s at 30fps) otherwise
+  - Respects `auto_retry_sensors` config flag
+  - Maintains existing hot-plug support for thermal cameras
+- **Manual Sensor Retry** (v3.4.0):
+  - New "RETRY" button in developer controls
+  - Forces immediate reconnection attempt for both RGB and thermal
+  - User feedback via logging
+
+### Modified - GUI Modernization
+- **File: `driver_gui.py`**
+  - **Rounded Button Corners**: Modern button rendering with configurable corner radius
+  - **New Method**: `_draw_rounded_rectangle()` - Draw rounded rectangles with filled or outline mode
+  - **Updated**: `_draw_button_simple()` - Now uses rounded corners (20% of button height)
+  - **Dynamic Theme Colors**: All colors now loaded from config system
+  - **Auto Theme Updates**: GUI automatically refreshes theme based on time/ambient/override
+  - **New Buttons**:
+    - "THEME" button: Cycle through AUTO → DARK → LIGHT → AUTO
+    - "RETRY" button: Manual sensor reconnection
+  - **Theme-Aware Rendering**: All UI elements respect current theme (dark/light)
+
+### Modified - Main Application
+- **File: `main.py`**
+  - **Theme Toggle Handler** (lines 552-569):
+    - Cycle through theme overrides with user feedback
+    - Save preference to config file
+  - **Retry Sensors Handler** (lines 571-603):
+    - Manual thermal camera retry (force immediate scan)
+    - Manual RGB camera retry (create new camera instance)
+    - User feedback for connection status
+  - **Auto-Retry Logic** (lines 680-714):
+    - Check if fusion mode active
+    - Check if auto-retry enabled in config
+    - Use appropriate retry interval (100 or 300 frames)
+    - Seamless hot-plug reconnection
+
+### Configuration Options
+- **Theme Settings**:
+  - `theme`: 'dark' or 'light' (current theme)
+  - `theme_mode`: 'auto', 'manual', 'time', 'ambient'
+  - `auto_theme_enabled`: Enable/disable auto-switching
+  - `day_start_hour`: Light theme start time (default: 7 AM)
+  - `night_start_hour`: Dark theme start time (default: 7 PM)
+  - `use_ambient_light`: Enable ambient light detection
+  - `ambient_threshold`: Brightness threshold 0-255 (default: 100)
+  - `theme_override`: Manual override (None, 'light', 'dark')
+
+- **Sensor Auto-Retry Settings**:
+  - `auto_retry_sensors`: Enable/disable auto-retry (default: True)
+  - `thermal_retry_interval`: Thermal retry interval in seconds (default: 3s)
+  - `rgb_retry_interval`: RGB retry interval in frames (default: 100)
+
+### Features
+- **Smart UX**: No more passive waiting screens - interactive GUI regardless of sensor state
+- **Auto Theme Switching**: GUI automatically adapts to time of day and ambient light
+- **Manual Control**: User can override automatic theme behavior
+- **Sensor Resilience**: Automatic reconnection when fusion features needed
+- **Modern UI**: Rounded buttons, clean design, professional appearance
+- **Persistent Config**: User preferences saved between sessions
+
+### Testing & Validation
+- All Python files syntax-checked (`config.py`, `driver_gui.py`, `main.py`)
+- Import dependencies verified
+- Button click handlers tested
+- Theme switching logic validated
+- Sensor retry logic verified
+
+### User Experience Improvements
+- **No Waiting**: GUI loads immediately, even without sensors
+- **Visual Feedback**: Sensor connection status always visible
+- **Interactive Controls**: Configure settings before sensors connect
+- **Smart Themes**: Automatic day/night adaptation
+- **Resilient Sensors**: Automatic reconnection for fusion mode
+
+### Documentation
+- Configuration system fully documented with docstrings
+- Theme switching priority system explained
+- Auto-retry logic documented in code
+- User-facing buttons with clear labels (THEME, RETRY)
+
 ## [v3.3.0] - 2025-11-14 - Dual RGB Camera Support + Cross-Platform Install
 
 ### Added - RGB Camera Options

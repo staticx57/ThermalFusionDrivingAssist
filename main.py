@@ -13,6 +13,7 @@ import platform
 from queue import Queue
 import cv2
 import os
+import numpy as np
 
 from flir_camera import FLIRBosonCamera
 from camera_factory import create_rgb_camera, detect_all_rgb_cameras
@@ -548,6 +549,59 @@ class ThermalRoadMonitorFusion:
                 logger.info(f"GUI mode switched to: {mode_name}")
                 logger.info(f"  {'All controls available for configuration' if self.developer_mode else 'Clean interface for driving'}")
 
+            elif button_id == 'theme_toggle':
+                # Cycle theme override: AUTO → DARK → LIGHT → AUTO
+                from config import get_config
+                config = get_config()
+                current_override = config.get('theme_override')
+
+                if current_override is None:
+                    # AUTO → DARK
+                    config.set_theme_override('dark', save=True)
+                    logger.info("Theme override: DARK (manual)")
+                elif current_override == 'dark':
+                    # DARK → LIGHT
+                    config.set_theme_override('light', save=True)
+                    logger.info("Theme override: LIGHT (manual)")
+                elif current_override == 'light':
+                    # LIGHT → AUTO
+                    config.set_theme_override(None, save=True)
+                    logger.info("Theme override: AUTO (time + ambient)")
+
+            elif button_id == 'retry_sensors':
+                # Manual sensor retry (v3.4.0)
+                logger.info("Manual sensor retry requested...")
+
+                # Reset thermal connection
+                if not self.thermal_connected:
+                    logger.info("  Retrying thermal camera...")
+                    self.last_thermal_scan_time = 0  # Force immediate retry
+                else:
+                    logger.info("  Thermal camera already connected")
+
+                # Reset RGB connection
+                if not self.rgb_available:
+                    logger.info("  Retrying RGB camera...")
+                    try:
+                        from camera_factory import create_rgb_camera
+                        rgb_camera = create_rgb_camera(
+                            resolution=(self.args.rgb_width, self.args.rgb_height),
+                            fps=self.args.rgb_fps,
+                            camera_type=self.args.rgb_camera_type
+                        )
+                        if rgb_camera.open():
+                            if hasattr(self, 'rgb_camera') and self.rgb_camera:
+                                self.rgb_camera.release()
+                            self.rgb_camera = rgb_camera
+                            self.rgb_available = True
+                            logger.info("  ✓ RGB camera reconnected successfully!")
+                        else:
+                            logger.warning("  ✗ RGB camera failed to open")
+                    except Exception as e:
+                        logger.warning(f"  ✗ RGB camera retry failed: {e}")
+                else:
+                    logger.info("  RGB camera already connected")
+
     def run(self):
         """Main application loop"""
         logger.info("Starting main loop...")
@@ -575,15 +629,11 @@ class ThermalRoadMonitorFusion:
                         else:
                             logger.debug("Thermal camera not found, will retry in 3s...")
 
-                    # Display waiting screen
-                    self._display_waiting_screen()
-                    time.sleep(0.1)
-                    continue
-
                 # 1. Capture thermal frame (with disconnect detection)
+                # If not connected, create placeholder frame so GUI can still render
                 thermal_frame = None
                 try:
-                    if self.thermal_camera:
+                    if self.thermal_camera and self.thermal_connected:
                         ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
                         if not ret_thermal or thermal_frame is None:
                             logger.warning("Thermal camera read failed - camera may have disconnected")
@@ -591,8 +641,7 @@ class ThermalRoadMonitorFusion:
                             if self.thermal_camera:
                                 self.thermal_camera.release()
                             self.thermal_camera = None
-                            time.sleep(0.1)
-                            continue
+                            thermal_frame = None
                 except Exception as e:
                     logger.warning(f"Thermal camera error: {e}")
                     logger.warning("Thermal camera disconnected - will attempt reconnection")
@@ -600,7 +649,13 @@ class ThermalRoadMonitorFusion:
                     if self.thermal_camera:
                         self.thermal_camera.release()
                     self.thermal_camera = None
-                    continue
+                    thermal_frame = None
+
+                # Create placeholder frame if no thermal camera
+                if thermal_frame is None:
+                    # Use saved resolution or default
+                    res = (self.args.width, self.args.height) if hasattr(self, 'args') else (640, 512)
+                    thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)  # Blank thermal frame
 
                 # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
@@ -623,8 +678,24 @@ class ThermalRoadMonitorFusion:
                             self.rgb_camera.release()
                         self.rgb_camera = None
                 elif not self.rgb_available and not getattr(self.args, 'disable_rgb', False):
-                    # Try to reconnect RGB camera every 100 frames (hot-plug support)
-                    if self.frame_count % 100 == 0:
+                    # Auto-retry RGB camera with intelligent retry interval (v3.4.0)
+                    from config import get_config
+                    config = get_config()
+
+                    # Check if auto-retry is enabled AND fusion mode is active
+                    auto_retry_enabled = config.get('auto_retry_sensors', True)
+                    fusion_mode_active = self.view_mode in [ViewMode.FUSION, ViewMode.SIDE_BY_SIDE, ViewMode.PICTURE_IN_PICTURE]
+
+                    # Determine retry interval
+                    if auto_retry_enabled and fusion_mode_active:
+                        # Aggressive retry when fusion mode enabled (config default: every 100 frames)
+                        retry_interval = config.get('rgb_retry_interval', 100)
+                    else:
+                        # Standard retry (every 300 frames = ~10s at 30fps)
+                        retry_interval = 300
+
+                    # Try to reconnect RGB camera (hot-plug support)
+                    if self.frame_count % retry_interval == 0:
                         logger.info("Attempting to reconnect RGB camera...")
                         try:
                             # Camera factory auto-detects: FLIR Firefly or UVC webcam
@@ -718,6 +789,7 @@ class ThermalRoadMonitorFusion:
                         audio_enabled=self.audio_enabled,  # v3.0
                         show_info=self.show_info_panel,  # NEW
                         thermal_available=self.thermal_connected,  # NEW
+                        rgb_available=self.rgb_available,  # NEW
                         detection_count=len(detections),  # NEW
                         lidar_available=False  # NEW (will be True when LiDAR integrated)
                     )
