@@ -384,8 +384,9 @@ class ThermalRoadMonitorFusion:
                 self.analyzer.update_vehicle_speed(vehicle_speed)
                 logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
-            # 7. Initialize GUI (Qt or OpenCV)
-            use_qt = getattr(self.args, 'use_qt_gui', False) and self.qt_app is not None
+            # 7. Initialize GUI (Qt is now default)
+            use_opencv = getattr(self.args, 'use_opencv_gui', False)
+            use_qt = not use_opencv and self.qt_app is not None
 
             if use_qt:
                 # Qt GUI - Professional interface
@@ -833,34 +834,40 @@ class ThermalRoadMonitorFusion:
 
                 # 9. Render and display
                 try:
-                    current_palette = self.available_palettes[self.current_palette_idx]
-                    display_frame = self.gui.render_frame_with_controls(
-                        thermal_frame=thermal_colored,
-                        rgb_frame=rgb_frame,
-                        fusion_frame=fusion_frame,
-                        detections=detections,
-                        alerts=alerts,
-                        metrics=metrics,
-                        show_detections=self.show_detections,
-                        current_palette=current_palette,
-                        yolo_enabled=self.yolo_enabled,
-                        buffer_flush_enabled=self.buffer_flush_enabled,
-                        frame_skip_value=self.frame_skip_value,
-                        device=self.device,
-                        current_model=self.current_model,
-                        fusion_mode=self.fusion_mode,
-                        fusion_alpha=self.fusion_alpha,
-                        audio_enabled=self.audio_enabled,  # v3.0
-                        show_info=self.show_info_panel,  # NEW
-                        thermal_available=self.thermal_connected,  # NEW
-                        rgb_available=self.rgb_available,  # NEW
-                        detection_count=len(detections),  # NEW
-                        lidar_available=False  # NEW (will be True when LiDAR integrated)
-                    )
-
                     # Display frame based on GUI type
                     if self.gui_type == 'qt':
-                        # Qt GUI: Update frame and process events
+                        # Qt GUI: Select frame based on view mode and pass raw frame
+                        if self.view_mode == ViewMode.RGB_ONLY and rgb_frame is not None:
+                            display_frame = rgb_frame
+                        elif self.view_mode == ViewMode.FUSION and fusion_frame is not None:
+                            display_frame = fusion_frame
+                        elif self.view_mode == ViewMode.SIDE_BY_SIDE:
+                            # Create side-by-side view
+                            if rgb_frame is not None and thermal_colored.shape[0] == rgb_frame.shape[0]:
+                                display_frame = np.hstack([thermal_colored, rgb_frame])
+                            else:
+                                display_frame = thermal_colored
+                        elif self.view_mode == ViewMode.PICTURE_IN_PICTURE and rgb_frame is not None:
+                            # Simple PiP: RGB in corner of thermal
+                            display_frame = thermal_colored.copy()
+                            pip_size = (thermal_colored.shape[1] // 4, thermal_colored.shape[0] // 4)
+                            rgb_small = cv2.resize(rgb_frame, pip_size)
+                            display_frame[10:10+rgb_small.shape[0], 10:10+rgb_small.shape[1]] = rgb_small
+                        else:
+                            display_frame = thermal_colored
+
+                        # Draw detections if enabled (before passing to Qt GUI)
+                        if self.show_detections and len(detections) > 0:
+                            for det in detections:
+                                x1, y1, x2, y2 = map(int, det.bbox)
+                                # Draw bounding box
+                                cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                # Draw label
+                                label = f"{det.class_name}: {det.confidence:.2f}"
+                                cv2.putText(display_frame, label, (x1, y1 - 10),
+                                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                        # Update Qt GUI (handles its own rendering of controls/overlays)
                         self.gui.update_frame(display_frame)
                         self.gui.update_metrics(
                             fps=self.smoothed_fps,
@@ -868,12 +875,42 @@ class ThermalRoadMonitorFusion:
                             thermal_connected=self.thermal_connected,
                             rgb_connected=self.rgb_available
                         )
+                        # Update view mode and control states
+                        self.gui.set_view_mode(self.view_mode)
+                        self.gui.control_panel.set_yolo_enabled(self.yolo_enabled)
+                        self.gui.control_panel.set_audio_enabled(self.audio_enabled)
                         # Process Qt events (allows GUI to remain responsive)
                         self.qt_app.processEvents()
                         # Qt GUI doesn't return key codes in the same way, use a small delay
                         time.sleep(0.001)
                     else:
-                        # OpenCV GUI: Traditional display with key handling
+                        # OpenCV GUI: Composite everything into single frame with controls
+                        current_palette = self.available_palettes[self.current_palette_idx]
+                        display_frame = self.gui.render_frame_with_controls(
+                            thermal_frame=thermal_colored,
+                            rgb_frame=rgb_frame,
+                            fusion_frame=fusion_frame,
+                            detections=detections,
+                            alerts=alerts,
+                            metrics=metrics,
+                            show_detections=self.show_detections,
+                            current_palette=current_palette,
+                            yolo_enabled=self.yolo_enabled,
+                            buffer_flush_enabled=self.buffer_flush_enabled,
+                            frame_skip_value=self.frame_skip_value,
+                            device=self.device,
+                            current_model=self.current_model,
+                            fusion_mode=self.fusion_mode,
+                            fusion_alpha=self.fusion_alpha,
+                            audio_enabled=self.audio_enabled,  # v3.0
+                            show_info=self.show_info_panel,  # NEW
+                            thermal_available=self.thermal_connected,  # NEW
+                            rgb_available=self.rgb_available,  # NEW
+                            detection_count=len(detections),  # NEW
+                            lidar_available=False  # NEW (will be True when LiDAR integrated)
+                        )
+
+                        # Display and handle keypress
                         key = self.gui.display(display_frame)
                         self._handle_keypress(key, display_frame)
                 except Exception as e:
@@ -1124,9 +1161,9 @@ def parse_arguments():
     parser.add_argument('--vehicle-speed', type=float, default=0.0,
                        help='Vehicle speed in km/h for TTC calculation (default: 0)')
 
-    # GUI options
-    parser.add_argument('--use-qt-gui', action='store_true',
-                       help='Use Qt GUI instead of OpenCV GUI (better theming, text rendering)')
+    # GUI options (Qt is now default)
+    parser.add_argument('--use-opencv-gui', action='store_true',
+                       help='Use legacy OpenCV GUI instead of Qt (not recommended)')
 
     return parser.parse_args()
 
@@ -1134,8 +1171,8 @@ def parse_arguments():
 def main():
     print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   FLIR Thermal + RGB Fusion Road Monitor v3.0              ║
-║   Cross-Platform: Jetson Orin & x86-64 Workstations        ║
+║   FLIR Thermal + RGB Fusion Road Monitor v3.5              ║
+║   Qt Professional GUI | Jetson Orin & x86-64               ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Keyboard Controls:                                          ║
 ║    Q/ESC - Quit          F - Fullscreen      D - Detections  ║
@@ -1162,16 +1199,23 @@ def main():
 
     args = parse_arguments()
 
-    # Initialize QApplication if using Qt GUI (must be created before any Qt widgets)
+    # Initialize QApplication (Qt GUI is now default)
     qt_app = None
-    if getattr(args, 'use_qt_gui', False):
+    use_opencv = getattr(args, 'use_opencv_gui', False)
+
+    if not use_opencv:
         try:
             from PyQt5.QtWidgets import QApplication
             qt_app = QApplication(sys.argv)
             qt_app.setApplicationName("Thermal Fusion Driving Assist")
-            logger.info("QApplication initialized")
+            logger.info("QApplication initialized (Qt GUI)")
         except ImportError:
-            logger.warning("PyQt5 not available, will fall back to OpenCV GUI")
+            logger.error("=" * 70)
+            logger.error("PyQt5 is required but not installed!")
+            logger.error("Install with: pip install PyQt5")
+            logger.error("Or use legacy OpenCV GUI with: --use-opencv-gui")
+            logger.error("=" * 70)
+            sys.exit(1)
 
     app = ThermalRoadMonitorFusion(args, qt_app=qt_app)
 
