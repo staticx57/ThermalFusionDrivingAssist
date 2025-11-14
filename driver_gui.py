@@ -411,7 +411,8 @@ class DriverGUI:
                                    device: str = "cuda",
                                    current_model: str = "yolov8s.pt",
                                    fusion_mode: str = "alpha_blend",
-                                   fusion_alpha: float = 0.5) -> np.ndarray:
+                                   fusion_alpha: float = 0.5,
+                                   audio_enabled: bool = True) -> np.ndarray:
         """
         Render frame with enhanced GUI controls
 
@@ -453,7 +454,8 @@ class DriverGUI:
             'view_mode': self.view_mode,
             'fusion_mode': fusion_mode,
             'fusion_alpha': fusion_alpha,
-            'rgb_available': rgb_frame is not None
+            'rgb_available': rgb_frame is not None,
+            'audio_enabled': audio_enabled  # v3.0
         })
 
         return canvas

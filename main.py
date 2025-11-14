@@ -83,6 +83,10 @@ class ThermalRoadMonitorFusion:
         self.buffer_flush_enabled = False
         self.frame_skip_value = 1
 
+        # v3.0 Advanced ADAS state
+        self.audio_enabled = getattr(args, 'enable_audio', True)
+        self.distance_enabled = getattr(args, 'enable_distance', True)
+
         # Model management
         self.available_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt']
         self.current_model = getattr(args, 'model', 'yolov8s.pt')
@@ -230,11 +234,24 @@ class ThermalRoadMonitorFusion:
             self.available_palettes = self.detector.get_available_palettes()
             self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
 
-            # 6. Initialize road analyzer
+            # 6. Initialize road analyzer with v3.0 features
+            enable_distance = getattr(self.args, 'enable_distance', True)
+            enable_audio = getattr(self.args, 'enable_audio', True)
+            thermal_mode = not self.rgb_available  # Use thermal mode if RGB not available
+
             self.analyzer = RoadAnalyzer(
                 frame_width=actual_res[0],
-                frame_height=actual_res[1]
+                frame_height=actual_res[1],
+                enable_distance=enable_distance,
+                enable_audio=enable_audio,
+                thermal_mode=thermal_mode
             )
+
+            # Update vehicle speed if provided (for TTC calculation)
+            vehicle_speed = getattr(self.args, 'vehicle_speed', 0.0)
+            if vehicle_speed > 0:
+                self.analyzer.update_vehicle_speed(vehicle_speed)
+                logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
             # 7. Initialize enhanced GUI
             scale_factor = getattr(self.args, 'scale', 2.0)
@@ -410,16 +427,47 @@ class ThermalRoadMonitorFusion:
                     logger.error(f"Error reading thermal camera: {e}", exc_info=True)
                     break
 
-                # 2. Capture RGB frame (if available)
+                # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
                 if self.rgb_available and self.rgb_camera:
                     try:
                         ret_rgb, rgb_frame = self.rgb_camera.read(flush_buffer=self.buffer_flush_enabled)
                         if not ret_rgb:
                             rgb_frame = None
+                            # Try to reconnect on next iteration
+                            logger.warning("RGB camera read failed - will attempt reconnection")
+                            self.rgb_available = False
+                            if self.rgb_camera:
+                                self.rgb_camera.release()
+                            self.rgb_camera = None
                     except Exception as e:
                         logger.debug(f"RGB camera read error: {e}")
                         rgb_frame = None
+                        self.rgb_available = False
+                        if self.rgb_camera:
+                            self.rgb_camera.release()
+                        self.rgb_camera = None
+                elif not self.rgb_available and not getattr(self.args, 'disable_rgb', False):
+                    # Try to reconnect RGB camera every 100 frames (hot-plug support)
+                    if self.frame_count % 100 == 0:
+                        logger.info("Attempting to reconnect RGB camera...")
+                        rgb_cameras = detect_rgb_cameras()
+                        if rgb_cameras:
+                            try:
+                                use_gstreamer = (rgb_cameras[0]['type'] == 'CSI')
+                                self.rgb_camera = RGBCamera(
+                                    device_id=rgb_cameras[0]['id'],
+                                    resolution=(640, 480),
+                                    use_gstreamer=use_gstreamer
+                                )
+                                if self.rgb_camera.open():
+                                    self.rgb_available = True
+                                    logger.info(f"✓ RGB camera reconnected: {rgb_cameras[0]}")
+                                else:
+                                    self.rgb_camera = None
+                            except Exception as e:
+                                logger.debug(f"RGB reconnection failed: {e}")
+                                self.rgb_camera = None
 
                 # 3. Apply thermal color palette
                 try:
@@ -493,7 +541,8 @@ class ThermalRoadMonitorFusion:
                         device=self.device,
                         current_model=self.current_model,
                         fusion_mode=self.fusion_mode,
-                        fusion_alpha=self.fusion_alpha
+                        fusion_alpha=self.fusion_alpha,
+                        audio_enabled=self.audio_enabled  # v3.0
                     )
 
                     key = self.gui.display(display_frame)
@@ -556,6 +605,12 @@ class ThermalRoadMonitorFusion:
             self.device = 'cpu' if self.device == 'cuda' else 'cuda'
             self.detector.set_device(self.device)
             logger.info(f"Device: {self.device.upper()}")
+        elif key == ord('a') or key == ord('A'):
+            # Toggle audio alerts (v3.0)
+            self.audio_enabled = not self.audio_enabled
+            if self.analyzer:
+                self.analyzer.set_audio_enabled(self.audio_enabled)
+            logger.info(f"Audio alerts {'enabled' if self.audio_enabled else 'disabled'}")
 
     def shutdown(self):
         """Cleanup resources"""
@@ -572,6 +627,9 @@ class ThermalRoadMonitorFusion:
             self.rgb_camera.release()
         if self.detector:
             self.detector.release()
+        if self.analyzer:
+            # Cleanup audio system (v3.0)
+            self.analyzer.cleanup()
         if self.gui:
             self.gui.close()
         if self.perf_monitor:
@@ -622,29 +680,46 @@ def parse_arguments():
     parser.add_argument('--calibration-file', type=str, default=None,
                        help='Camera calibration file (JSON)')
 
+    # v3.0 Advanced ADAS options
+    parser.add_argument('--enable-distance', action='store_true', default=True,
+                       help='Enable distance estimation (default: True)')
+    parser.add_argument('--disable-distance', dest='enable_distance', action='store_false',
+                       help='Disable distance estimation')
+    parser.add_argument('--enable-audio', action='store_true', default=True,
+                       help='Enable audio alerts (default: True)')
+    parser.add_argument('--disable-audio', dest='enable_audio', action='store_false',
+                       help='Disable audio alerts')
+    parser.add_argument('--audio-volume', type=float, default=0.7,
+                       help='Audio alert volume (0.0-1.0, default: 0.7)')
+    parser.add_argument('--vehicle-speed', type=float, default=0.0,
+                       help='Vehicle speed in km/h for TTC calculation (default: 0)')
+
     return parser.parse_args()
 
 
 def main():
     print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   FLIR Thermal + RGB Fusion Road Monitor                    ║
+║   FLIR Thermal + RGB Fusion Road Monitor v3.0              ║
 ║   Cross-Platform: Jetson Orin & x86-64 Workstations        ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Keyboard Controls:                                          ║
 ║    Q/ESC - Quit          F - Fullscreen      D - Detections  ║
 ║    Y - Toggle YOLO       V - Cycle Views     S - Screenshot  ║
 ║    C - Cycle Palettes    G - Device Toggle   P - Stats       ║
+║    A - Toggle Audio      (v3.0 Audio Alerts)                ║
 ║                                                               ║
 ║  GUI Buttons (click):                                        ║
 ║    Row 1: PAL, YOLO, BOX, DEV, MODEL                        ║
-║    Row 2: FLUSH, SKIP, VIEW, FUS, α                         ║
+║    Row 2: FLUSH, AUDIO, SKIP, VIEW, FUS, α                  ║
 ║                                                               ║
 ║  View Modes: Thermal, RGB, Fusion, Side-by-Side, PIP       ║
 ║  Fusion Modes: Alpha Blend, Edge Enhanced, Thermal Overlay  ║
 ║                Side-by-Side, PIP, Max Intensity, Weighted   ║
 ║                                                               ║
-║  Smart Features:                                             ║
+║  v3.0 Smart Features:                                        ║
+║    • Distance estimation with TTC warnings                   ║
+║    • ISO 26262 compliant audio alerts (1.5-2 kHz)          ║
 ║    • RED PULSE alerts on sides for pedestrians/animals      ║
 ║    • Directional proximity warnings (left/right/center)     ║
 ║    • Multi-view support for optimal situational awareness   ║

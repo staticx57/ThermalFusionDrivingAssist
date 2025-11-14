@@ -17,6 +17,9 @@ import logging
 
 from object_detector import Detection
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Optional imports (graceful degradation if not available)
 try:
     from distance_estimator import DistanceEstimator, DistanceEstimate
@@ -31,9 +34,6 @@ try:
 except ImportError:
     AUDIO_AVAILABLE = False
     logger.warning("audio_alert_system not available - audio alerts disabled")
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class AlertLevel(Enum):
@@ -177,6 +177,9 @@ class RoadAnalyzer:
                 distance_m = distance_estimate.distance_m
                 ttc = distance_estimate.time_to_collision
                 distance_zone, _ = self.distance_estimator.get_distance_zones(distance_m)
+
+                # Store distance on Detection object for GUI display (NEW)
+                det.distance_estimate = distance_m
 
         # Calculate object size relative to frame (legacy method)
         obj_area = det.get_area()
