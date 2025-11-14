@@ -15,12 +15,12 @@ import cv2
 import os
 
 from flir_camera import FLIRBosonCamera
-from rgb_camera import RGBCamera, detect_rgb_cameras
+from camera_factory import create_rgb_camera, detect_all_rgb_cameras
 from camera_detector import CameraDetector
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor, ViewMode
 from road_analyzer import RoadAnalyzer
-from driver_gui_v2 import DriverGUI
+from driver_gui import DriverGUI
 from performance_monitor import PerformanceMonitor
 
 logging.basicConfig(
@@ -83,6 +83,14 @@ class ThermalRoadMonitorFusion:
         self.buffer_flush_enabled = False
         self.frame_skip_value = 1
 
+        # v3.0 Advanced ADAS state
+        self.audio_enabled = getattr(args, 'enable_audio', True)
+        self.distance_enabled = getattr(args, 'enable_distance', True)
+
+        # GUI state (dual-mode GUI)
+        self.show_info_panel = False
+        self.developer_mode = False  # Start in simple mode
+
         # Model management
         self.available_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt']
         self.current_model = getattr(args, 'model', 'yolov8s.pt')
@@ -118,14 +126,20 @@ class ThermalRoadMonitorFusion:
         self.latest_detections = []
         self.latest_alerts = []
 
-    def initialize(self) -> bool:
-        """Initialize all components"""
-        logger.info("Initializing Thermal + RGB Fusion Road Monitor...")
-        logger.info(f"Platform: {'Jetson' if self.platform_info['is_jetson'] else 'x86-64'} "
-                   f"({self.platform_info['machine']})")
+        # Thermal camera connection state
+        self.thermal_connected = False
+        self.last_thermal_scan_time = 0
+        self.thermal_scan_interval = 3.0  # Scan every 3 seconds
 
+    def _try_connect_thermal(self) -> bool:
+        """
+        Try to detect and connect thermal camera
+
+        Returns:
+            True if connected successfully, False otherwise
+        """
         try:
-            # 1. Detect thermal camera
+            # Auto-detect if camera_id not provided
             if self.args.camera_id is None:
                 logger.info("Auto-detecting thermal cameras...")
                 cameras = CameraDetector.detect_all_cameras()
@@ -137,48 +151,159 @@ class ThermalRoadMonitorFusion:
                     self.args.width = flir_camera.resolution[0] if flir_camera.resolution[0] > 0 else self.args.width
                     self.args.height = flir_camera.resolution[1] if flir_camera.resolution[1] > 0 else self.args.height
                 else:
-                    logger.error("No thermal camera detected")
+                    logger.debug("No thermal camera detected in scan")
                     return False
 
-            # 2. Initialize thermal camera
+            # Try to open thermal camera
             logger.info(f"Opening thermal camera device {self.args.camera_id}...")
             self.thermal_camera = FLIRBosonCamera(
                 device_id=self.args.camera_id,
                 resolution=(self.args.width, self.args.height)
             )
-            if not self.thermal_camera.open():
+
+            if self.thermal_camera.open():
+                actual_res = self.thermal_camera.get_actual_resolution()
+                logger.info(f"✓ Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
+                self.thermal_connected = True
+                return True
+            else:
+                logger.debug("Thermal camera failed to open")
+                self.thermal_camera = None
                 return False
 
-            actual_res = self.thermal_camera.get_actual_resolution()
-            logger.info(f"Thermal camera opened: {actual_res[0]}x{actual_res[1]}")
+        except Exception as e:
+            logger.debug(f"Thermal camera connection error: {e}")
+            self.thermal_camera = None
+            return False
+
+    def _initialize_detector_after_thermal_connect(self):
+        """Initialize detector after thermal camera connects during runtime"""
+        try:
+            if not self.thermal_camera:
+                return
+
+            detection_mode = getattr(self.args, 'detection_mode', 'edge')
+            model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
+            palette = getattr(self.args, 'palette', 'ironbow')
+
+            self.detector = VPIDetector(
+                confidence_threshold=self.args.confidence,
+                thermal_palette=palette,
+                model_path=model_path,
+                detection_mode=detection_mode,
+                device=self.device
+            )
+
+            if self.detector.initialize():
+                self.available_palettes = self.detector.get_available_palettes()
+                self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+                logger.info("✓ Detector initialized successfully")
+            else:
+                logger.error("Failed to initialize detector after thermal connect")
+                self.detector = None
+
+        except Exception as e:
+            logger.error(f"Error initializing detector: {e}")
+            self.detector = None
+
+    def _display_waiting_screen(self):
+        """Display waiting screen when no thermal camera connected"""
+        import numpy as np
+
+        # Create black screen with message
+        screen = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        # Draw message
+        messages = [
+            "THERMAL FUSION DRIVING ASSIST",
+            "",
+            "Waiting for thermal camera...",
+            "",
+            "Connect FLIR Boson thermal camera",
+            "",
+            f"Next scan in: {int(self.thermal_scan_interval - (time.time() - self.last_thermal_scan_time))}s",
+            "",
+            "Press Q to quit"
+        ]
+
+        y_start = 200
+        for i, msg in enumerate(messages):
+            y = y_start + i * 50
+            color = (0, 255, 255) if i == 0 else (200, 200, 200)
+            font_scale = 1.2 if i == 0 else 0.8
+            thickness = 3 if i == 0 else 2
+
+            # Center text
+            text_size = cv2.getTextSize(msg, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
+            x = (1280 - text_size[0]) // 2
+
+            cv2.putText(screen, msg, (x, y), cv2.FONT_HERSHEY_SIMPLEX,
+                       font_scale, color, thickness)
+
+        # Display
+        if self.gui:
+            key = self.gui.display(screen)
+            if key == ord('q') or key == 27:
+                self.running = False
+
+    def initialize(self) -> bool:
+        """
+        Initialize all components
+
+        PRODUCTION MODE: Gracefully handles zero sensors at startup
+        System will wait for thermal camera connection
+        """
+        logger.info("Initializing Thermal + RGB Fusion Road Monitor...")
+        logger.info(f"Platform: {'Jetson' if self.platform_info['is_jetson'] else 'x86-64'} "
+                   f"({self.platform_info['machine']})")
+
+        try:
+            # 1. Try to detect and connect thermal camera (optional at startup)
+            thermal_connected = self._try_connect_thermal()
+
+            if not thermal_connected:
+                logger.warning("=" * 60)
+                logger.warning("NO THERMAL CAMERA DETECTED")
+                logger.warning("System will wait for thermal camera connection...")
+                logger.warning("Connect thermal camera and it will auto-detect")
+                logger.warning("=" * 60)
+                # Don't return False - continue initialization
+                # System will poll for thermal camera in main loop
+
+            # 2. Determine actual resolution (use thermal if available, else defaults)
+            if self.thermal_connected and self.thermal_camera:
+                actual_res = self.thermal_camera.get_actual_resolution()
+            else:
+                # Use default resolution if no thermal camera
+                actual_res = (self.args.width, self.args.height)
+                logger.info(f"Using default resolution: {actual_res[0]}x{actual_res[1]}")
 
             # 3. Detect and initialize RGB camera (optional)
+            # Camera factory auto-detects: FLIR Firefly (global shutter) or UVC webcam
             if not self.args.disable_rgb:
-                logger.info("Detecting RGB cameras...")
-                rgb_cameras = detect_rgb_cameras()
+                logger.info("Detecting RGB cameras (FLIR Firefly or UVC)...")
 
-                if rgb_cameras:
-                    # Use first available RGB camera (USB or CSI)
-                    rgb_cam_info = rgb_cameras[0]
-                    logger.info(f"Found {rgb_cam_info['type']} RGB camera: ID {rgb_cam_info['id']}")
-
-                    use_gstreamer = (rgb_cam_info['type'] == 'CSI')
-                    self.rgb_camera = RGBCamera(
-                        device_id=rgb_cam_info['id'],
+                try:
+                    # Camera factory auto-detects best available camera
+                    # Priority: FLIR Firefly > UVC webcam
+                    self.rgb_camera = create_rgb_camera(
                         resolution=(640, 480),  # Standard RGB resolution
                         fps=30,
-                        use_gstreamer=use_gstreamer
+                        camera_type="auto"  # Auto-detect
                     )
 
                     if self.rgb_camera.open():
                         self.rgb_available = True
                         rgb_res = self.rgb_camera.get_actual_resolution()
-                        logger.info(f"RGB camera opened: {rgb_res[0]}x{rgb_res[1]}")
+                        logger.info(f"✓ RGB camera opened: {self.rgb_camera.camera_type}")
+                        logger.info(f"  Resolution: {rgb_res[0]}x{rgb_res[1]}")
                     else:
                         logger.warning("RGB camera failed to open - continuing with thermal only")
                         self.rgb_camera = None
-                else:
-                    logger.info("No RGB cameras found - continuing with thermal only")
+                except RuntimeError as e:
+                    logger.info(f"No RGB cameras found: {e}")
+                    logger.info("Continuing with thermal only")
+                    self.rgb_camera = None
             else:
                 logger.info("RGB camera disabled by user")
 
@@ -198,43 +323,62 @@ class ThermalRoadMonitorFusion:
                 logger.info("Fusion processor not initialized (no RGB camera)")
                 self.view_mode = ViewMode.THERMAL_ONLY
 
-            # 5. Initialize VPI detector
-            detection_mode = getattr(self.args, 'detection_mode', 'edge')
-            model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
-            logger.info(f"Initializing VPI detector (mode: {detection_mode}, device: {self.device})...")
-            palette = getattr(self.args, 'palette', 'ironbow')
+            # 5. Initialize VPI detector (only if thermal connected)
+            if self.thermal_connected:
+                detection_mode = getattr(self.args, 'detection_mode', 'edge')
+                model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
+                logger.info(f"Initializing VPI detector (mode: {detection_mode}, device: {self.device})...")
+                palette = getattr(self.args, 'palette', 'ironbow')
 
-            # Check VPI availability (may not be on x86)
-            try:
-                import vpi
-                vpi_available = True
-            except ImportError:
-                vpi_available = False
-                logger.warning("VPI not available on this platform - using CPU-only processing")
-                if self.device == 'cuda':
-                    logger.info("Forcing device to CPU (VPI not available)")
-                    self.device = 'cpu'
+                # Check VPI availability (may not be on x86)
+                try:
+                    import vpi
+                    vpi_available = True
+                except ImportError:
+                    vpi_available = False
+                    logger.warning("VPI not available on this platform - using CPU-only processing")
+                    if self.device == 'cuda':
+                        logger.info("Forcing device to CPU (VPI not available)")
+                        self.device = 'cpu'
 
-            self.detector = VPIDetector(
-                confidence_threshold=self.args.confidence,
-                thermal_palette=palette,
-                model_path=model_path,
-                detection_mode=detection_mode,
-                device=self.device
-            )
+                self.detector = VPIDetector(
+                    confidence_threshold=self.args.confidence,
+                    thermal_palette=palette,
+                    model_path=model_path,
+                    detection_mode=detection_mode,
+                    device=self.device
+                )
 
-            if not self.detector.initialize():
-                logger.error("Failed to initialize VPI detector")
-                return False
+                if not self.detector.initialize():
+                    logger.error("Failed to initialize VPI detector")
+                    return False
 
-            self.available_palettes = self.detector.get_available_palettes()
-            self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+                self.available_palettes = self.detector.get_available_palettes()
+                self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+            else:
+                logger.info("Detector initialization deferred until thermal camera connects")
+                self.detector = None
+                self.available_palettes = ['ironbow']  # Default
+                self.current_palette_idx = 0
 
-            # 6. Initialize road analyzer
+            # 6. Initialize road analyzer with v3.0 features
+            enable_distance = getattr(self.args, 'enable_distance', True)
+            enable_audio = getattr(self.args, 'enable_audio', True)
+            thermal_mode = not self.rgb_available  # Use thermal mode if RGB not available
+
             self.analyzer = RoadAnalyzer(
                 frame_width=actual_res[0],
-                frame_height=actual_res[1]
+                frame_height=actual_res[1],
+                enable_distance=enable_distance,
+                enable_audio=enable_audio,
+                thermal_mode=thermal_mode
             )
+
+            # Update vehicle speed if provided (for TTC calculation)
+            vehicle_speed = getattr(self.args, 'vehicle_speed', 0.0)
+            if vehicle_speed > 0:
+                self.analyzer.update_vehicle_speed(vehicle_speed)
+                logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
             # 7. Initialize enhanced GUI
             scale_factor = getattr(self.args, 'scale', 2.0)
@@ -385,6 +529,25 @@ class ThermalRoadMonitorFusion:
                     self.fusion_processor.set_alpha(self.fusion_alpha)
                     logger.info(f"Fusion alpha set to: {self.fusion_alpha}")
 
+            elif button_id == 'audio_toggle':
+                # Toggle audio alerts (v3.0)
+                self.audio_enabled = not self.audio_enabled
+                if self.analyzer:
+                    self.analyzer.set_audio_enabled(self.audio_enabled)
+                logger.info(f"Audio alerts {'enabled' if self.audio_enabled else 'disabled'}")
+
+            elif button_id == 'info_toggle':
+                # Toggle info panel
+                self.show_info_panel = not self.show_info_panel
+                logger.info(f"Info panel {'shown' if self.show_info_panel else 'hidden'}")
+
+            elif button_id == 'dev_mode_toggle':
+                # Toggle developer mode
+                self.developer_mode = self.gui.toggle_developer_mode()
+                mode_name = "DEVELOPER" if self.developer_mode else "SIMPLE"
+                logger.info(f"GUI mode switched to: {mode_name}")
+                logger.info(f"  {'All controls available for configuration' if self.developer_mode else 'Clean interface for driving'}")
+
     def run(self):
         """Main application loop"""
         logger.info("Starting main loop...")
@@ -399,27 +562,85 @@ class ThermalRoadMonitorFusion:
             while self.running:
                 loop_start = time.time()
 
-                # 1. Capture thermal frame
-                try:
-                    ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
-                    if not ret_thermal or thermal_frame is None:
-                        logger.warning("Failed to read thermal frame")
-                        time.sleep(0.1)
-                        continue
-                except Exception as e:
-                    logger.error(f"Error reading thermal camera: {e}", exc_info=True)
-                    break
+                # 0. Poll for thermal camera if not connected (hot-plug support)
+                if not self.thermal_connected:
+                    current_time = time.time()
+                    if current_time - self.last_thermal_scan_time > self.thermal_scan_interval:
+                        self.last_thermal_scan_time = current_time
+                        logger.info("Scanning for thermal camera...")
+                        if self._try_connect_thermal():
+                            logger.info("✓ Thermal camera connected! Initializing detector...")
+                            # Initialize detector now that thermal is connected
+                            self._initialize_detector_after_thermal_connect()
+                        else:
+                            logger.debug("Thermal camera not found, will retry in 3s...")
 
-                # 2. Capture RGB frame (if available)
+                    # Display waiting screen
+                    self._display_waiting_screen()
+                    time.sleep(0.1)
+                    continue
+
+                # 1. Capture thermal frame (with disconnect detection)
+                thermal_frame = None
+                try:
+                    if self.thermal_camera:
+                        ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
+                        if not ret_thermal or thermal_frame is None:
+                            logger.warning("Thermal camera read failed - camera may have disconnected")
+                            self.thermal_connected = False
+                            if self.thermal_camera:
+                                self.thermal_camera.release()
+                            self.thermal_camera = None
+                            time.sleep(0.1)
+                            continue
+                except Exception as e:
+                    logger.warning(f"Thermal camera error: {e}")
+                    logger.warning("Thermal camera disconnected - will attempt reconnection")
+                    self.thermal_connected = False
+                    if self.thermal_camera:
+                        self.thermal_camera.release()
+                    self.thermal_camera = None
+                    continue
+
+                # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
                 if self.rgb_available and self.rgb_camera:
                     try:
                         ret_rgb, rgb_frame = self.rgb_camera.read(flush_buffer=self.buffer_flush_enabled)
                         if not ret_rgb:
                             rgb_frame = None
+                            # Try to reconnect on next iteration
+                            logger.warning("RGB camera read failed - will attempt reconnection")
+                            self.rgb_available = False
+                            if self.rgb_camera:
+                                self.rgb_camera.release()
+                            self.rgb_camera = None
                     except Exception as e:
                         logger.debug(f"RGB camera read error: {e}")
                         rgb_frame = None
+                        self.rgb_available = False
+                        if self.rgb_camera:
+                            self.rgb_camera.release()
+                        self.rgb_camera = None
+                elif not self.rgb_available and not getattr(self.args, 'disable_rgb', False):
+                    # Try to reconnect RGB camera every 100 frames (hot-plug support)
+                    if self.frame_count % 100 == 0:
+                        logger.info("Attempting to reconnect RGB camera...")
+                        try:
+                            # Camera factory auto-detects: FLIR Firefly or UVC webcam
+                            self.rgb_camera = create_rgb_camera(
+                                resolution=(640, 480),
+                                fps=30,
+                                camera_type="auto"
+                            )
+                            if self.rgb_camera.open():
+                                self.rgb_available = True
+                                logger.info(f"✓ RGB camera reconnected: {self.rgb_camera.camera_type}")
+                            else:
+                                self.rgb_camera = None
+                        except Exception as e:
+                            logger.debug(f"RGB reconnection failed: {e}")
+                            self.rgb_camera = None
 
                 # 3. Apply thermal color palette
                 try:
@@ -493,7 +714,12 @@ class ThermalRoadMonitorFusion:
                         device=self.device,
                         current_model=self.current_model,
                         fusion_mode=self.fusion_mode,
-                        fusion_alpha=self.fusion_alpha
+                        fusion_alpha=self.fusion_alpha,
+                        audio_enabled=self.audio_enabled,  # v3.0
+                        show_info=self.show_info_panel,  # NEW
+                        thermal_available=self.thermal_connected,  # NEW
+                        detection_count=len(detections),  # NEW
+                        lidar_available=False  # NEW (will be True when LiDAR integrated)
                     )
 
                     key = self.gui.display(display_frame)
@@ -556,6 +782,107 @@ class ThermalRoadMonitorFusion:
             self.device = 'cpu' if self.device == 'cuda' else 'cuda'
             self.detector.set_device(self.device)
             logger.info(f"Device: {self.device.upper()}")
+        elif key == ord('a') or key == ord('A'):
+            # Toggle audio alerts (v3.0)
+            self.audio_enabled = not self.audio_enabled
+            if self.analyzer:
+                self.analyzer.set_audio_enabled(self.audio_enabled)
+            logger.info(f"Audio alerts {'enabled' if self.audio_enabled else 'disabled'}")
+        elif key == ord('i') or key == ord('I'):
+            # Toggle info panel
+            self.show_info_panel = not self.show_info_panel
+            logger.info(f"Info panel {'shown' if self.show_info_panel else 'hidden'}")
+        elif key == ord('h') or key == ord('H'):
+            # Show help overlay (quick reference)
+            self._show_help_overlay()
+        elif key == ord('b') or key == ord('B'):
+            # Toggle detection boxes (moved from button in simple mode)
+            self.show_detections = not self.show_detections
+            logger.info(f"Detection boxes {'shown' if self.show_detections else 'hidden'}")
+        elif key == ord('m') or key == ord('M'):
+            # Cycle models (moved from button in simple mode)
+            if not self.model_switching and self.detector and self.detector.detection_mode == 'model':
+                self.model_switching = True
+                self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
+                new_model = self.available_models[self.current_model_index]
+                self.current_model = new_model
+                logger.info(f"Switching to model: {new_model}")
+                self.detector.load_yolo_model(new_model)
+                self.model_switching = False
+                logger.info(f"Model switched to: {new_model}")
+
+    def _show_help_overlay(self):
+        """Show keyboard shortcuts help overlay"""
+        import numpy as np
+
+        # Create semi-transparent overlay
+        help_screen = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        # Title
+        title = "KEYBOARD SHORTCUTS"
+        cv2.putText(help_screen, title, (400, 80),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 3)
+
+        # Shortcuts (2 columns)
+        shortcuts_left = [
+            ("V", "Cycle view modes"),
+            ("D", "Toggle detection boxes"),
+            ("Y", "Toggle YOLO"),
+            ("A", "Toggle audio"),
+            ("C", "Cycle thermal palette"),
+            ("M", "Cycle models"),
+        ]
+
+        shortcuts_right = [
+            ("I", "Toggle info panel"),
+            ("B", "Toggle boxes"),
+            ("S", "Screenshot"),
+            ("P", "Print stats"),
+            ("F", "Fullscreen"),
+            ("H", "This help"),
+            ("Q/ESC", "Quit"),
+        ]
+
+        # Draw left column
+        y = 150
+        for key, desc in shortcuts_left:
+            cv2.putText(help_screen, f"{key}", (200, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.putText(help_screen, f"- {desc}", (280, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+            y += 60
+
+        # Draw right column
+        y = 150
+        for key, desc in shortcuts_right:
+            cv2.putText(help_screen, f"{key}", (700, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.putText(help_screen, f"- {desc}", (780, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+            y += 60
+
+        # GUI modes section
+        y += 40
+        cv2.putText(help_screen, "GUI MODES:", (200, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (100, 150, 255), 2)
+        y += 50
+        cv2.putText(help_screen, "SIMPLE MODE - Clean interface for driving (default)", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        y += 40
+        cv2.putText(help_screen, "DEV MODE - Full controls for configuration when stationary", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        y += 50
+        cv2.putText(help_screen, "Click 'DEV MODE' button or 'SIMPLE' button to toggle", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 100), 1)
+
+        # Footer
+        cv2.putText(help_screen, "Press any key to close", (450, 650),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (100, 100, 100), 1)
+
+        # Display and wait for key
+        if self.gui:
+            self.gui.display(help_screen)
+            cv2.waitKey(0)
 
     def shutdown(self):
         """Cleanup resources"""
@@ -572,6 +899,9 @@ class ThermalRoadMonitorFusion:
             self.rgb_camera.release()
         if self.detector:
             self.detector.release()
+        if self.analyzer:
+            # Cleanup audio system (v3.0)
+            self.analyzer.cleanup()
         if self.gui:
             self.gui.close()
         if self.perf_monitor:
@@ -622,29 +952,46 @@ def parse_arguments():
     parser.add_argument('--calibration-file', type=str, default=None,
                        help='Camera calibration file (JSON)')
 
+    # v3.0 Advanced ADAS options
+    parser.add_argument('--enable-distance', action='store_true', default=True,
+                       help='Enable distance estimation (default: True)')
+    parser.add_argument('--disable-distance', dest='enable_distance', action='store_false',
+                       help='Disable distance estimation')
+    parser.add_argument('--enable-audio', action='store_true', default=True,
+                       help='Enable audio alerts (default: True)')
+    parser.add_argument('--disable-audio', dest='enable_audio', action='store_false',
+                       help='Disable audio alerts')
+    parser.add_argument('--audio-volume', type=float, default=0.7,
+                       help='Audio alert volume (0.0-1.0, default: 0.7)')
+    parser.add_argument('--vehicle-speed', type=float, default=0.0,
+                       help='Vehicle speed in km/h for TTC calculation (default: 0)')
+
     return parser.parse_args()
 
 
 def main():
     print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   FLIR Thermal + RGB Fusion Road Monitor                    ║
+║   FLIR Thermal + RGB Fusion Road Monitor v3.0              ║
 ║   Cross-Platform: Jetson Orin & x86-64 Workstations        ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Keyboard Controls:                                          ║
 ║    Q/ESC - Quit          F - Fullscreen      D - Detections  ║
 ║    Y - Toggle YOLO       V - Cycle Views     S - Screenshot  ║
 ║    C - Cycle Palettes    G - Device Toggle   P - Stats       ║
+║    A - Toggle Audio      (v3.0 Audio Alerts)                ║
 ║                                                               ║
 ║  GUI Buttons (click):                                        ║
 ║    Row 1: PAL, YOLO, BOX, DEV, MODEL                        ║
-║    Row 2: FLUSH, SKIP, VIEW, FUS, α                         ║
+║    Row 2: FLUSH, AUDIO, SKIP, VIEW, FUS, α                  ║
 ║                                                               ║
 ║  View Modes: Thermal, RGB, Fusion, Side-by-Side, PIP       ║
 ║  Fusion Modes: Alpha Blend, Edge Enhanced, Thermal Overlay  ║
 ║                Side-by-Side, PIP, Max Intensity, Weighted   ║
 ║                                                               ║
-║  Smart Features:                                             ║
+║  v3.0 Smart Features:                                        ║
+║    • Distance estimation with TTC warnings                   ║
+║    • ISO 26262 compliant audio alerts (1.5-2 kHz)          ║
 ║    • RED PULSE alerts on sides for pedestrians/animals      ║
 ║    • Directional proximity warnings (left/right/center)     ║
 ║    • Multi-view support for optimal situational awareness   ║
