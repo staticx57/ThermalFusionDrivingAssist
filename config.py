@@ -303,7 +303,10 @@ class Config:
                 'button_active_alt': (100, 150, 255),  # Blue
                 'button_warning': (255, 150, 60),  # Orange
                 'accent_cyan': (50, 180, 220),
+                'accent_green': (60, 180, 80),  # Green accent
                 'accent_purple': (150, 100, 200),
+                'danger_pulse': (255, 30, 30),  # Bright red for danger pulse
+                'warning_pulse': (255, 200, 0),  # Bright yellow for warning pulse
             }
         else:
             # Dark theme colors (default)
@@ -324,7 +327,10 @@ class Config:
                 'button_active_alt': (100, 150, 255),  # Blue
                 'button_warning': (255, 120, 30),  # Orange
                 'accent_cyan': (0, 255, 255),
+                'accent_green': (100, 255, 100),  # Green accent
                 'accent_purple': (200, 100, 255),
+                'danger_pulse': (0, 0, 255),  # Bright red for danger pulse
+                'warning_pulse': (0, 255, 255),  # Bright yellow for warning pulse
             }
 
 
