@@ -183,10 +183,11 @@ if "%INSTALL_FIREFLY%"=="true" (
 echo.
 echo %BLUE%Qt GUI Features ^(v3.x^):%NC%
 echo   • Multithreaded architecture ^(VideoProcessorWorker^)
-echo   • Developer mode ^(Ctrl+D^) with 8 controls:
+echo   • Developer mode ^(Ctrl+D^) with 9 controls:
 echo     - Palette cycling, Detection toggle, Device switch
 echo     - Model cycling ^(with custom model support^)
 echo     - Fusion mode/alpha, Buffer flush, Frame skip
+echo     - Simulated thermal camera ^(debug mode^)
 echo   • ADAS-compliant alert overlays
 echo   • Light/Dark theme auto-switching
 echo.

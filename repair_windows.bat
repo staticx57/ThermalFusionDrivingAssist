@@ -97,9 +97,10 @@ echo.
 echo %BLUE%Latest Features ^(v3.x^):%NC%
 echo   • Qt GUI ^(replaces OpenCV GUI^)
 echo   • Multithreaded video processing
-echo   • Developer mode ^(Ctrl+D^) with 8 controls
+echo   • Developer mode ^(Ctrl+D^) with 9 controls
 echo   • ADAS-compliant alert overlays
 echo   • Custom model support ^(see CUSTOM_MODELS.md^)
+echo   • Simulated thermal camera ^(debug mode^)
 echo   • Light/Dark theme auto-switching
 echo.
 echo %GREEN%Ready to run: python main.py%NC%
