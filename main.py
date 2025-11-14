@@ -122,14 +122,20 @@ class ThermalRoadMonitorFusion:
         self.latest_detections = []
         self.latest_alerts = []
 
-    def initialize(self) -> bool:
-        """Initialize all components"""
-        logger.info("Initializing Thermal + RGB Fusion Road Monitor...")
-        logger.info(f"Platform: {'Jetson' if self.platform_info['is_jetson'] else 'x86-64'} "
-                   f"({self.platform_info['machine']})")
+        # Thermal camera connection state
+        self.thermal_connected = False
+        self.last_thermal_scan_time = 0
+        self.thermal_scan_interval = 3.0  # Scan every 3 seconds
 
+    def _try_connect_thermal(self) -> bool:
+        """
+        Try to detect and connect thermal camera
+
+        Returns:
+            True if connected successfully, False otherwise
+        """
         try:
-            # 1. Detect thermal camera
+            # Auto-detect if camera_id not provided
             if self.args.camera_id is None:
                 logger.info("Auto-detecting thermal cameras...")
                 cameras = CameraDetector.detect_all_cameras()
@@ -141,20 +147,132 @@ class ThermalRoadMonitorFusion:
                     self.args.width = flir_camera.resolution[0] if flir_camera.resolution[0] > 0 else self.args.width
                     self.args.height = flir_camera.resolution[1] if flir_camera.resolution[1] > 0 else self.args.height
                 else:
-                    logger.error("No thermal camera detected")
+                    logger.debug("No thermal camera detected in scan")
                     return False
 
-            # 2. Initialize thermal camera
+            # Try to open thermal camera
             logger.info(f"Opening thermal camera device {self.args.camera_id}...")
             self.thermal_camera = FLIRBosonCamera(
                 device_id=self.args.camera_id,
                 resolution=(self.args.width, self.args.height)
             )
-            if not self.thermal_camera.open():
+
+            if self.thermal_camera.open():
+                actual_res = self.thermal_camera.get_actual_resolution()
+                logger.info(f"✓ Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
+                self.thermal_connected = True
+                return True
+            else:
+                logger.debug("Thermal camera failed to open")
+                self.thermal_camera = None
                 return False
 
-            actual_res = self.thermal_camera.get_actual_resolution()
-            logger.info(f"Thermal camera opened: {actual_res[0]}x{actual_res[1]}")
+        except Exception as e:
+            logger.debug(f"Thermal camera connection error: {e}")
+            self.thermal_camera = None
+            return False
+
+    def _initialize_detector_after_thermal_connect(self):
+        """Initialize detector after thermal camera connects during runtime"""
+        try:
+            if not self.thermal_camera:
+                return
+
+            detection_mode = getattr(self.args, 'detection_mode', 'edge')
+            model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
+            palette = getattr(self.args, 'palette', 'ironbow')
+
+            self.detector = VPIDetector(
+                confidence_threshold=self.args.confidence,
+                thermal_palette=palette,
+                model_path=model_path,
+                detection_mode=detection_mode,
+                device=self.device
+            )
+
+            if self.detector.initialize():
+                self.available_palettes = self.detector.get_available_palettes()
+                self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+                logger.info("✓ Detector initialized successfully")
+            else:
+                logger.error("Failed to initialize detector after thermal connect")
+                self.detector = None
+
+        except Exception as e:
+            logger.error(f"Error initializing detector: {e}")
+            self.detector = None
+
+    def _display_waiting_screen(self):
+        """Display waiting screen when no thermal camera connected"""
+        import numpy as np
+
+        # Create black screen with message
+        screen = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        # Draw message
+        messages = [
+            "THERMAL FUSION DRIVING ASSIST",
+            "",
+            "Waiting for thermal camera...",
+            "",
+            "Connect FLIR Boson thermal camera",
+            "",
+            f"Next scan in: {int(self.thermal_scan_interval - (time.time() - self.last_thermal_scan_time))}s",
+            "",
+            "Press Q to quit"
+        ]
+
+        y_start = 200
+        for i, msg in enumerate(messages):
+            y = y_start + i * 50
+            color = (0, 255, 255) if i == 0 else (200, 200, 200)
+            font_scale = 1.2 if i == 0 else 0.8
+            thickness = 3 if i == 0 else 2
+
+            # Center text
+            text_size = cv2.getTextSize(msg, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
+            x = (1280 - text_size[0]) // 2
+
+            cv2.putText(screen, msg, (x, y), cv2.FONT_HERSHEY_SIMPLEX,
+                       font_scale, color, thickness)
+
+        # Display
+        if self.gui:
+            key = self.gui.display(screen)
+            if key == ord('q') or key == 27:
+                self.running = False
+
+    def initialize(self) -> bool:
+        """
+        Initialize all components
+
+        PRODUCTION MODE: Gracefully handles zero sensors at startup
+        System will wait for thermal camera connection
+        """
+        logger.info("Initializing Thermal + RGB Fusion Road Monitor...")
+        logger.info(f"Platform: {'Jetson' if self.platform_info['is_jetson'] else 'x86-64'} "
+                   f"({self.platform_info['machine']})")
+
+        try:
+            # 1. Try to detect and connect thermal camera (optional at startup)
+            thermal_connected = self._try_connect_thermal()
+
+            if not thermal_connected:
+                logger.warning("=" * 60)
+                logger.warning("NO THERMAL CAMERA DETECTED")
+                logger.warning("System will wait for thermal camera connection...")
+                logger.warning("Connect thermal camera and it will auto-detect")
+                logger.warning("=" * 60)
+                # Don't return False - continue initialization
+                # System will poll for thermal camera in main loop
+
+            # 2. Determine actual resolution (use thermal if available, else defaults)
+            if self.thermal_connected and self.thermal_camera:
+                actual_res = self.thermal_camera.get_actual_resolution()
+            else:
+                # Use default resolution if no thermal camera
+                actual_res = (self.args.width, self.args.height)
+                logger.info(f"Using default resolution: {actual_res[0]}x{actual_res[1]}")
 
             # 3. Detect and initialize RGB camera (optional)
             if not self.args.disable_rgb:
@@ -202,37 +320,43 @@ class ThermalRoadMonitorFusion:
                 logger.info("Fusion processor not initialized (no RGB camera)")
                 self.view_mode = ViewMode.THERMAL_ONLY
 
-            # 5. Initialize VPI detector
-            detection_mode = getattr(self.args, 'detection_mode', 'edge')
-            model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
-            logger.info(f"Initializing VPI detector (mode: {detection_mode}, device: {self.device})...")
-            palette = getattr(self.args, 'palette', 'ironbow')
+            # 5. Initialize VPI detector (only if thermal connected)
+            if self.thermal_connected:
+                detection_mode = getattr(self.args, 'detection_mode', 'edge')
+                model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
+                logger.info(f"Initializing VPI detector (mode: {detection_mode}, device: {self.device})...")
+                palette = getattr(self.args, 'palette', 'ironbow')
 
-            # Check VPI availability (may not be on x86)
-            try:
-                import vpi
-                vpi_available = True
-            except ImportError:
-                vpi_available = False
-                logger.warning("VPI not available on this platform - using CPU-only processing")
-                if self.device == 'cuda':
-                    logger.info("Forcing device to CPU (VPI not available)")
-                    self.device = 'cpu'
+                # Check VPI availability (may not be on x86)
+                try:
+                    import vpi
+                    vpi_available = True
+                except ImportError:
+                    vpi_available = False
+                    logger.warning("VPI not available on this platform - using CPU-only processing")
+                    if self.device == 'cuda':
+                        logger.info("Forcing device to CPU (VPI not available)")
+                        self.device = 'cpu'
 
-            self.detector = VPIDetector(
-                confidence_threshold=self.args.confidence,
-                thermal_palette=palette,
-                model_path=model_path,
-                detection_mode=detection_mode,
-                device=self.device
-            )
+                self.detector = VPIDetector(
+                    confidence_threshold=self.args.confidence,
+                    thermal_palette=palette,
+                    model_path=model_path,
+                    detection_mode=detection_mode,
+                    device=self.device
+                )
 
-            if not self.detector.initialize():
-                logger.error("Failed to initialize VPI detector")
-                return False
+                if not self.detector.initialize():
+                    logger.error("Failed to initialize VPI detector")
+                    return False
 
-            self.available_palettes = self.detector.get_available_palettes()
-            self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+                self.available_palettes = self.detector.get_available_palettes()
+                self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+            else:
+                logger.info("Detector initialization deferred until thermal camera connects")
+                self.detector = None
+                self.available_palettes = ['ironbow']  # Default
+                self.current_palette_idx = 0
 
             # 6. Initialize road analyzer with v3.0 features
             enable_distance = getattr(self.args, 'enable_distance', True)
@@ -416,16 +540,45 @@ class ThermalRoadMonitorFusion:
             while self.running:
                 loop_start = time.time()
 
-                # 1. Capture thermal frame
+                # 0. Poll for thermal camera if not connected (hot-plug support)
+                if not self.thermal_connected:
+                    current_time = time.time()
+                    if current_time - self.last_thermal_scan_time > self.thermal_scan_interval:
+                        self.last_thermal_scan_time = current_time
+                        logger.info("Scanning for thermal camera...")
+                        if self._try_connect_thermal():
+                            logger.info("✓ Thermal camera connected! Initializing detector...")
+                            # Initialize detector now that thermal is connected
+                            self._initialize_detector_after_thermal_connect()
+                        else:
+                            logger.debug("Thermal camera not found, will retry in 3s...")
+
+                    # Display waiting screen
+                    self._display_waiting_screen()
+                    time.sleep(0.1)
+                    continue
+
+                # 1. Capture thermal frame (with disconnect detection)
+                thermal_frame = None
                 try:
-                    ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
-                    if not ret_thermal or thermal_frame is None:
-                        logger.warning("Failed to read thermal frame")
-                        time.sleep(0.1)
-                        continue
+                    if self.thermal_camera:
+                        ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
+                        if not ret_thermal or thermal_frame is None:
+                            logger.warning("Thermal camera read failed - camera may have disconnected")
+                            self.thermal_connected = False
+                            if self.thermal_camera:
+                                self.thermal_camera.release()
+                            self.thermal_camera = None
+                            time.sleep(0.1)
+                            continue
                 except Exception as e:
-                    logger.error(f"Error reading thermal camera: {e}", exc_info=True)
-                    break
+                    logger.warning(f"Thermal camera error: {e}")
+                    logger.warning("Thermal camera disconnected - will attempt reconnection")
+                    self.thermal_connected = False
+                    if self.thermal_camera:
+                        self.thermal_camera.release()
+                    self.thermal_camera = None
+                    continue
 
                 # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None
