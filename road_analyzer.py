@@ -1,6 +1,12 @@
 """
 Road Object Analysis and Alert System
 Analyzes detected objects and generates driver alerts
+
+New Features (v3.0):
+- Distance estimation for all detected objects
+- Time-to-collision (TTC) calculation
+- Audio alert integration
+- Enhanced proximity warnings with distance zones
 """
 import numpy as np
 from typing import List, Dict, Optional
@@ -13,6 +19,21 @@ from object_detector import Detection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Optional imports (graceful degradation if not available)
+try:
+    from distance_estimator import DistanceEstimator, DistanceEstimate
+    DISTANCE_AVAILABLE = True
+except ImportError:
+    DISTANCE_AVAILABLE = False
+    logger.warning("distance_estimator not available - distance estimation disabled")
+
+try:
+    from audio_alert_system import AudioAlertSystem
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    logger.warning("audio_alert_system not available - audio alerts disabled")
 
 
 class AlertLevel(Enum):
@@ -31,6 +52,9 @@ class Alert:
     object_type: str
     timestamp: float
     position: str  # "left", "center", "right"
+    distance_m: Optional[float] = None  # Distance in meters (NEW)
+    ttc: Optional[float] = None  # Time-to-collision in seconds (NEW)
+    distance_zone: Optional[str] = None  # "IMMEDIATE", "VERY CLOSE", "CLOSE", etc. (NEW)
 
 
 class RoadAnalyzer:
@@ -61,13 +85,21 @@ class RoadAnalyzer:
         'motion': 0.05,      # Unknown motion
     }
 
-    def __init__(self, frame_width: int = 640, frame_height: int = 512):
+    def __init__(self, frame_width: int = 640, frame_height: int = 512,
+                 enable_distance: bool = True,
+                 enable_audio: bool = True,
+                 thermal_mode: bool = False,
+                 lidar=None):  # NEW: LiDAR integration (Phase 1)
         """
         Initialize road analyzer
 
         Args:
             frame_width: Camera frame width
             frame_height: Camera frame height
+            enable_distance: Enable distance estimation
+            enable_audio: Enable audio alerts
+            thermal_mode: True if using thermal camera (affects distance estimation)
+            lidar: Optional PandarIntegration instance for enhanced distance accuracy
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
@@ -79,6 +111,26 @@ class RoadAnalyzer:
 
         # Alert cooldown to prevent spam (seconds)
         self.alert_cooldown = 1.0
+
+        # Distance estimator (NEW - Phase 1: LiDAR integration)
+        self.distance_estimator = None
+        if enable_distance and DISTANCE_AVAILABLE:
+            self.distance_estimator = DistanceEstimator(
+                camera_focal_length=640.0,
+                camera_height=1.2,
+                frame_height=frame_height,
+                frame_width=frame_width,  # NEW
+                thermal_mode=thermal_mode,
+                lidar=lidar  # NEW: Pass LiDAR instance for Phase 1 integration
+            )
+            lidar_status = "WITH LiDAR" if lidar and lidar.connected else "camera only"
+            logger.info(f"Distance estimation enabled ({lidar_status})")
+
+        # Audio alert system (NEW)
+        self.audio_system = None
+        if enable_audio and AUDIO_AVAILABLE:
+            self.audio_system = AudioAlertSystem()
+            logger.info("Audio alerts enabled")
 
     def analyze(self, detections: List[Detection]) -> List[Alert]:
         """
@@ -110,7 +162,7 @@ class RoadAnalyzer:
         return self.alerts
 
     def _evaluate_detection(self, det: Detection, current_time: float) -> Optional[Alert]:
-        """Evaluate a single detection for alerts"""
+        """Evaluate a single detection for alerts (ENHANCED with distance estimation)"""
 
         # Check alert cooldown
         cooldown_key = f"{det.class_name}_{det.get_center()}"
@@ -118,7 +170,23 @@ class RoadAnalyzer:
             if current_time - self.last_alert_time[cooldown_key] < self.alert_cooldown:
                 return None
 
-        # Calculate object size relative to frame
+        # Estimate distance (NEW)
+        distance_estimate = None
+        distance_m = None
+        ttc = None
+        distance_zone = None
+
+        if self.distance_estimator:
+            distance_estimate = self.distance_estimator.estimate_distance(det)
+            if distance_estimate:
+                distance_m = distance_estimate.distance_m
+                ttc = distance_estimate.time_to_collision
+                distance_zone, _ = self.distance_estimator.get_distance_zones(distance_m)
+
+                # Store distance on Detection object for GUI display (NEW)
+                det.distance_estimate = distance_m
+
+        # Calculate object size relative to frame (legacy method)
         obj_area = det.get_area()
         size_ratio = obj_area / self.frame_area
 
@@ -126,39 +194,73 @@ class RoadAnalyzer:
         center_x, center_y = det.get_center()
         position = self._get_position(center_x)
 
-        # Critical alert check
-        critical_threshold = self.CRITICAL_SIZE_THRESHOLDS.get(det.class_name, 0.25)
-        if size_ratio >= critical_threshold:
+        # Alert level determination (distance-based if available, else size-based)
+        alert_level = None
+        message = ""
+
+        if distance_m is not None:
+            # Distance-based alerting (more accurate)
+            if distance_m < 5.0:  # IMMEDIATE zone
+                alert_level = AlertLevel.CRITICAL
+                message = f"CRITICAL: {det.class_name.upper()} {distance_m:.1f}m ahead!"
+            elif distance_m < 10.0:  # VERY CLOSE zone
+                alert_level = AlertLevel.CRITICAL
+                message = f"DANGER: {det.class_name} {distance_m:.1f}m on {position}!"
+            elif distance_m < 20.0:  # CLOSE zone
+                alert_level = AlertLevel.WARNING
+                message = f"Warning: {det.class_name} {distance_m:.1f}m on {position}"
+            elif distance_m < 40.0:  # MEDIUM zone
+                if det.class_name in ['person', 'bicycle', 'motorcycle']:
+                    alert_level = AlertLevel.INFO
+                    message = f"{det.class_name} {distance_m:.0f}m ahead"
+
+            # TTC-based urgent warning
+            if ttc is not None and ttc < 3.0:
+                alert_level = AlertLevel.CRITICAL
+                message = f"COLLISION WARNING: {det.class_name} - TTC {ttc:.1f}s!"
+
+        else:
+            # Fallback to size-based alerting (legacy)
+            critical_threshold = self.CRITICAL_SIZE_THRESHOLDS.get(det.class_name, 0.25)
+            if size_ratio >= critical_threshold:
+                alert_level = AlertLevel.CRITICAL
+                message = f"CRITICAL: {det.class_name.upper()} VERY CLOSE ahead!"
+            else:
+                warning_threshold = self.WARNING_SIZE_THRESHOLDS.get(det.class_name, 0.12)
+                if size_ratio >= warning_threshold:
+                    alert_level = AlertLevel.WARNING
+                    message = f"Warning: {det.class_name} approaching on {position}"
+
+            # Info alert for certain object types
+            if det.class_name in ['traffic light', 'stop sign']:
+                alert_level = AlertLevel.INFO
+                message = f"{det.class_name} detected ahead"
+
+        # Create alert if needed
+        if alert_level:
             self.last_alert_time[cooldown_key] = current_time
-            return Alert(
-                level=AlertLevel.CRITICAL,
-                message=f"CRITICAL: {det.class_name.upper()} VERY CLOSE ahead!",
+
+            alert = Alert(
+                level=alert_level,
+                message=message,
                 object_type=det.class_name,
                 timestamp=current_time,
-                position=position
+                position=position,
+                distance_m=distance_m,
+                ttc=ttc,
+                distance_zone=distance_zone
             )
 
-        # Warning alert check
-        warning_threshold = self.WARNING_SIZE_THRESHOLDS.get(det.class_name, 0.12)
-        if size_ratio >= warning_threshold:
-            self.last_alert_time[cooldown_key] = current_time
-            return Alert(
-                level=AlertLevel.WARNING,
-                message=f"Warning: {det.class_name} approaching on {position}",
-                object_type=det.class_name,
-                timestamp=current_time,
-                position=position
-            )
+            # Play audio alert (NEW)
+            if self.audio_system and self.audio_system.is_enabled():
+                if ttc is not None and ttc < 3.0:
+                    # Urgent collision warning
+                    self.audio_system.play_collision_warning(ttc, position)
+                else:
+                    # Standard alert
+                    self.audio_system.play_alert(alert_level, position, det.class_name)
 
-        # Info alert for certain object types
-        if det.class_name in ['traffic light', 'stop sign']:
-            return Alert(
-                level=AlertLevel.INFO,
-                message=f"{det.class_name} detected ahead",
-                object_type=det.class_name,
-                timestamp=current_time,
-                position=position
-            )
+            return alert
 
         return None
 
@@ -198,3 +300,31 @@ class RoadAnalyzer:
         """Clear alerts older than max_age seconds"""
         current_time = time.time()
         self.alerts = [a for a in self.alerts if current_time - a.timestamp < max_age]
+
+    def update_vehicle_speed(self, speed_kmh: float):
+        """
+        Update vehicle speed for TTC calculation (NEW)
+
+        Args:
+            speed_kmh: Vehicle speed in km/h
+        """
+        if self.distance_estimator:
+            self.distance_estimator.update_vehicle_speed(speed_kmh)
+
+    def set_audio_enabled(self, enabled: bool):
+        """Enable/disable audio alerts (NEW)"""
+        if self.audio_system:
+            if enabled:
+                self.audio_system.enable()
+            else:
+                self.audio_system.disable()
+
+    def set_audio_volume(self, volume: float):
+        """Set audio volume 0.0-1.0 (NEW)"""
+        if self.audio_system:
+            self.audio_system.set_volume(volume)
+
+    def cleanup(self):
+        """Cleanup resources (NEW)"""
+        if self.audio_system:
+            self.audio_system.cleanup()

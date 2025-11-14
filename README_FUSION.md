@@ -163,39 +163,34 @@ sudo -H pip3 install jetson-stats
 
 ### Quick Start
 
-**1. Thermal Only (Original Mode):**
+**1. Basic Thermal + RGB Fusion:**
 ```bash
-python3 main_vpi.py --detection-mode model --model yolov8n.pt
+python3 main.py --detection-mode model --model yolov8n.pt
 ```
 
-**2. Thermal + RGB Fusion (New):**
-```bash
-python3 main_fusion.py --detection-mode model --model yolov8n.pt
-```
-
-**3. With Calibration:**
+**2. With Camera Calibration:**
 ```bash
 # First, calibrate cameras
 python3 camera_calibration.py
 
 # Then run with calibration
-python3 main_fusion.py --calibration-file camera_calibration.json
+python3 main.py --calibration-file camera_calibration.json
 ```
 
-**4. Thermal Only (Disable RGB):**
+**3. Thermal Only Mode (Disable RGB):**
 ```bash
-python3 main_fusion.py --disable-rgb
+python3 main.py --disable-rgb
 ```
 
 ## Command-Line Options
 
 ```
-usage: main_fusion.py [-h] [--camera-id ID] [--width W] [--height H]
-                      [--disable-rgb] [--confidence C] [--detection-mode {edge,model}]
-                      [--model PATH] [--device {cuda,cpu}] [--fullscreen]
-                      [--scale SCALE] [--palette {white_hot,black_hot,...}]
-                      [--fusion-mode {alpha_blend,edge_enhanced,...}]
-                      [--fusion-alpha ALPHA] [--calibration-file PATH]
+usage: main.py [-h] [--camera-id ID] [--width W] [--height H]
+               [--disable-rgb] [--confidence C] [--detection-mode {edge,model}]
+               [--model PATH] [--device {cuda,cpu}] [--fullscreen]
+               [--scale SCALE] [--palette {white_hot,black_hot,...}]
+               [--fusion-mode {alpha_blend,edge_enhanced,...}]
+               [--fusion-alpha ALPHA] [--calibration-file PATH]
 
 Camera Options:
   --camera-id ID        Thermal camera device ID (auto-detect if omitted)
@@ -255,22 +250,20 @@ Fusion Options:
 
 ```
 ThermalFusionDrivingAssist/
-├── main_vpi.py                 # Original thermal-only entry point
-├── main_fusion.py              # NEW: Thermal + RGB fusion entry point
+├── main.py                     # Main entry point (thermal + RGB fusion)
 │
 ├── flir_camera.py              # FLIR Boson thermal camera interface
-├── rgb_camera.py               # NEW: RGB camera interface (USB/CSI)
+├── rgb_camera.py               # RGB camera interface (USB/CSI)
 ├── camera_detector.py          # Camera auto-detection
 │
 ├── vpi_detector.py             # VPI-accelerated detection
 ├── object_detector.py          # YOLO object detector
 ├── road_analyzer.py            # Alert generation logic
 │
-├── fusion_processor.py         # NEW: Thermal-RGB fusion algorithms
-├── camera_calibration.py       # NEW: Camera alignment calibration
+├── fusion_processor.py         # Thermal-RGB fusion algorithms
+├── camera_calibration.py       # Camera alignment calibration
 │
-├── driver_gui.py               # Original GUI
-├── driver_gui_v2.py            # NEW: Enhanced GUI with multi-view
+├── driver_gui.py               # Enhanced GUI with multi-view support
 │
 ├── performance_monitor.py      # System metrics monitoring
 ├── requirements.txt            # Python dependencies
@@ -350,7 +343,7 @@ python3 camera_calibration.py
 
 **Using Calibration:**
 ```bash
-python3 main_fusion.py --calibration-file camera_calibration.json
+python3 main.py --calibration-file camera_calibration.json
 ```
 
 ## Performance Optimization
@@ -358,7 +351,7 @@ python3 main_fusion.py --calibration-file camera_calibration.json
 **For Jetson Orin Nano (8GB):**
 ```bash
 # Best performance
-python3 main_fusion.py \
+python3 main.py \
   --model yolov8n.pt \
   --device cuda \
   --fusion-mode alpha_blend \
@@ -371,7 +364,7 @@ python3 main_fusion.py \
 **For x86-64 Workstation:**
 ```bash
 # Development/debugging
-python3 main_fusion.py \
+python3 main.py \
   --model yolov8s.pt \
   --device cuda \
   --fusion-mode feature_weighted \
@@ -416,10 +409,10 @@ This is **normal** on x86-64. The system automatically falls back to CPU process
 **On Workstation (x86-64 ThinkPad P16):**
 ```bash
 # Develop and test with USB cameras
-python3 main_fusion.py --device cuda
+python3 main.py --device cuda
 
 # Test CPU fallback
-python3 main_fusion.py --device cpu
+python3 main.py --device cpu
 ```
 
 **Deploy to Jetson Orin:**
@@ -432,7 +425,7 @@ ssh jetson@192.168.1.100
 
 # Run on Jetson with CSI camera
 cd ~/ThermalFusionDrivingAssist
-python3 main_fusion.py --device cuda
+python3 main.py --device cuda
 ```
 
 ## Architecture Diagram
