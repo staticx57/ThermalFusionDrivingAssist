@@ -758,33 +758,47 @@ class DriverGUI:
         if bg_color is None:
             bg_color = self.colors['button_bg']
 
-        self.control_buttons[button_id] = (x, y, w, h)
+        # Get canvas dimensions for bounds checking
+        canvas_h, canvas_w = canvas.shape[:2]
+
+        # Clamp button to canvas bounds
+        x = max(0, min(x, canvas_w - 1))
+        y = max(0, min(y, canvas_h - 1))
+        actual_w = min(w, canvas_w - x)
+        actual_h = min(h, canvas_h - y)
+
+        # Skip if button is completely outside canvas
+        if actual_w <= 0 or actual_h <= 0:
+            return
+
+        self.control_buttons[button_id] = (x, y, actual_w, actual_h)
 
         is_active = bg_color == self.colors['button_active'] or bg_color == self.colors['button_active_alt']
 
         # Calculate corner radius (proportional to button height)
-        corner_radius = max(3, int(h * 0.2))  # 20% of button height
+        corner_radius = max(3, int(actual_h * 0.2))  # 20% of button height
 
         # Draw button background with rounded corners and transparency
-        overlay = canvas[y:y+h, x:x+w].copy()
-        button_layer = np.zeros((h, w, 3), dtype=np.uint8)
-        self._draw_rounded_rectangle(button_layer, 0, 0, w, h, bg_color, corner_radius, -1)
+        overlay = canvas[y:y+actual_h, x:x+actual_w].copy()
+        button_layer = np.zeros((actual_h, actual_w, 3), dtype=np.uint8)
+        self._draw_rounded_rectangle(button_layer, 0, 0, actual_w, actual_h, bg_color, corner_radius, -1)
 
-        # Apply transparency blend
-        cv2.addWeighted(button_layer, 0.75, overlay, 0.25, 0, overlay)
-        canvas[y:y+h, x:x+w] = overlay
+        # Apply transparency blend - ensure dimensions match
+        if overlay.shape == button_layer.shape:
+            cv2.addWeighted(button_layer, 0.75, overlay, 0.25, 0, overlay)
+            canvas[y:y+actual_h, x:x+actual_w] = overlay
 
         # Draw border with rounded corners
         border_color = self.colors['accent_green'] if is_active else self.colors['panel_accent']
         border_thickness = max(2, int(2 * gui_scale)) if is_active else max(1, int(1 * gui_scale))
-        self._draw_rounded_rectangle(canvas, x, y, w, h, border_color, corner_radius, border_thickness)
+        self._draw_rounded_rectangle(canvas, x, y, actual_w, actual_h, border_color, corner_radius, border_thickness)
 
         # Text (centered)
         text_color = self.colors['text'] if is_active else self.colors['text_dim']
         text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX,
                                    self.font_scale_small * 0.75, self.font_thickness)[0]
-        text_x = x + (w - text_size[0]) // 2
-        text_y = y + (h + text_size[1]) // 2
+        text_x = x + (actual_w - text_size[0]) // 2
+        text_y = y + (actual_h + text_size[1]) // 2
 
         cv2.putText(canvas, text, (text_x, text_y),
                    cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_small * 0.75,
