@@ -36,6 +36,12 @@ class VideoProcessorWorker(QThread):
         logger.info("VideoProcessorWorker thread started")
         self.running = True
 
+        # Log platform-specific frame rate target
+        is_jetson = hasattr(self.app, 'platform_info') and self.app.platform_info.get('is_jetson', False)
+        target_fps = 20 if is_jetson else 30
+        platform_name = "Jetson Orin" if is_jetson else "x86-64"
+        logger.info(f"Platform: {platform_name}, Target FPS: {target_fps} (adaptive throttling)")
+
         while self.running:
             loop_start = time.time()
 
@@ -267,10 +273,34 @@ class VideoProcessorWorker(QThread):
 
             self.app.frame_count += 1
 
-            # Print stats
+            # Frame rate limiting: Adaptive based on platform
+            # Jetson: 20 FPS (thermal/power constrained, YOLO inference time)
+            # x86: 30 FPS (more headroom, faster inference)
+            # Prevents CPU spinning and Qt event queue flooding
+            loop_time = time.time() - loop_start
+
+            # Determine target FPS based on platform
+            is_jetson = hasattr(self.app, 'platform_info') and self.app.platform_info.get('is_jetson', False)
+            target_fps = 20 if is_jetson else 30
+            target_frame_time = 1.0 / target_fps
+
+            sleep_time = target_frame_time - loop_time
+            throttle_active = sleep_time > 0
+            if throttle_active:
+                time.sleep(sleep_time)
+
+            # Print stats with performance debug info
             if self.app.frame_count % 100 == 0:
-                logger.info(f"Frame {self.app.frame_count} | FPS: {self.app.smoothed_fps:.1f} | "
-                          f"Detections: {len(detections)} | View: {self.app.view_mode}")
+                actual_loop_time = loop_time + (sleep_time if throttle_active else 0)
+                throttle_status = "✓" if throttle_active else "✗ OVERRUN"
+                logger.info(
+                    f"Frame {self.app.frame_count} | "
+                    f"FPS: {self.app.smoothed_fps:.1f}/{target_fps} | "
+                    f"Loop: {loop_time*1000:.1f}ms | "
+                    f"Throttle: {throttle_status} | "
+                    f"Detections: {len(detections)} | "
+                    f"View: {self.app.view_mode}"
+                )
 
     def stop(self):
         """Stop the worker thread gracefully"""

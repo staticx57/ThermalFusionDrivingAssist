@@ -319,7 +319,6 @@ class ControlPanel(QWidget):
 
         # Developer controls: 3x3 grid layout
         dev_controls_widget = QWidget()
-        dev_controls_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
         dev_grid.setContentsMargins(5, 5, 5, 5)
@@ -446,9 +445,14 @@ class ControlPanel(QWidget):
         """Show or hide developer control buttons widget"""
         if show:
             self.dev_controls_widget.show()
+            # Force layout update to ensure visibility
+            self.layout().invalidate()
+            self.layout().activate()
             logger.info("Developer controls shown (9 controls in 3x3 grid)")
         else:
             self.dev_controls_widget.hide()
+            self.layout().invalidate()
+            self.layout().activate()
             logger.info("Developer controls hidden")
 
 
@@ -470,11 +474,11 @@ class InfoPanel(QLabel):
         super().__init__(parent)
         self.setObjectName("info_panel")
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.setWordWrap(True)  # Allow wrap for long text
+        self.setWordWrap(False)  # No wrap - performance optimization
 
-        # Larger size to prevent truncation - still minimal
-        self.setMinimumSize(280, 60)
-        self.setMaximumSize(400, 100)
+        # Sized for two-line layout without truncation
+        self.setMinimumSize(300, 50)
+        self.setMaximumSize(350, 70)
 
         # Top-left corner (SAE J2400: avoid center placement for non-critical info)
         self.move(10, 10)
@@ -511,34 +515,28 @@ class InfoPanel(QLabel):
 
         # Row 1: DETECTION METRICS (most important - what driver needs)
         if detections > 0:
-            # Emphasize when objects detected - safety critical
-            row1 = f"🎯 DETECTIONS: {detections} Objects"
+            row1 = f"🎯 {detections} Objects Detected"
         else:
-            # Clear road - reassuring message
-            row1 = f"✓ Road Clear"
+            row1 = "✓ Clear"
 
         # Row 2: SYSTEM STATUS (diagnostic info)
-        # Include performance quality, FPS, and sensor warnings
-        sensor_warnings = []
+        # Build compact status line
+        row2 = f"{status_icon} {fps:.0f}fps"
+
+        # Add sensor warnings if critical
         if not thermal_connected and not rgb_connected:
-            sensor_warnings.append("⚠ No Cameras")
+            row2 += " | ⚠ NoCam"
         elif not thermal_connected:
-            sensor_warnings.append("⚠ No Thermal")
+            row2 += " | ⚠ NoThr"
         elif not rgb_connected:
-            sensor_warnings.append("⚠ No RGB")
+            row2 += " | ⚠ NoRGB"
 
-        # Build row 2: status icon + FPS + warnings + hints
-        row2_parts = [f"{status_icon} {fps:.0f} FPS"]
-        if sensor_warnings:
-            row2_parts.extend(sensor_warnings)
+        # Add hint if performance degraded
         if hint:
-            row2_parts.append(hint.strip())
+            row2 += hint
 
-        row2 = "  |  ".join(row2_parts)
-
-        # Combine rows
-        info_text = f"{row1}\n{row2}"
-        self.setText(info_text)
+        # Combine rows (simple concatenation)
+        self.setText(f"{row1}\n{row2}")
 
 
 # ============================================================================
@@ -582,14 +580,13 @@ class DriverAppWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Video display (takes remaining space)
+        # Video display (most of the space)
         self.video_widget = VideoWidget()
-        main_layout.addWidget(self.video_widget, stretch=1)
+        main_layout.addWidget(self.video_widget, stretch=9)
 
-        # Control panel (fixed size, no stretch - expands as needed)
+        # Control panel (bottom area)
         self.control_panel = ControlPanel()
-        self.control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        main_layout.addWidget(self.control_panel, stretch=0)
+        main_layout.addWidget(self.control_panel, stretch=1)
 
         left_widget.setLayout(main_layout)
         horizontal_layout.addWidget(left_widget)
