@@ -11,7 +11,7 @@ import logging
 
 try:
     from PyQt5.QtWidgets import (QMainWindow, QWidget, QLabel, QPushButton,
-                                  QVBoxLayout, QHBoxLayout, QApplication,
+                                  QVBoxLayout, QHBoxLayout, QGridLayout, QApplication,
                                   QSizePolicy)
     from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QSize
     from PyQt5.QtGui import QImage, QPixmap, QFont
