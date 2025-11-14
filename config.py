@@ -307,6 +307,19 @@ class Config:
                 'accent_purple': (150, 100, 200),
                 'danger_pulse': (255, 30, 30),  # Bright red for danger pulse
                 'warning_pulse': (255, 200, 0),  # Bright yellow for warning pulse
+                # Detection box colors (light theme - darker colors for visibility)
+                'detection_person': (180, 180, 0),  # Cyan (BGR)
+                'detection_vehicle': (0, 150, 0),  # Green
+                'detection_bike': (180, 0, 180),  # Magenta
+                'detection_traffic': (0, 0, 200),  # Red
+                'detection_default': (180, 180, 0),  # Cyan
+                # Distance-based colors (light theme)
+                'distance_immediate': (0, 0, 200),  # Dark red
+                'distance_close': (0, 100, 200),  # Dark orange
+                'distance_medium': (0, 150, 150),  # Dark yellow
+                'distance_safe': (0, 150, 0),  # Dark green
+                'label_bg': (40, 40, 40),  # Dark gray for labels
+                'motion_color': (0, 120, 200),  # Orange for motion
             }
         else:
             # Dark theme colors (default)
@@ -331,6 +344,19 @@ class Config:
                 'accent_purple': (200, 100, 255),
                 'danger_pulse': (0, 0, 255),  # Bright red for danger pulse
                 'warning_pulse': (0, 255, 255),  # Bright yellow for warning pulse
+                # Detection box colors (dark theme - bright colors for visibility)
+                'detection_person': (0, 255, 255),  # Cyan (BGR)
+                'detection_vehicle': (0, 255, 0),  # Green
+                'detection_bike': (255, 0, 255),  # Magenta
+                'detection_traffic': (0, 0, 255),  # Red
+                'detection_default': (0, 255, 255),  # Cyan
+                # Distance-based colors (dark theme)
+                'distance_immediate': (0, 0, 255),  # Bright red
+                'distance_close': (0, 165, 255),  # Bright orange
+                'distance_medium': (0, 255, 255),  # Bright yellow
+                'distance_safe': (0, 255, 0),  # Bright green
+                'label_bg': (0, 0, 0),  # Black for labels
+                'motion_color': (0, 165, 255),  # Orange for motion
             }
 
 

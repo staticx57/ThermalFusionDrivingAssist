@@ -201,14 +201,14 @@ class DriverGUI:
             cv2.putText(canvas, icon,
                        (alert_margin + 5, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
             # Count
             count = len(self.proximity_zones['left'])
             cv2.putText(canvas, str(count),
                        (alert_margin + 10, text_y + 40),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
         # RIGHT SIDE ALERT
         if len(self.proximity_zones['right']) > 0:
@@ -236,14 +236,14 @@ class DriverGUI:
             cv2.putText(canvas, icon,
                        (w - alert_margin - alert_width + 5, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
             # Count
             count = len(self.proximity_zones['right'])
             cv2.putText(canvas, str(count),
                        (w - alert_margin - alert_width + 10, text_y + 40),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
         # CENTER WARNING (top of screen)
         if len(self.proximity_zones['center']) > 0:
@@ -276,7 +276,7 @@ class DriverGUI:
 
             cv2.putText(canvas, text, (text_x, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
     def render_multi_view(self, thermal_frame: Optional[np.ndarray],
                          rgb_frame: Optional[np.ndarray],
@@ -647,14 +647,27 @@ class DriverGUI:
         x = canvas_w - panel_w - margin
         y = int(120 * self.scale_factor)  # Below top buttons
 
-        # Semi-transparent background
-        overlay = canvas[y:y+panel_h, x:x+panel_w].copy()
-        bg = np.full((panel_h, panel_w, 3), self.colors['panel_bg'], dtype=np.uint8)
-        cv2.addWeighted(bg, 0.85, overlay, 0.15, 0, overlay)
-        canvas[y:y+panel_h, x:x+panel_w] = overlay
+        # Clamp to canvas bounds
+        x = max(0, min(x, canvas_w - 1))
+        y = max(0, min(y, canvas_h - 1))
+        actual_panel_w = min(panel_w, canvas_w - x)
+        actual_panel_h = min(panel_h, canvas_h - y)
 
-        # Border
-        cv2.rectangle(canvas, (x, y), (x + panel_w, y + panel_h),
+        # Skip if panel doesn't fit
+        if actual_panel_w <= 0 or actual_panel_h <= 0:
+            return
+
+        # Semi-transparent background
+        overlay = canvas[y:y+actual_panel_h, x:x+actual_panel_w].copy()
+        bg = np.full((actual_panel_h, actual_panel_w, 3), self.colors['panel_bg'], dtype=np.uint8)
+
+        # Only blend if shapes match
+        if overlay.shape == bg.shape:
+            cv2.addWeighted(bg, 0.85, overlay, 0.15, 0, overlay)
+            canvas[y:y+actual_panel_h, x:x+actual_panel_w] = overlay
+
+        # Border (use actual dimensions)
+        cv2.rectangle(canvas, (x, y), (x + actual_panel_w, y + actual_panel_h),
                      self.colors['panel_accent'], 2)
 
         # Content
@@ -758,33 +771,47 @@ class DriverGUI:
         if bg_color is None:
             bg_color = self.colors['button_bg']
 
-        self.control_buttons[button_id] = (x, y, w, h)
+        # Get canvas dimensions for bounds checking
+        canvas_h, canvas_w = canvas.shape[:2]
+
+        # Clamp button to canvas bounds
+        x = max(0, min(x, canvas_w - 1))
+        y = max(0, min(y, canvas_h - 1))
+        actual_w = min(w, canvas_w - x)
+        actual_h = min(h, canvas_h - y)
+
+        # Skip if button is completely outside canvas
+        if actual_w <= 0 or actual_h <= 0:
+            return
+
+        self.control_buttons[button_id] = (x, y, actual_w, actual_h)
 
         is_active = bg_color == self.colors['button_active'] or bg_color == self.colors['button_active_alt']
 
         # Calculate corner radius (proportional to button height)
-        corner_radius = max(3, int(h * 0.2))  # 20% of button height
+        corner_radius = max(3, int(actual_h * 0.2))  # 20% of button height
 
         # Draw button background with rounded corners and transparency
-        overlay = canvas[y:y+h, x:x+w].copy()
-        button_layer = np.zeros((h, w, 3), dtype=np.uint8)
-        self._draw_rounded_rectangle(button_layer, 0, 0, w, h, bg_color, corner_radius, -1)
+        overlay = canvas[y:y+actual_h, x:x+actual_w].copy()
+        button_layer = np.zeros((actual_h, actual_w, 3), dtype=np.uint8)
+        self._draw_rounded_rectangle(button_layer, 0, 0, actual_w, actual_h, bg_color, corner_radius, -1)
 
-        # Apply transparency blend
-        cv2.addWeighted(button_layer, 0.75, overlay, 0.25, 0, overlay)
-        canvas[y:y+h, x:x+w] = overlay
+        # Apply transparency blend - ensure dimensions match
+        if overlay.shape == button_layer.shape:
+            cv2.addWeighted(button_layer, 0.75, overlay, 0.25, 0, overlay)
+            canvas[y:y+actual_h, x:x+actual_w] = overlay
 
         # Draw border with rounded corners
         border_color = self.colors['accent_green'] if is_active else self.colors['panel_accent']
         border_thickness = max(2, int(2 * gui_scale)) if is_active else max(1, int(1 * gui_scale))
-        self._draw_rounded_rectangle(canvas, x, y, w, h, border_color, corner_radius, border_thickness)
+        self._draw_rounded_rectangle(canvas, x, y, actual_w, actual_h, border_color, corner_radius, border_thickness)
 
         # Text (centered)
         text_color = self.colors['text'] if is_active else self.colors['text_dim']
         text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX,
                                    self.font_scale_small * 0.75, self.font_thickness)[0]
-        text_x = x + (w - text_size[0]) // 2
-        text_y = y + (h + text_size[1]) // 2
+        text_x = x + (actual_w - text_size[0]) // 2
+        text_y = y + (actual_h + text_size[1]) // 2
 
         cv2.putText(canvas, text, (text_x, text_y),
                    cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_small * 0.75,
@@ -814,32 +841,37 @@ class DriverGUI:
         identified_objects = [d for d in detections if d.class_name != 'motion']
         motion_objects = [d for d in detections if d.class_name == 'motion']
 
-        # Color map
+        # Color map - now theme-aware
         color_map = {
-            'person': (0, 255, 255), 'car': (0, 255, 0), 'truck': (0, 200, 0),
-            'bus': (0, 180, 0), 'bicycle': (255, 0, 255), 'motorcycle': (200, 0, 255),
-            'traffic light': (0, 0, 255), 'stop sign': (0, 0, 255),
+            'person': self.colors['detection_person'],
+            'car': self.colors['detection_vehicle'],
+            'truck': self.colors['detection_vehicle'],
+            'bus': self.colors['detection_vehicle'],
+            'bicycle': self.colors['detection_bike'],
+            'motorcycle': self.colors['detection_bike'],
+            'traffic light': self.colors['detection_traffic'],
+            'stop sign': self.colors['detection_traffic'],
         }
 
         # Draw identified objects
         for det in identified_objects:
             x1, y1, x2, y2 = det.bbox
-            color = color_map.get(det.class_name, (0, 255, 255))
+            color = color_map.get(det.class_name, self.colors['detection_default'])
             box_thickness = max(3, int(4 * self.scale_factor))
 
-            # Color-code box based on distance (NEW)
+            # Color-code box based on distance (NEW) - theme-aware colors
             if det.distance_estimate is not None:
                 distance_m = det.distance_estimate
                 if distance_m < 5.0:
-                    color = (0, 0, 255)  # RED - IMMEDIATE
+                    color = self.colors['distance_immediate']  # RED - IMMEDIATE
                     box_thickness = max(4, int(6 * self.scale_factor))
                 elif distance_m < 10.0:
-                    color = (0, 165, 255)  # ORANGE - VERY CLOSE
+                    color = self.colors['distance_close']  # ORANGE - VERY CLOSE
                     box_thickness = max(3, int(5 * self.scale_factor))
                 elif distance_m < 20.0:
-                    color = (0, 255, 255)  # YELLOW - CLOSE
+                    color = self.colors['distance_medium']  # YELLOW - CLOSE
                 else:
-                    color = (0, 255, 0)  # GREEN - SAFE
+                    color = self.colors['distance_safe']  # GREEN - SAFE
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, box_thickness)
 
@@ -857,12 +889,12 @@ class DriverGUI:
                          (x1 + label_w + padding * 2, y1), color, -1)
             cv2.putText(frame, label, (x1 + padding, y1 - padding),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (0, 0, 0), self.font_thickness_bold)
+                       self.colors['label_bg'], self.font_thickness_bold)
 
-        # Draw motion (dashed boxes)
+        # Draw motion (dashed boxes) - theme-aware
         for det in motion_objects:
             x1, y1, x2, y2 = det.bbox
-            color = (255, 165, 0)  # Orange
+            color = self.colors['motion_color']  # Orange (theme-aware)
             self._draw_dashed_rectangle(frame, (x1, y1), (x2, y2), color, max(2, int(2 * self.scale_factor)))
 
             label = "MOTION"
