@@ -1,5 +1,105 @@
 # ThermalFusionDrivingAssist - Changelog
 
+## [v3.3.0] - 2025-11-14 - Dual RGB Camera Support + Cross-Platform Install
+
+### Added - RGB Camera Options
+- **File: `rgb_camera_uvc.py`** (NEW - 400+ lines)
+  - Generic UVC (USB Video Class) webcam support
+  - Compatible with any standard USB webcam
+  - Works out-of-box with OpenCV (no special drivers)
+  - Supported cameras:
+    - Logitech C920, C922, C930e
+    - Microsoft LifeCam
+    - Generic USB webcams
+    - Jetson CSI cameras (via GStreamer)
+  - Auto-detection and enumeration
+  - Cross-platform: Linux (V4L2) + Windows (DirectShow)
+
+- **File: `rgb_camera_firefly.py`** (NEW - 600+ lines)
+  - FLIR Firefly camera support (global shutter)
+  - Requires Spinnaker SDK + PySpin
+  - Supported models:
+    - Firefly S (USB 2.0)
+    - Firefly (USB 3.0)
+    - FireFly MV (Machine Vision)
+  - **Global Shutter Advantages**:
+    - No motion blur for moving objects
+    - Accurate object detection in high-speed scenarios
+    - Better for automotive/driving applications
+  - Full camera configuration via Spinnaker GenICam interface
+  - Auto exposure, auto gain, auto white balance
+  - Configurable resolution and frame rate
+  - Professional-grade image quality
+
+- **File: `camera_factory.py`** (NEW - 350+ lines)
+  - Automatic RGB camera detection and instantiation
+  - Priority order (auto-detect mode):
+    1. FLIR Firefly (global shutter, best quality)
+    2. Generic UVC webcam (fallback)
+    3. Legacy RGBCamera class (compatibility)
+  - Unified interface for all camera types
+  - Camera type forcing: `camera_type="firefly"` or `"uvc"` or `"auto"`
+  - Comprehensive camera detection summary
+  - User-friendly error messages
+
+### Added - Cross-Platform Installation Scripts
+- **File: `install_linux.sh`** (NEW - 250+ lines)
+  - Automated installation for Jetson Orin Nano and x86-64 Linux
+  - Detects platform architecture (ARM64 vs x86-64)
+  - Installs system dependencies (OpenCV, Python packages, V4L2)
+  - Optional FLIR Firefly support: `./install_linux.sh --with-firefly`
+  - Spinnaker SDK installation guidance
+  - USB permissions configuration for FLIR cameras
+  - Camera detection verification
+  - Color-coded output for easy troubleshooting
+
+- **File: `install_windows.bat`** (NEW - 200+ lines)
+  - Automated installation for Windows 10/11 (ThinkPad P16)
+  - Python version verification
+  - pip upgrade and dependency installation
+  - Optional FLIR Firefly support: `install_windows.bat --with-firefly`
+  - Spinnaker SDK installation instructions
+  - PySpin verification
+  - Color-coded output (where supported)
+  - Comprehensive troubleshooting guidance
+
+### Modified - Main Application
+- **File: `main.py`**
+  - Updated to use `camera_factory` instead of direct `RGBCamera` import
+  - Auto-detection of RGB camera type (Firefly > UVC)
+  - Enhanced logging shows camera type on connection
+  - Hot-plug support maintained for both camera types
+  - Graceful fallback if no cameras found
+  - Camera type displayed in info panel
+
+### Features
+- **Dual Camera Support**: Choose between UVC webcam or FLIR Firefly
+- **Auto-Detection**: System automatically finds and uses best available camera
+- **Global Shutter**: FLIR Firefly eliminates motion blur (critical for driving)
+- **Cross-Platform**: Works on Jetson (ARM64) and ThinkPad (x86-64)
+- **Hot-Plug Support**: Both camera types support runtime connection/disconnection
+- **Professional Quality**: FLIR Firefly offers superior image quality for critical applications
+
+### Testing & Validation
+- All Python files syntax-checked and validated
+- Import dependencies verified
+- Camera factory tested with auto-detection
+- Install scripts tested for both platforms
+- Backward compatibility maintained with existing `rgb_camera.py`
+
+### Documentation
+- Camera comparison guide in install scripts
+- Comprehensive troubleshooting in both scripts
+- Testing commands provided for each camera type
+- SDK download links and installation instructions
+
+### Use Cases
+- **Hobbyist/Development**: Use any USB webcam (UVC)
+- **Production/Automotive**: Use FLIR Firefly (global shutter, no motion blur)
+- **Testing**: Easy switching between camera types without code changes
+
+---
+
 ## [v3.2.0] - 2025-11-14 - LiDAR Integration Phase 1
 
 ### Added - Hesai Pandar 40P LiDAR Integration

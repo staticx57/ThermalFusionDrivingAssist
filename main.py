@@ -15,7 +15,7 @@ import cv2
 import os
 
 from flir_camera import FLIRBosonCamera
-from rgb_camera import RGBCamera, detect_rgb_cameras
+from camera_factory import create_rgb_camera, detect_all_rgb_cameras
 from camera_detector import CameraDetector
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor, ViewMode
@@ -279,32 +279,31 @@ class ThermalRoadMonitorFusion:
                 logger.info(f"Using default resolution: {actual_res[0]}x{actual_res[1]}")
 
             # 3. Detect and initialize RGB camera (optional)
+            # Camera factory auto-detects: FLIR Firefly (global shutter) or UVC webcam
             if not self.args.disable_rgb:
-                logger.info("Detecting RGB cameras...")
-                rgb_cameras = detect_rgb_cameras()
+                logger.info("Detecting RGB cameras (FLIR Firefly or UVC)...")
 
-                if rgb_cameras:
-                    # Use first available RGB camera (USB or CSI)
-                    rgb_cam_info = rgb_cameras[0]
-                    logger.info(f"Found {rgb_cam_info['type']} RGB camera: ID {rgb_cam_info['id']}")
-
-                    use_gstreamer = (rgb_cam_info['type'] == 'CSI')
-                    self.rgb_camera = RGBCamera(
-                        device_id=rgb_cam_info['id'],
+                try:
+                    # Camera factory auto-detects best available camera
+                    # Priority: FLIR Firefly > UVC webcam
+                    self.rgb_camera = create_rgb_camera(
                         resolution=(640, 480),  # Standard RGB resolution
                         fps=30,
-                        use_gstreamer=use_gstreamer
+                        camera_type="auto"  # Auto-detect
                     )
 
                     if self.rgb_camera.open():
                         self.rgb_available = True
                         rgb_res = self.rgb_camera.get_actual_resolution()
-                        logger.info(f"RGB camera opened: {rgb_res[0]}x{rgb_res[1]}")
+                        logger.info(f"✓ RGB camera opened: {self.rgb_camera.camera_type}")
+                        logger.info(f"  Resolution: {rgb_res[0]}x{rgb_res[1]}")
                     else:
                         logger.warning("RGB camera failed to open - continuing with thermal only")
                         self.rgb_camera = None
-                else:
-                    logger.info("No RGB cameras found - continuing with thermal only")
+                except RuntimeError as e:
+                    logger.info(f"No RGB cameras found: {e}")
+                    logger.info("Continuing with thermal only")
+                    self.rgb_camera = None
             else:
                 logger.info("RGB camera disabled by user")
 
@@ -627,23 +626,21 @@ class ThermalRoadMonitorFusion:
                     # Try to reconnect RGB camera every 100 frames (hot-plug support)
                     if self.frame_count % 100 == 0:
                         logger.info("Attempting to reconnect RGB camera...")
-                        rgb_cameras = detect_rgb_cameras()
-                        if rgb_cameras:
-                            try:
-                                use_gstreamer = (rgb_cameras[0]['type'] == 'CSI')
-                                self.rgb_camera = RGBCamera(
-                                    device_id=rgb_cameras[0]['id'],
-                                    resolution=(640, 480),
-                                    use_gstreamer=use_gstreamer
-                                )
-                                if self.rgb_camera.open():
-                                    self.rgb_available = True
-                                    logger.info(f"✓ RGB camera reconnected: {rgb_cameras[0]}")
-                                else:
-                                    self.rgb_camera = None
-                            except Exception as e:
-                                logger.debug(f"RGB reconnection failed: {e}")
+                        try:
+                            # Camera factory auto-detects: FLIR Firefly or UVC webcam
+                            self.rgb_camera = create_rgb_camera(
+                                resolution=(640, 480),
+                                fps=30,
+                                camera_type="auto"
+                            )
+                            if self.rgb_camera.open():
+                                self.rgb_available = True
+                                logger.info(f"✓ RGB camera reconnected: {self.rgb_camera.camera_type}")
+                            else:
                                 self.rgb_camera = None
+                        except Exception as e:
+                            logger.debug(f"RGB reconnection failed: {e}")
+                            self.rgb_camera = None
 
                 # 3. Apply thermal color palette
                 try:
