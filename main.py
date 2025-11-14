@@ -21,8 +21,10 @@ from camera_detector import CameraDetector
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor
 from road_analyzer import RoadAnalyzer
-from driver_gui import DriverGUI, ViewMode
+from view_mode import ViewMode
 from performance_monitor import PerformanceMonitor
+
+# GUI will be imported conditionally based on --use-qt-gui argument
 
 logging.basicConfig(
     level=logging.INFO,
@@ -381,27 +383,47 @@ class ThermalRoadMonitorFusion:
                 self.analyzer.update_vehicle_speed(vehicle_speed)
                 logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
-            # 7. Initialize enhanced GUI
-            scale_factor = getattr(self.args, 'scale', 2.0)
-            self.gui = DriverGUI(
-                window_name="Thermal Fusion Driving Assist",
-                scale_factor=scale_factor
-            )
+            # 7. Initialize GUI (Qt or OpenCV)
+            use_qt = getattr(self.args, 'use_qt_gui', False)
 
-            # Calculate window size
-            video_width = int(actual_res[0] * scale_factor)
-            video_height = int(actual_res[1] * scale_factor)
-            window_width = video_width * 2
-            window_height = video_height * 2
+            if use_qt:
+                # Qt GUI - Professional interface
+                try:
+                    from driver_gui_qt import DriverAppWindow
+                    logger.info("Using Qt GUI (professional mode)")
+                    self.gui = DriverAppWindow()
+                    self.gui_type = 'qt'
+                    # Qt GUI will be shown in run() method
+                except ImportError:
+                    logger.error("PyQt5 not available. Install with: pip3 install -r requirements_qt.txt")
+                    logger.info("Falling back to OpenCV GUI...")
+                    use_qt = False
 
-            self.gui.create_window(
-                fullscreen=self.args.fullscreen,
-                window_width=window_width,
-                window_height=window_height
-            )
+            if not use_qt:
+                # OpenCV GUI - Fallback
+                from driver_gui import DriverGUI
+                logger.info("Using OpenCV GUI")
+                scale_factor = getattr(self.args, 'scale', 2.0)
+                self.gui = DriverGUI(
+                    window_name="Thermal Fusion Driving Assist",
+                    scale_factor=scale_factor
+                )
+                self.gui_type = 'opencv'
 
-            # Set up mouse callback
-            cv2.setMouseCallback(self.gui.window_name, self._mouse_callback)
+                # Calculate window size
+                video_width = int(actual_res[0] * scale_factor)
+                video_height = int(actual_res[1] * scale_factor)
+                window_width = video_width * 2
+                window_height = video_height * 2
+
+                self.gui.create_window(
+                    fullscreen=self.args.fullscreen,
+                    window_width=window_width,
+                    window_height=window_height
+                )
+
+                # Set up mouse callback (OpenCV only)
+                cv2.setMouseCallback(self.gui.window_name, self._mouse_callback)
 
             # 8. Initialize performance monitor
             self.perf_monitor = PerformanceMonitor()
@@ -424,19 +446,26 @@ class ThermalRoadMonitorFusion:
                 if self.yolo_enabled and not self.detection_queue.empty():
                     frame = self.detection_queue.get(timeout=0.1)
 
-                    self.detector.frame_skip = self.frame_skip_value
+                    # Check if detector is available (requires thermal camera connection)
+                    if self.detector:
+                        self.detector.frame_skip = self.frame_skip_value
 
-                    detections = self.detector.detect(frame, filter_road_objects=True)
-                    alerts = self.analyzer.analyze(detections)
+                        detections = self.detector.detect(frame, filter_road_objects=True)
+                        alerts = self.analyzer.analyze(detections)
 
-                    with self.detection_lock:
-                        self.latest_detections = detections
-                        self.latest_alerts = alerts
+                        with self.detection_lock:
+                            self.latest_detections = detections
+                            self.latest_alerts = alerts
 
-                    self.perf_monitor.update_inference_metrics(
-                        self.detector.fps,
-                        self.detector.last_inference_time * 1000
-                    )
+                        self.perf_monitor.update_inference_metrics(
+                            self.detector.fps,
+                            self.detector.last_inference_time * 1000
+                        )
+                    else:
+                        # No detector available - clear detections
+                        with self.detection_lock:
+                            self.latest_detections = []
+                            self.latest_alerts = []
                 elif not self.yolo_enabled:
                     with self.detection_lock:
                         self.latest_detections = []
@@ -1066,6 +1095,10 @@ def parse_arguments():
                        help='Audio alert volume (0.0-1.0, default: 0.7)')
     parser.add_argument('--vehicle-speed', type=float, default=0.0,
                        help='Vehicle speed in km/h for TTC calculation (default: 0)')
+
+    # GUI options
+    parser.add_argument('--use-qt-gui', action='store_true',
+                       help='Use Qt GUI instead of OpenCV GUI (better theming, text rendering)')
 
     return parser.parse_args()
 
