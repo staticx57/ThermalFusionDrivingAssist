@@ -340,6 +340,19 @@ class DriverGUI:
 
         canvas = frame_scaled.copy()
 
+        # DEBUG: Log canvas dimensions periodically (every 30 frames)
+        if hasattr(self, '_debug_frame_count'):
+            self._debug_frame_count += 1
+        else:
+            self._debug_frame_count = 0
+            # Log OpenCV backend once at startup
+            backend_name = cv2.videoio_registry.getBackendName(cv2.CAP_ANY)
+            print(f"[DEBUG] OpenCV Window Backend: {backend_name}")
+
+        if self._debug_frame_count % 30 == 0:
+            print(f"[DEBUG] Frame {self._debug_frame_count}: Canvas.shape = {canvas.shape}, "
+                  f"orig = {orig_w}x{orig_h}, scaled = {scaled_w}x{scaled_h}, scale_factor = {self.scale_factor}")
+
         # Update proximity zones for smart alerts
         self._update_proximity_zones(detections, orig_w)
 
@@ -507,6 +520,11 @@ class DriverGUI:
         top_margin = int(45 * gui_scale)
         left_margin = int(15 * gui_scale)
 
+        # DEBUG: Log button positioning calculations periodically
+        if hasattr(self, '_debug_frame_count') and self._debug_frame_count % 30 == 0:
+            print(f"[DEBUG] Button calc: gui_scale={gui_scale}, button_spacing={button_spacing}, "
+                  f"top_margin={top_margin}, left_margin={left_margin}")
+
         self.control_buttons = {}
 
         if self.developer_mode:
@@ -555,6 +573,11 @@ class DriverGUI:
         for btn_id, text, width, bg_color in buttons:
             self._draw_button_simple(canvas, current_x, button_y, width,
                                     button_height, text, btn_id, gui_scale, bg_color)
+
+            # DEBUG: Log button X positions for first button periodically
+            if btn_id == 'view_mode_cycle' and hasattr(self, '_debug_frame_count') and self._debug_frame_count % 30 == 0:
+                print(f"[DEBUG] Button '{btn_id}' position: x={current_x}, y={button_y}, width={width}")
+
             current_x += width + button_spacing
 
     def _draw_developer_controls(self, canvas: np.ndarray, params: dict,
