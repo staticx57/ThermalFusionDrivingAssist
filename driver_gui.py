@@ -201,14 +201,14 @@ class DriverGUI:
             cv2.putText(canvas, icon,
                        (alert_margin + 5, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
             # Count
             count = len(self.proximity_zones['left'])
             cv2.putText(canvas, str(count),
                        (alert_margin + 10, text_y + 40),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
         # RIGHT SIDE ALERT
         if len(self.proximity_zones['right']) > 0:
@@ -236,14 +236,14 @@ class DriverGUI:
             cv2.putText(canvas, icon,
                        (w - alert_margin - alert_width + 5, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
             # Count
             count = len(self.proximity_zones['right'])
             cv2.putText(canvas, str(count),
                        (w - alert_margin - alert_width + 10, text_y + 40),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
         # CENTER WARNING (top of screen)
         if len(self.proximity_zones['center']) > 0:
@@ -276,7 +276,7 @@ class DriverGUI:
 
             cv2.putText(canvas, text, (text_x, text_y),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_large,
-                       (255, 255, 255), self.font_thickness_bold)
+                       self.colors['text'], self.font_thickness_bold)
 
     def render_multi_view(self, thermal_frame: Optional[np.ndarray],
                          rgb_frame: Optional[np.ndarray],
@@ -841,32 +841,37 @@ class DriverGUI:
         identified_objects = [d for d in detections if d.class_name != 'motion']
         motion_objects = [d for d in detections if d.class_name == 'motion']
 
-        # Color map
+        # Color map - now theme-aware
         color_map = {
-            'person': (0, 255, 255), 'car': (0, 255, 0), 'truck': (0, 200, 0),
-            'bus': (0, 180, 0), 'bicycle': (255, 0, 255), 'motorcycle': (200, 0, 255),
-            'traffic light': (0, 0, 255), 'stop sign': (0, 0, 255),
+            'person': self.colors['detection_person'],
+            'car': self.colors['detection_vehicle'],
+            'truck': self.colors['detection_vehicle'],
+            'bus': self.colors['detection_vehicle'],
+            'bicycle': self.colors['detection_bike'],
+            'motorcycle': self.colors['detection_bike'],
+            'traffic light': self.colors['detection_traffic'],
+            'stop sign': self.colors['detection_traffic'],
         }
 
         # Draw identified objects
         for det in identified_objects:
             x1, y1, x2, y2 = det.bbox
-            color = color_map.get(det.class_name, (0, 255, 255))
+            color = color_map.get(det.class_name, self.colors['detection_default'])
             box_thickness = max(3, int(4 * self.scale_factor))
 
-            # Color-code box based on distance (NEW)
+            # Color-code box based on distance (NEW) - theme-aware colors
             if det.distance_estimate is not None:
                 distance_m = det.distance_estimate
                 if distance_m < 5.0:
-                    color = (0, 0, 255)  # RED - IMMEDIATE
+                    color = self.colors['distance_immediate']  # RED - IMMEDIATE
                     box_thickness = max(4, int(6 * self.scale_factor))
                 elif distance_m < 10.0:
-                    color = (0, 165, 255)  # ORANGE - VERY CLOSE
+                    color = self.colors['distance_close']  # ORANGE - VERY CLOSE
                     box_thickness = max(3, int(5 * self.scale_factor))
                 elif distance_m < 20.0:
-                    color = (0, 255, 255)  # YELLOW - CLOSE
+                    color = self.colors['distance_medium']  # YELLOW - CLOSE
                 else:
-                    color = (0, 255, 0)  # GREEN - SAFE
+                    color = self.colors['distance_safe']  # GREEN - SAFE
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, box_thickness)
 
@@ -884,12 +889,12 @@ class DriverGUI:
                          (x1 + label_w + padding * 2, y1), color, -1)
             cv2.putText(frame, label, (x1 + padding, y1 - padding),
                        cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium,
-                       (0, 0, 0), self.font_thickness_bold)
+                       self.colors['label_bg'], self.font_thickness_bold)
 
-        # Draw motion (dashed boxes)
+        # Draw motion (dashed boxes) - theme-aware
         for det in motion_objects:
             x1, y1, x2, y2 = det.bbox
-            color = (255, 165, 0)  # Orange
+            color = self.colors['motion_color']  # Orange (theme-aware)
             self._draw_dashed_rectangle(frame, (x1, y1), (x2, y2), color, max(2, int(2 * self.scale_factor)))
 
             label = "MOTION"
