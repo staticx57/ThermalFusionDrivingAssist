@@ -24,6 +24,7 @@ import cv2
 from object_detector import Detection
 from road_analyzer import Alert, AlertLevel
 from view_mode import ViewMode
+from developer_panel import DeveloperPanel
 
 logger = logging.getLogger(__name__)
 
@@ -360,11 +361,19 @@ class DriverAppWindow(QMainWindow):
         self.current_theme = 'dark'
         self.view_mode = ViewMode.THERMAL_ONLY
         self.show_info_panel = False
+        self.developer_mode = False  # Developer panel hidden by default
 
         # Create central widget and layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
+        # Horizontal layout: Main content | Developer Panel
+        horizontal_layout = QHBoxLayout()
+        horizontal_layout.setContentsMargins(0, 0, 0, 0)
+        horizontal_layout.setSpacing(0)
+
+        # Left side: Video + Controls (vertical layout)
+        left_widget = QWidget()
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -377,7 +386,16 @@ class DriverAppWindow(QMainWindow):
         self.control_panel = ControlPanel()
         main_layout.addWidget(self.control_panel, stretch=1)
 
-        central_widget.setLayout(main_layout)
+        left_widget.setLayout(main_layout)
+        horizontal_layout.addWidget(left_widget)
+
+        # Right side: Developer Panel (initially hidden)
+        self.developer_panel = DeveloperPanel()
+        self.developer_panel.set_app_reference(app)
+        self.developer_panel.hide()  # Hidden by default
+        horizontal_layout.addWidget(self.developer_panel)
+
+        central_widget.setLayout(horizontal_layout)
 
         # Info panel overlay (on top of video widget)
         self.info_panel = InfoPanel(self.video_widget)
@@ -459,9 +477,25 @@ class DriverAppWindow(QMainWindow):
         if hasattr(self.app, 'frame_count'):
             self.app.frame_count = 0  # Trigger RGB retry on next frame
 
+    def toggle_developer_mode(self):
+        """Toggle developer mode panel (Ctrl+D)"""
+        self.developer_mode = not self.developer_mode
+        if self.developer_mode:
+            self.developer_panel.show()
+            logger.info("✓ Developer mode ENABLED (Ctrl+D to toggle)")
+        else:
+            self.developer_panel.hide()
+            logger.info("✗ Developer mode DISABLED")
+
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts"""
         key = event.key()
+        modifiers = event.modifiers()
+
+        # Ctrl+D: Toggle developer mode
+        if key == Qt.Key_D and modifiers & Qt.ControlModifier:
+            self.toggle_developer_mode()
+            return
 
         if key == Qt.Key_Q or key == Qt.Key_Escape:
             # Quit
@@ -553,6 +587,10 @@ class DriverAppWindow(QMainWindow):
             self.set_view_mode(self.app.view_mode)
             self.control_panel.set_yolo_enabled(self.app.yolo_enabled)
             self.control_panel.set_audio_enabled(self.app.audio_enabled)
+
+        # Update developer panel if enabled
+        if self.developer_mode and self.developer_panel:
+            self.developer_panel.update_metrics(metrics)
 
     def update_frame(self, frame: np.ndarray):
         """Update video display (called from main loop)"""
