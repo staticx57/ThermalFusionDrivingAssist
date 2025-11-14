@@ -1,21 +1,33 @@
 """
 Distance Estimation for Thermal/RGB ADAS
 Uses monocular camera distance estimation via bounding box geometry
+WITH LIDAR INTEGRATION for enhanced accuracy
 
-Methods:
-1. Known object height method (simple, 85-90% accuracy)
-2. Camera calibration method (requires calibration, 90-95% accuracy)
+Methods (in priority order):
+1. LiDAR distance (±2cm accuracy, 98% confidence) - PHASE 1 ACTIVE
+2. Known object height method (simple, 85-90% accuracy)
+3. Camera calibration method (requires calibration, 90-95% accuracy)
+
+Phase 1 Integration: LiDAR distance override
+- Query LiDAR for distance in detection ROI
+- Use LiDAR distance if available (3+ points in region)
+- Fall back to monocular camera if LiDAR unavailable
 
 References:
 - FLIR thermal distance estimation: 95% accuracy within 20m
 - Monocular camera geometry: standard pinhole camera model
+- Hesai Pandar 40P: ±2cm accuracy, 0.3-200m range
 """
 import numpy as np
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, TYPE_CHECKING
 import logging
 from dataclasses import dataclass
 
 from object_detector import Detection
+
+# Type hint only (avoid circular import)
+if TYPE_CHECKING:
+    from pandar_integration import PandarIntegration
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,8 +85,12 @@ class DistanceEstimator:
                  camera_focal_length: float = 640.0,  # pixels (typical for 640px width)
                  camera_height: float = 1.2,  # meters (camera mounting height)
                  frame_height: int = 512,
+                 frame_width: int = 640,  # NEW: needed for LiDAR FOV calculation
                  thermal_mode: bool = False,
-                 calibration_file: Optional[str] = None):
+                 calibration_file: Optional[str] = None,
+                 lidar: Optional['PandarIntegration'] = None,  # NEW: LiDAR integration
+                 camera_fov_h: float = 60.0,  # NEW: camera horizontal FOV (degrees)
+                 camera_fov_v: float = 45.0):  # NEW: camera vertical FOV (degrees)
         """
         Initialize distance estimator
 
@@ -82,13 +98,23 @@ class DistanceEstimator:
             camera_focal_length: Focal length in pixels (fx from camera intrinsics)
             camera_height: Height of camera above ground (meters)
             frame_height: Camera frame height in pixels
+            frame_width: Camera frame width in pixels
             thermal_mode: True if using thermal camera (enables thermal-specific tuning)
             calibration_file: Optional camera calibration JSON
+            lidar: Optional PandarIntegration instance for enhanced distance accuracy
+            camera_fov_h: Camera horizontal field of view in degrees
+            camera_fov_v: Camera vertical field of view in degrees
         """
         self.focal_length = camera_focal_length
         self.camera_height = camera_height
         self.frame_height = frame_height
+        self.frame_width = frame_width  # NEW
         self.thermal_mode = thermal_mode
+
+        # LiDAR integration (Phase 1: Distance override)
+        self.lidar = lidar  # NEW
+        self.camera_fov_h = camera_fov_h  # NEW
+        self.camera_fov_v = camera_fov_v  # NEW
 
         # Load calibration if provided
         self.calibrated = False
@@ -106,12 +132,20 @@ class DistanceEstimator:
         self.distance_history: Dict[str, list] = {}
         self.history_length = 5  # frames
 
+        # Statistics
+        self.lidar_hits = 0  # Count of successful LiDAR measurements
+        self.camera_fallbacks = 0  # Count of camera fallbacks
+
+        lidar_status = "ENABLED" if lidar else "DISABLED"
         logger.info(f"DistanceEstimator initialized: focal_length={camera_focal_length}px, "
-                   f"camera_height={camera_height}m, thermal_mode={thermal_mode}")
+                   f"camera_height={camera_height}m, thermal_mode={thermal_mode}, "
+                   f"LiDAR={lidar_status}")
 
     def estimate_distance(self, detection: Detection) -> Optional[DistanceEstimate]:
         """
         Estimate distance to detected object
+
+        Phase 1 Integration: Try LiDAR first, fall back to camera if unavailable
 
         Args:
             detection: Object detection with bounding box
@@ -119,6 +153,26 @@ class DistanceEstimator:
         Returns:
             DistanceEstimate or None if cannot estimate
         """
+        # PHASE 1: Try LiDAR first (±2cm accuracy)
+        if self.lidar and self.lidar.connected:
+            lidar_distance = self._try_lidar_distance(detection)
+            if lidar_distance is not None:
+                self.lidar_hits += 1
+                # Calculate TTC if moving
+                ttc = None
+                if self.vehicle_speed_ms > 0.5:
+                    ttc = lidar_distance / self.vehicle_speed_ms
+
+                return DistanceEstimate(
+                    distance_m=lidar_distance,
+                    confidence=0.98,  # LiDAR is highly accurate
+                    method="lidar",
+                    time_to_collision=ttc
+                )
+
+        # FALLBACK: Use monocular camera estimation
+        self.camera_fallbacks += 1
+
         # Check if we have known height for this object type
         if detection.class_name not in self.OBJECT_HEIGHTS:
             # Try motion/unknown objects with lower confidence
@@ -133,6 +187,36 @@ class DistanceEstimator:
 
         # Estimate using bounding box height
         return self._estimate_by_height(detection, real_height, base_confidence)
+
+    def _try_lidar_distance(self, detection: Detection) -> Optional[float]:
+        """
+        Try to get LiDAR distance for detection bounding box
+
+        Args:
+            detection: Object detection with bounding box
+
+        Returns:
+            Distance in meters or None if no LiDAR data available
+        """
+        if not self.lidar or not self.lidar.connected:
+            return None
+
+        try:
+            # Query LiDAR for distance in detection ROI
+            distance_m = self.lidar.get_distance_for_bbox(
+                bbox=detection.bbox,
+                image_width=self.frame_width,
+                image_height=self.frame_height,
+                camera_fov_h=self.camera_fov_h,
+                camera_fov_v=self.camera_fov_v,
+                camera_pitch=0.0  # Assume camera level (can be adjusted)
+            )
+
+            return distance_m
+
+        except Exception as e:
+            logger.warning(f"LiDAR query error: {e}")
+            return None
 
     def _estimate_by_height(self, detection: Detection,
                            real_height_m: float,
@@ -241,15 +325,27 @@ class DistanceEstimator:
             return ("FAR", "blue")
 
     def get_statistics(self) -> Dict:
-        """Get estimator statistics"""
-        return {
+        """Get estimator statistics (including LiDAR performance)"""
+        stats = {
             'focal_length': self.focal_length,
             'camera_height': self.camera_height,
             'thermal_mode': self.thermal_mode,
             'calibrated': self.calibrated,
             'vehicle_speed_kmh': self.vehicle_speed_ms * 3.6,
-            'tracked_objects': len(self.distance_history)
+            'tracked_objects': len(self.distance_history),
+            'lidar_enabled': self.lidar is not None and self.lidar.connected,
+            'lidar_hits': self.lidar_hits,
+            'camera_fallbacks': self.camera_fallbacks
         }
+
+        # Calculate LiDAR usage percentage
+        total_measurements = self.lidar_hits + self.camera_fallbacks
+        if total_measurements > 0:
+            stats['lidar_usage_percent'] = (self.lidar_hits / total_measurements) * 100
+        else:
+            stats['lidar_usage_percent'] = 0.0
+
+        return stats
 
 
 # Example usage

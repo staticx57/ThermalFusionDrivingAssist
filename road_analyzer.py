@@ -88,7 +88,8 @@ class RoadAnalyzer:
     def __init__(self, frame_width: int = 640, frame_height: int = 512,
                  enable_distance: bool = True,
                  enable_audio: bool = True,
-                 thermal_mode: bool = False):
+                 thermal_mode: bool = False,
+                 lidar=None):  # NEW: LiDAR integration (Phase 1)
         """
         Initialize road analyzer
 
@@ -98,6 +99,7 @@ class RoadAnalyzer:
             enable_distance: Enable distance estimation
             enable_audio: Enable audio alerts
             thermal_mode: True if using thermal camera (affects distance estimation)
+            lidar: Optional PandarIntegration instance for enhanced distance accuracy
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
@@ -110,16 +112,19 @@ class RoadAnalyzer:
         # Alert cooldown to prevent spam (seconds)
         self.alert_cooldown = 1.0
 
-        # Distance estimator (NEW)
+        # Distance estimator (NEW - Phase 1: LiDAR integration)
         self.distance_estimator = None
         if enable_distance and DISTANCE_AVAILABLE:
             self.distance_estimator = DistanceEstimator(
                 camera_focal_length=640.0,
                 camera_height=1.2,
                 frame_height=frame_height,
-                thermal_mode=thermal_mode
+                frame_width=frame_width,  # NEW
+                thermal_mode=thermal_mode,
+                lidar=lidar  # NEW: Pass LiDAR instance for Phase 1 integration
             )
-            logger.info("Distance estimation enabled")
+            lidar_status = "WITH LiDAR" if lidar and lidar.connected else "camera only"
+            logger.info(f"Distance estimation enabled ({lidar_status})")
 
         # Audio alert system (NEW)
         self.audio_system = None
