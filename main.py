@@ -87,6 +87,10 @@ class ThermalRoadMonitorFusion:
         self.audio_enabled = getattr(args, 'enable_audio', True)
         self.distance_enabled = getattr(args, 'enable_distance', True)
 
+        # GUI state (dual-mode GUI)
+        self.show_info_panel = False
+        self.developer_mode = False  # Start in simple mode
+
         # Model management
         self.available_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt']
         self.current_model = getattr(args, 'model', 'yolov8s.pt')
@@ -526,6 +530,25 @@ class ThermalRoadMonitorFusion:
                     self.fusion_processor.set_alpha(self.fusion_alpha)
                     logger.info(f"Fusion alpha set to: {self.fusion_alpha}")
 
+            elif button_id == 'audio_toggle':
+                # Toggle audio alerts (v3.0)
+                self.audio_enabled = not self.audio_enabled
+                if self.analyzer:
+                    self.analyzer.set_audio_enabled(self.audio_enabled)
+                logger.info(f"Audio alerts {'enabled' if self.audio_enabled else 'disabled'}")
+
+            elif button_id == 'info_toggle':
+                # Toggle info panel
+                self.show_info_panel = not self.show_info_panel
+                logger.info(f"Info panel {'shown' if self.show_info_panel else 'hidden'}")
+
+            elif button_id == 'dev_mode_toggle':
+                # Toggle developer mode
+                self.developer_mode = self.gui.toggle_developer_mode()
+                mode_name = "DEVELOPER" if self.developer_mode else "SIMPLE"
+                logger.info(f"GUI mode switched to: {mode_name}")
+                logger.info(f"  {'All controls available for configuration' if self.developer_mode else 'Clean interface for driving'}")
+
     def run(self):
         """Main application loop"""
         logger.info("Starting main loop...")
@@ -695,7 +718,11 @@ class ThermalRoadMonitorFusion:
                         current_model=self.current_model,
                         fusion_mode=self.fusion_mode,
                         fusion_alpha=self.fusion_alpha,
-                        audio_enabled=self.audio_enabled  # v3.0
+                        audio_enabled=self.audio_enabled,  # v3.0
+                        show_info=self.show_info_panel,  # NEW
+                        thermal_available=self.thermal_connected,  # NEW
+                        detection_count=len(detections),  # NEW
+                        lidar_available=False  # NEW (will be True when LiDAR integrated)
                     )
 
                     key = self.gui.display(display_frame)
@@ -764,6 +791,101 @@ class ThermalRoadMonitorFusion:
             if self.analyzer:
                 self.analyzer.set_audio_enabled(self.audio_enabled)
             logger.info(f"Audio alerts {'enabled' if self.audio_enabled else 'disabled'}")
+        elif key == ord('i') or key == ord('I'):
+            # Toggle info panel
+            self.show_info_panel = not self.show_info_panel
+            logger.info(f"Info panel {'shown' if self.show_info_panel else 'hidden'}")
+        elif key == ord('h') or key == ord('H'):
+            # Show help overlay (quick reference)
+            self._show_help_overlay()
+        elif key == ord('b') or key == ord('B'):
+            # Toggle detection boxes (moved from button in simple mode)
+            self.show_detections = not self.show_detections
+            logger.info(f"Detection boxes {'shown' if self.show_detections else 'hidden'}")
+        elif key == ord('m') or key == ord('M'):
+            # Cycle models (moved from button in simple mode)
+            if not self.model_switching and self.detector and self.detector.detection_mode == 'model':
+                self.model_switching = True
+                self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
+                new_model = self.available_models[self.current_model_index]
+                self.current_model = new_model
+                logger.info(f"Switching to model: {new_model}")
+                self.detector.load_yolo_model(new_model)
+                self.model_switching = False
+                logger.info(f"Model switched to: {new_model}")
+
+    def _show_help_overlay(self):
+        """Show keyboard shortcuts help overlay"""
+        import numpy as np
+
+        # Create semi-transparent overlay
+        help_screen = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        # Title
+        title = "KEYBOARD SHORTCUTS"
+        cv2.putText(help_screen, title, (400, 80),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 3)
+
+        # Shortcuts (2 columns)
+        shortcuts_left = [
+            ("V", "Cycle view modes"),
+            ("D", "Toggle detection boxes"),
+            ("Y", "Toggle YOLO"),
+            ("A", "Toggle audio"),
+            ("C", "Cycle thermal palette"),
+            ("M", "Cycle models"),
+        ]
+
+        shortcuts_right = [
+            ("I", "Toggle info panel"),
+            ("B", "Toggle boxes"),
+            ("S", "Screenshot"),
+            ("P", "Print stats"),
+            ("F", "Fullscreen"),
+            ("H", "This help"),
+            ("Q/ESC", "Quit"),
+        ]
+
+        # Draw left column
+        y = 150
+        for key, desc in shortcuts_left:
+            cv2.putText(help_screen, f"{key}", (200, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.putText(help_screen, f"- {desc}", (280, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+            y += 60
+
+        # Draw right column
+        y = 150
+        for key, desc in shortcuts_right:
+            cv2.putText(help_screen, f"{key}", (700, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.putText(help_screen, f"- {desc}", (780, y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+            y += 60
+
+        # GUI modes section
+        y += 40
+        cv2.putText(help_screen, "GUI MODES:", (200, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (100, 150, 255), 2)
+        y += 50
+        cv2.putText(help_screen, "SIMPLE MODE - Clean interface for driving (default)", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        y += 40
+        cv2.putText(help_screen, "DEV MODE - Full controls for configuration when stationary", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        y += 50
+        cv2.putText(help_screen, "Click 'DEV MODE' button or 'SIMPLE' button to toggle", (220, y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 100), 1)
+
+        # Footer
+        cv2.putText(help_screen, "Press any key to close", (450, 650),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (100, 100, 100), 1)
+
+        # Display and wait for key
+        if self.gui:
+            self.gui.display(help_screen)
+            cv2.waitKey(0)
 
     def shutdown(self):
         """Cleanup resources"""

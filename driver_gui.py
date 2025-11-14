@@ -38,6 +38,7 @@ class DriverGUI:
         self.is_fullscreen = False
         self.scale_factor = scale_factor
         self.view_mode = ViewMode.THERMAL_ONLY  # Default to thermal
+        self.developer_mode = False  # Start in simple mode (default)
 
         # Modern color scheme
         self.colors = {
@@ -412,7 +413,11 @@ class DriverGUI:
                                    current_model: str = "yolov8s.pt",
                                    fusion_mode: str = "alpha_blend",
                                    fusion_alpha: float = 0.5,
-                                   audio_enabled: bool = True) -> np.ndarray:
+                                   audio_enabled: bool = True,
+                                   show_info: bool = False,
+                                   thermal_available: bool = True,
+                                   detection_count: int = 0,
+                                   lidar_available: bool = False) -> np.ndarray:
         """
         Render frame with enhanced GUI controls
 
@@ -432,6 +437,11 @@ class DriverGUI:
             current_model: YOLO model
             fusion_mode: Fusion algorithm
             fusion_alpha: Fusion blend ratio
+            audio_enabled: Audio alerts on/off (v3.0)
+            show_info: Show info panel (NEW)
+            thermal_available: Thermal camera status (NEW)
+            detection_count: Number of detections (NEW)
+            lidar_available: LiDAR status (NEW)
 
         Returns:
             Rendered frame with controls
@@ -442,8 +452,8 @@ class DriverGUI:
             detections, alerts, metrics, show_detections
         )
 
-        # Add enhanced control buttons
-        self._draw_enhanced_controls(canvas, {
+        # Build params dict for GUI elements
+        params = {
             'palette': current_palette,
             'yolo': yolo_enabled,
             'boxes': show_detections,
@@ -455,26 +465,93 @@ class DriverGUI:
             'fusion_mode': fusion_mode,
             'fusion_alpha': fusion_alpha,
             'rgb_available': rgb_frame is not None,
-            'audio_enabled': audio_enabled  # v3.0
-        })
+            'audio_enabled': audio_enabled,
+            'show_info': show_info,
+            'thermal_available': thermal_available,
+            'detection_count': detection_count,
+            'lidar_available': lidar_available,
+            'fps': metrics.get('fps', 0)
+        }
+
+        # Add enhanced control buttons
+        self._draw_enhanced_controls(canvas, params)
+
+        # Draw info panel if enabled
+        self._draw_info_panel(canvas, params)
 
         return canvas
 
     def _draw_enhanced_controls(self, canvas: np.ndarray, params: dict):
         """
-        Draw enhanced control panel with better layout
+        Draw control panel - DUAL MODE: Simple (4 buttons) or Developer (all buttons)
 
         Args:
             canvas: Frame to draw on
             params: GUI parameters dictionary
         """
-        gui_scale = self.scale_factor * 0.85  # Slightly larger than before
-        button_height = int(35 * gui_scale)   # Taller buttons
-        button_spacing = int(10 * gui_scale)  # More spacing
-        top_margin = int(50 * gui_scale)      # Lower to avoid view mode text
+        gui_scale = self.scale_factor * 0.9
+        button_spacing = int(15 * gui_scale)
+        top_margin = int(45 * gui_scale)
         left_margin = int(15 * gui_scale)
 
         self.control_buttons = {}
+
+        if self.developer_mode:
+            # DEVELOPER MODE: All buttons (2 rows) - for configuration when stationary
+            self._draw_developer_controls(canvas, params, gui_scale, button_spacing, top_margin, left_margin)
+        else:
+            # SIMPLE MODE: 4 essential buttons + DEV toggle - for driving
+            self._draw_simple_controls(canvas, params, gui_scale, button_spacing, top_margin, left_margin)
+
+    def _draw_simple_controls(self, canvas: np.ndarray, params: dict,
+                             gui_scale: float, button_spacing: int,
+                             top_margin: int, left_margin: int):
+        """
+        Draw SIMPLE mode controls (4 buttons + DEV MODE toggle)
+        Clean interface for driving - easy to use
+        """
+        button_width = int(160 * gui_scale)    # Wider buttons for easier clicking
+        button_height = int(50 * gui_scale)    # Taller buttons
+
+        current_x = left_margin
+        button_y = top_margin
+
+        # Single row - 4 essential buttons + DEV toggle
+        buttons = [
+            ('view_mode_cycle', self._get_view_text(params['view_mode']),
+             button_width, self.colors['button_active_alt']),
+
+            ('yolo_toggle', f"DETECT: {'ON ✓' if params['yolo'] else 'OFF'}",
+             button_width,
+             self.colors['button_active'] if params['yolo'] else self.colors['button_bg']),
+
+            ('audio_toggle', f"AUDIO: {'ON 🔊' if params.get('audio_enabled', True) else 'OFF 🔇'}",
+             button_width,
+             self.colors['button_active'] if params.get('audio_enabled', True) else self.colors['button_bg']),
+
+            ('info_toggle', f"INFO {'ℹ️' if params.get('show_info', False) else ''}",
+             int(button_width * 0.7),
+             self.colors['button_active_alt'] if params.get('show_info', False) else self.colors['button_bg']),
+
+            # DEV MODE toggle (right side, orange accent)
+            ('dev_mode_toggle', "🛠️ DEV MODE",
+             int(button_width * 0.9),
+             self.colors['warning']),  # Orange to indicate it's special
+        ]
+
+        for btn_id, text, width, bg_color in buttons:
+            self._draw_button_simple(canvas, current_x, button_y, width,
+                                    button_height, text, btn_id, gui_scale, bg_color)
+            current_x += width + button_spacing
+
+    def _draw_developer_controls(self, canvas: np.ndarray, params: dict,
+                                 gui_scale: float, button_spacing: int,
+                                 top_margin: int, left_margin: int):
+        """
+        Draw DEVELOPER mode controls (all buttons, 2 rows)
+        Full control interface for configuration/debugging when stationary
+        """
+        button_height = int(35 * gui_scale)
         current_x = left_margin
         button_y = top_margin
 
@@ -516,11 +593,110 @@ class DriverGUI:
                 ('fusion_alpha_adjust', f"α: {params['fusion_alpha']:.1f}", 70, None),
             ])
 
+        # Add info toggle and DEV MODE toggle
+        buttons_row2.append(('info_toggle', f"INFO: {'ON' if params.get('show_info', False) else 'OFF'}", 85,
+                            self.colors['button_active'] if params.get('show_info', False) else self.colors['button_bg']))
+        buttons_row2.append(('dev_mode_toggle', "SIMPLE", 95, self.colors['accent_green']))  # Green = go to simple mode
+
         for btn_id, text, width, bg_color in buttons_row2:
             w = int(width * gui_scale)
             self._draw_button_simple(canvas, current_x, button_y, w, button_height,
                                     text, btn_id, gui_scale, bg_color)
             current_x += w + button_spacing
+
+    def _get_view_text(self, view_mode: str) -> str:
+        """Get display text for view mode button with icons"""
+        mode_text = {
+            'thermal': 'VIEW: Thermal',
+            'rgb': 'VIEW: RGB',
+            'fusion': 'VIEW: Fusion',
+            'side_by_side': 'VIEW: Split',
+            'picture_in_picture': 'VIEW: PIP',
+            'pip': 'VIEW: PIP'
+        }
+        return mode_text.get(view_mode, f'VIEW: {view_mode[:6].upper()}')
+
+    def _draw_info_panel(self, canvas: np.ndarray, params: dict):
+        """
+        Draw info panel (top-right) when enabled
+        Shows sensor status, system info, shortcuts
+        """
+        if not params.get('show_info', False):
+            return
+
+        # Panel dimensions
+        panel_w = int(320 * self.scale_factor)
+        panel_h = int(400 * self.scale_factor)
+        margin = int(15 * self.scale_factor)
+
+        # Position: top-right corner
+        canvas_h, canvas_w = canvas.shape[:2]
+        x = canvas_w - panel_w - margin
+        y = int(120 * self.scale_factor)  # Below top buttons
+
+        # Semi-transparent background
+        overlay = canvas[y:y+panel_h, x:x+panel_w].copy()
+        bg = np.full((panel_h, panel_w, 3), self.colors['panel_bg'], dtype=np.uint8)
+        cv2.addWeighted(bg, 0.85, overlay, 0.15, 0, overlay)
+        canvas[y:y+panel_h, x:x+panel_w] = overlay
+
+        # Border
+        cv2.rectangle(canvas, (x, y), (x + panel_w, y + panel_h),
+                     self.colors['panel_accent'], 2)
+
+        # Content
+        text_y = y + int(35 * self.scale_factor)
+        line_height = int(30 * self.scale_factor)
+        text_x = x + int(15 * self.scale_factor)
+
+        def draw_line(text, color=None):
+            nonlocal text_y
+            if color is None:
+                color = self.colors['text']
+            cv2.putText(canvas, text, (text_x, text_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_small,
+                       color, self.font_thickness)
+            text_y += line_height
+
+        # Title
+        draw_line("SYSTEM INFO", self.colors['accent_cyan'])
+        text_y += int(5 * self.scale_factor)
+
+        # Sensors
+        draw_line("SENSORS:", self.colors['text_dim'])
+
+        # RGB
+        rgb_status = "  Connected" if params.get('rgb_available') else "  Not found"
+        rgb_color = self.colors['success'] if params.get('rgb_available') else self.colors['text_dim']
+        draw_line(f"  RGB:{rgb_status}", rgb_color)
+
+        # Thermal (connected if we're running)
+        thermal_status = "  Connected" if params.get('thermal_available', True) else "  Not found"
+        thermal_color = self.colors['success'] if params.get('thermal_available', True) else self.colors['text_dim']
+        draw_line(f"  Thermal:{thermal_status}", thermal_color)
+
+        # LiDAR (future)
+        lidar_status = "  Connected" if params.get('lidar_available', False) else "  Ready"
+        lidar_color = self.colors['success'] if params.get('lidar_available', False) else self.colors['text_dim']
+        draw_line(f"  LiDAR:{lidar_status}", lidar_color)
+
+        text_y += int(10 * self.scale_factor)
+
+        # System stats
+        draw_line("SYSTEM:", self.colors['text_dim'])
+        draw_line(f"  FPS: {params.get('fps', 0):.0f}")
+        draw_line(f"  Objects: {params.get('detection_count', 0)}")
+        draw_line(f"  Device: {params['device'].upper()}")
+        draw_line(f"  Model: {params['model'][:14]}")
+
+        text_y += int(10 * self.scale_factor)
+
+        # Shortcuts
+        draw_line("SHORTCUTS:", self.colors['text_dim'])
+        draw_line("  H - Help", self.colors['accent_green'])
+        draw_line("  C - Palette", self.colors['accent_green'])
+        draw_line("  M - Model", self.colors['accent_green'])
+        draw_line("  S - Screenshot", self.colors['accent_green'])
 
     def _draw_button_simple(self, canvas: np.ndarray, x: int, y: int, w: int, h: int,
                            text: str, button_id: str, gui_scale: float, bg_color: tuple = None):
@@ -855,3 +1031,8 @@ class DriverGUI:
         else:
             cv2.setWindowProperty(self.window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
             self.is_fullscreen = True
+
+    def toggle_developer_mode(self):
+        """Toggle between Simple and Developer GUI modes"""
+        self.developer_mode = not self.developer_mode
+        return self.developer_mode
