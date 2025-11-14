@@ -416,6 +416,7 @@ class DriverGUI:
                                    audio_enabled: bool = True,
                                    show_info: bool = False,
                                    thermal_available: bool = True,
+                                   rgb_available: bool = False,
                                    detection_count: int = 0,
                                    lidar_available: bool = False) -> np.ndarray:
         """
@@ -464,7 +465,7 @@ class DriverGUI:
             'view_mode': self.view_mode,
             'fusion_mode': fusion_mode,
             'fusion_alpha': fusion_alpha,
-            'rgb_available': rgb_frame is not None,
+            'rgb_available': rgb_available,
             'audio_enabled': audio_enabled,
             'show_info': show_info,
             'thermal_available': thermal_available,
