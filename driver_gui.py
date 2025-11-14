@@ -501,6 +501,8 @@ class DriverGUI:
         buttons_row2 = [
             ('buffer_flush_toggle', f"FLUSH: {'ON' if params['buffer_flush'] else 'OFF'}", 95,
              self.colors['button_active'] if params['buffer_flush'] else self.colors['button_bg']),
+            ('audio_toggle', f"AUDIO: {'ON' if params.get('audio_enabled', True) else 'OFF'}", 95,
+             self.colors['button_active'] if params.get('audio_enabled', True) else self.colors['button_bg']),
             ('frame_skip_cycle', f"SKIP: 1/{params['frame_skip']+1}", 85, None),
             ('view_mode_cycle', f"VIEW: {params['view_mode'][:4].upper()}", 100, self.colors['button_active_alt']),
         ]
@@ -586,10 +588,29 @@ class DriverGUI:
             x1, y1, x2, y2 = det.bbox
             color = color_map.get(det.class_name, (0, 255, 255))
             box_thickness = max(3, int(4 * self.scale_factor))
+
+            # Color-code box based on distance (NEW)
+            if det.distance_estimate is not None:
+                distance_m = det.distance_estimate
+                if distance_m < 5.0:
+                    color = (0, 0, 255)  # RED - IMMEDIATE
+                    box_thickness = max(4, int(6 * self.scale_factor))
+                elif distance_m < 10.0:
+                    color = (0, 165, 255)  # ORANGE - VERY CLOSE
+                    box_thickness = max(3, int(5 * self.scale_factor))
+                elif distance_m < 20.0:
+                    color = (0, 255, 255)  # YELLOW - CLOSE
+                else:
+                    color = (0, 255, 0)  # GREEN - SAFE
+
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, box_thickness)
 
-            # Label
-            label = f"{det.class_name.upper()}: {det.confidence:.0%}"
+            # Label with distance info (NEW)
+            if det.distance_estimate is not None:
+                label = f"{det.class_name.upper()}: {det.distance_estimate:.1f}m ({det.confidence:.0%})"
+            else:
+                label = f"{det.class_name.upper()}: {det.confidence:.0%}"
+
             (label_w, label_h), baseline = cv2.getTextSize(
                 label, cv2.FONT_HERSHEY_SIMPLEX, self.font_scale_medium, self.font_thickness_bold)
             padding = int(8 * self.scale_factor)
