@@ -439,29 +439,25 @@ class ThermalRoadMonitorFusion:
             use_opencv = getattr(self.args, 'use_opencv_gui', False)
             use_qt = not use_opencv and self.qt_app is not None
 
-            if use_qt:
-                # Qt GUI - Professional interface
-                try:
-                    from driver_gui_qt import DriverAppWindow
-                    logger.info("Using Qt GUI (professional mode)")
-                    self.gui = DriverAppWindow(app=self)  # Pass self reference for button callbacks
-                    self.gui_type = 'qt'
-                    # Qt GUI will be shown in run() method
-                    logger.info("Qt GUI window created successfully with app reference")
-                except ImportError as e:
-                    logger.error(f"PyQt5 import error: {e}")
-                    logger.error("Install with: pip3 install -r requirements_qt.txt")
-                    logger.info("Falling back to OpenCV GUI...")
-                    use_qt = False
-                except Exception as e:
-                    logger.error(f"Qt GUI creation error: {e}")
-                    logger.info("Falling back to OpenCV GUI...")
-                    use_qt = False
+            logger.info(f"GUI Selection: use_opencv={use_opencv}, qt_app={'present' if self.qt_app else 'None'}, use_qt={use_qt}")
 
-            if not use_qt:
-                # OpenCV GUI - Fallback
+            if use_qt:
+                # Qt GUI - Professional interface (v3.x default)
+                from driver_gui_qt import DriverAppWindow
+                logger.info("✓ Using Qt GUI (professional mode)")
+                self.gui = DriverAppWindow(app=self)  # Pass self reference for button callbacks
+                self.gui_type = 'qt'
+                # Qt GUI will be shown in run() method
+                logger.info("✓ Qt GUI window created successfully with app reference")
+
+            else:
+                # OpenCV GUI - Legacy fallback (deprecated)
+                logger.warning("=" * 70)
+                logger.warning("Using LEGACY OpenCV GUI (deprecated)")
+                logger.warning("For best experience, use Qt GUI (default)")
+                logger.warning("Qt GUI features: multithreading, developer mode, ADAS alerts")
+                logger.warning("=" * 70)
                 from driver_gui import DriverGUI
-                logger.info("Using OpenCV GUI")
                 scale_factor = getattr(self.args, 'scale', 2.0)
                 self.gui = DriverGUI(
                     window_name="Thermal Fusion Driving Assist",
