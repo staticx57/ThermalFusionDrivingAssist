@@ -234,7 +234,6 @@ class ControlPanel(QWidget):
     view_mode_clicked = pyqtSignal()
     yolo_toggled = pyqtSignal(bool)
     audio_toggled = pyqtSignal(bool)
-    info_toggled = pyqtSignal(bool)
     theme_clicked = pyqtSignal()
     retry_sensors_clicked = pyqtSignal()
 
@@ -255,7 +254,6 @@ class ControlPanel(QWidget):
         self.view_btn = QPushButton("🎥 View: Thermal")
         self.yolo_btn = QPushButton("🎯 YOLO: OFF")
         self.audio_btn = QPushButton("🔊 Audio: ON")
-        self.info_btn = QPushButton("ℹ️ Info")
         self.theme_btn = QPushButton("🎨 Theme: Auto")
         self.retry_btn = QPushButton("🔄 Retry Sensors")
 
@@ -282,7 +280,6 @@ class ControlPanel(QWidget):
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
         self.audio_btn.setCheckable(True)
-        self.info_btn.setCheckable(True)
         self.buffer_flush_btn.setCheckable(True)
         self.detection_btn.setCheckable(True)
 
@@ -293,7 +290,6 @@ class ControlPanel(QWidget):
         self.view_btn.clicked.connect(self.view_mode_clicked.emit)
         self.yolo_btn.toggled.connect(self._on_yolo_toggled)
         self.audio_btn.toggled.connect(self._on_audio_toggled)
-        self.info_btn.toggled.connect(self._on_info_toggled)
         self.theme_btn.clicked.connect(self.theme_clicked.emit)
         self.retry_btn.clicked.connect(self.retry_sensors_clicked.emit)
 
@@ -307,28 +303,42 @@ class ControlPanel(QWidget):
         self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
         self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
 
-        # Layout
-        layout = QHBoxLayout()
-        layout.addWidget(self.view_btn)
-        layout.addWidget(self.yolo_btn)
-        layout.addWidget(self.audio_btn)
-        layout.addWidget(self.info_btn)
+        # Main layout: Standard controls in horizontal row
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.view_btn)
+        main_layout.addWidget(self.yolo_btn)
+        main_layout.addWidget(self.audio_btn)
+        main_layout.addStretch()  # Push theme/retry to right
+        main_layout.addWidget(self.theme_btn)
+        main_layout.addWidget(self.retry_btn)
 
-        # Developer controls row 1 (camera & detection)
-        layout.addWidget(self.palette_btn)
-        layout.addWidget(self.detection_btn)
-        layout.addWidget(self.device_btn)
-        layout.addWidget(self.model_btn)
+        # Developer controls: Vertical grid layout (2 columns x 4 rows)
+        dev_controls_widget = QWidget()
+        dev_grid = QGridLayout()
+        dev_grid.setSpacing(5)
 
-        # Developer controls row 2 (performance & view)
-        layout.addWidget(self.buffer_flush_btn)
-        layout.addWidget(self.frame_skip_btn)
-        layout.addWidget(self.fusion_mode_btn)
-        layout.addWidget(self.fusion_alpha_btn)
+        # Column 1: Camera & Detection
+        dev_grid.addWidget(self.palette_btn, 0, 0)
+        dev_grid.addWidget(self.detection_btn, 1, 0)
+        dev_grid.addWidget(self.device_btn, 2, 0)
+        dev_grid.addWidget(self.model_btn, 3, 0)
 
-        layout.addStretch()  # Push theme/retry to right
-        layout.addWidget(self.theme_btn)
-        layout.addWidget(self.retry_btn)
+        # Column 2: Performance & View
+        dev_grid.addWidget(self.buffer_flush_btn, 0, 1)
+        dev_grid.addWidget(self.frame_skip_btn, 1, 1)
+        dev_grid.addWidget(self.fusion_mode_btn, 2, 1)
+        dev_grid.addWidget(self.fusion_alpha_btn, 3, 1)
+
+        dev_controls_widget.setLayout(dev_grid)
+        dev_controls_widget.hide()  # Hidden by default
+        self.dev_controls_widget = dev_controls_widget
+
+        # Combine: Main controls + dev controls
+        layout = QVBoxLayout()
+        layout.addLayout(main_layout)
+        layout.addWidget(dev_controls_widget)
+        layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
 
         self.setLayout(layout)
 
@@ -341,11 +351,6 @@ class ControlPanel(QWidget):
         """Update button text when toggled"""
         self.audio_btn.setText(f"{'🔊' if checked else '🔇'} Audio: {'ON' if checked else 'OFF'}")
         self.audio_toggled.emit(checked)
-
-    def _on_info_toggled(self, checked: bool):
-        """Update button text when toggled"""
-        self.info_btn.setText(f"ℹ️ Info{'✓' if checked else ''}")
-        self.info_toggled.emit(checked)
 
     def update_view_mode(self, mode: ViewMode):
         """Update view mode button text"""
@@ -419,26 +424,12 @@ class ControlPanel(QWidget):
         self.fusion_alpha_btn.setText(f"⚖️ α: {alpha:.2f}")
 
     def show_developer_controls(self, show: bool):
-        """Show or hide developer control buttons"""
+        """Show or hide developer control buttons widget"""
         if show:
-            self.buffer_flush_btn.show()
-            self.frame_skip_btn.show()
-            self.palette_btn.show()
-            self.detection_btn.show()
-            self.device_btn.show()
-            self.model_btn.show()
-            self.fusion_mode_btn.show()
-            self.fusion_alpha_btn.show()
-            logger.info("Developer controls shown (all 8 controls)")
+            self.dev_controls_widget.show()
+            logger.info("Developer controls shown (8 controls in 2x4 grid)")
         else:
-            self.buffer_flush_btn.hide()
-            self.frame_skip_btn.hide()
-            self.palette_btn.hide()
-            self.detection_btn.hide()
-            self.device_btn.hide()
-            self.model_btn.hide()
-            self.fusion_mode_btn.hide()
-            self.fusion_alpha_btn.hide()
+            self.dev_controls_widget.hide()
             logger.info("Developer controls hidden")
 
 
@@ -448,40 +439,46 @@ class ControlPanel(QWidget):
 
 class InfoPanel(QLabel):
     """
-    Semi-transparent overlay showing metrics
-    Positioned over video widget
+    Minimal ADAS-compliant status overlay
+    Shows only essential driving-relevant information:
+    - System health (FPS)
+    - Threat awareness (Active detections)
+    - Sensor status (Critical alerts only)
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("info_panel")
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.setWordWrap(True)
+        self.setWordWrap(False)
 
-        # Set minimum size
-        self.setMinimumSize(250, 150)
+        # Compact size - minimal intrusion
+        self.setMinimumSize(180, 60)
+        self.setMaximumSize(200, 80)
 
-        # Position in top-right corner (will be adjusted in parent resize)
-        self.move(parent.width() - 270 if parent else 0, 10)
+        # Top-left corner (SAE J2400: avoid center placement for non-critical info)
+        self.move(10, 10)
 
-        # Initially hidden
-        self.hide()
+        # Always visible in simple mode - essential safety info
+        self.show()
 
     def update_info(self, fps: float, detections: int,
-                    thermal_connected: bool, rgb_connected: bool,
-                    lidar_connected: bool = False):
-        """Update information display"""
-        info_text = f"""
-<b>Performance</b><br>
-FPS: {fps:.1f}<br>
-Detections: {detections}<br>
-<br>
-<b>Sensors</b><br>
-Thermal: {'✓ Connected' if thermal_connected else '✗ Disconnected'}<br>
-RGB: {'✓ Connected' if rgb_connected else '✗ Disconnected'}<br>
-LiDAR: {'✓ Connected' if lidar_connected else '✗ Not Available'}<br>
-"""
-        self.setText(info_text.strip())
+                    thermal_connected: bool, rgb_connected: bool):
+        """
+        Update minimal status display
+        ADAS principle: Show only safety-critical information
+        """
+        # Compact single-line format
+        sensor_status = ""
+        if not thermal_connected:
+            sensor_status = " | ⚠ THERM"
+        if not rgb_connected and not thermal_connected:
+            sensor_status = " | ⚠ CAMS"
+        elif not rgb_connected:
+            sensor_status = " | ⚠ RGB"
+
+        info_text = f"{fps:.0f} FPS | {detections} Det{sensor_status}"
+        self.setText(info_text)
 
 
 # ============================================================================
@@ -508,7 +505,6 @@ class DriverAppWindow(QMainWindow):
         # Application state
         self.current_theme = 'dark'
         self.view_mode = ViewMode.THERMAL_ONLY
-        self.show_info_panel = False
         self.developer_mode = False  # Developer panel hidden by default
 
         # Create central widget and layout
@@ -604,7 +600,6 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.view_mode_clicked.connect(self._on_view_mode_cycle)
         self.control_panel.yolo_toggled.connect(self._on_yolo_toggle)
         self.control_panel.audio_toggled.connect(self._on_audio_toggle)
-        self.control_panel.info_toggled.connect(self._on_info_toggle)
         self.control_panel.theme_clicked.connect(self._on_theme_toggle)
         self.control_panel.retry_sensors_clicked.connect(self._on_retry_sensors)
         # Developer controls
@@ -645,11 +640,6 @@ class DriverAppWindow(QMainWindow):
         self.app.audio_enabled = enabled
         logger.info(f"Audio alerts: {'enabled' if enabled else 'disabled'}")
 
-    def _on_info_toggle(self, show: bool):
-        """Toggle info panel"""
-        self.show_info_panel = show
-        self.toggle_info_panel(show)
-        logger.info(f"Info panel: {'shown' if show else 'hidden'}")
 
     def _on_theme_toggle(self):
         """Cycle through themes"""
@@ -806,17 +796,20 @@ class DriverAppWindow(QMainWindow):
     def toggle_developer_mode(self):
         """
         Toggle developer mode panel and controls (Ctrl+D)
+        Manages info panel visibility (hidden in dev mode, shown in simple mode)
         Note: Developer panel not intended for use while driving
         """
         self.developer_mode = not self.developer_mode
         if self.developer_mode:
             self.developer_panel.show()
             self.control_panel.show_developer_controls(True)
-            logger.info("✓ Developer mode ENABLED (panel + controls visible)")
+            self.info_panel.hide()  # Hide basic info - dev panel has everything
+            logger.info("✓ Developer mode ENABLED (panel + controls visible, basic info hidden)")
         else:
             self.developer_panel.hide()
             self.control_panel.show_developer_controls(False)
-            logger.info("✗ Developer mode DISABLED")
+            self.info_panel.show()  # Show minimal ADAS info in simple mode
+            logger.info("✗ Developer mode DISABLED (basic info visible)")
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts"""
@@ -850,10 +843,7 @@ class DriverAppWindow(QMainWindow):
                 self.app.audio_enabled = not self.app.audio_enabled
                 self.control_panel.set_audio_enabled(self.app.audio_enabled)
 
-        elif key == Qt.Key_I:
-            # Toggle info panel
-            self.show_info_panel = not self.show_info_panel
-            self.toggle_info_panel(self.show_info_panel)
+        # Key 'I' removed - info panel now auto-managed (always visible in simple mode)
 
         elif key == Qt.Key_T:
             # Cycle theme
@@ -943,17 +933,17 @@ class DriverAppWindow(QMainWindow):
 
     def update_metrics(self, fps: float, detections: int,
                        thermal_connected: bool, rgb_connected: bool):
-        """Update info panel metrics"""
-        if self.show_info_panel:
+        """
+        Update minimal info panel (ADAS-essential status)
+        Hidden in developer mode - detailed metrics shown in dev panel instead
+        """
+        if not self.developer_mode:
+            # Simple mode: Show minimal ADAS info
             self.info_panel.update_info(fps, detections,
                                         thermal_connected, rgb_connected)
-
-    def toggle_info_panel(self, show: bool):
-        """Show/hide info panel"""
-        self.show_info_panel = show
-        if show:
             self.info_panel.show()
         else:
+            # Developer mode: Hide basic info (dev panel has everything)
             self.info_panel.hide()
 
     def set_view_mode(self, mode: ViewMode):
