@@ -733,19 +733,38 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.set_device(new_device)
 
     def _on_model_cycle(self):
-        """Cycle through YOLO model variants (n, s, m, l)"""
+        """Cycle through YOLO model variants (presets + custom models from config)"""
         if not self.app:
             return
-        models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt', 'yolov8l.pt']
-        current = getattr(self.app, 'model_name', 'yolov8n.pt')
-        current_idx = models.index(current) if current in models else 0
-        next_idx = (current_idx + 1) % len(models)
-        next_model = models[next_idx]
+
+        # Get models from config
+        from config import get_config
+        config = get_config()
+
+        # Build list of available models: presets + custom
+        model_presets = config.get('model_presets', {})
+        preset_models = list(model_presets.values())
+        custom_models = config.get('custom_models', [])
+        all_models = preset_models + custom_models
+
+        if not all_models:
+            all_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt', 'yolov8l.pt']  # Fallback
+
+        # Get current model
+        current = getattr(self.app, 'model_name', all_models[0])
+        current_idx = all_models.index(current) if current in all_models else 0
+        next_idx = (current_idx + 1) % len(all_models)
+        next_model = all_models[next_idx]
 
         # Update model (requires detector reload)
         self.app.model_name = next_model
-        logger.info(f"YOLO model changed to: {next_model} (requires restart to apply)")
-        # Note: Actual model reload happens on next detector initialization
+        config.set('yolo_model', next_model, save=True)
+
+        # Check if it's a custom model
+        is_custom = next_model in custom_models
+        model_source = "Custom" if is_custom else "Preset"
+
+        logger.info(f"YOLO model changed to: {next_model} ({model_source}) - restart detector to apply")
         self.control_panel.set_model(next_model)
 
     def _on_fusion_mode_cycle(self):

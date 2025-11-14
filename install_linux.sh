@@ -95,7 +95,7 @@ echo -e "${GREEN}✓ Listing available UVC cameras:${NC}"
 v4l2-ctl --list-devices || echo -e "${YELLOW}⚠ No cameras detected${NC}"
 
 # Step 5: Install project dependencies
-echo -e "${BLUE}[5/6] Installing project Python dependencies...${NC}"
+echo -e "${BLUE}[5/7] Installing project Python dependencies...${NC}"
 if [ -f requirements.txt ]; then
     pip3 install --user -r requirements.txt
 else
@@ -103,9 +103,29 @@ else
     pip3 install --user numpy ultralytics supervision torch torchvision
 fi
 
+# Step 5.5: Install PyQt5 for Qt GUI
+echo -e "${BLUE}[5.5/7] Installing PyQt5 for Qt GUI (v3.x)...${NC}"
+if [ "$IS_JETSON" = true ]; then
+    # Jetson: Try system package first (better performance)
+    echo -e "${YELLOW}Attempting system PyQt5 installation...${NC}"
+    sudo apt-get install -y python3-pyqt5 python3-pyqt5.qtsvg python3-pyqt5.qtopengl || {
+        echo -e "${YELLOW}⚠ System PyQt5 failed. Installing via pip...${NC}"
+        pip3 install --user PyQt5
+    }
+else
+    # Generic Linux: pip installation
+    pip3 install --user PyQt5
+fi
+
+# Verify PyQt5
+python3 -c "from PyQt5.QtWidgets import QApplication; print('✓ PyQt5 installed successfully')" || {
+    echo -e "${RED}✗ PyQt5 installation failed${NC}"
+    echo -e "${YELLOW}⚠ Qt GUI may not work. Try: pip3 install --user PyQt5${NC}"
+}
+
 # Step 6: OPTIONAL - Install FLIR Firefly Spinnaker SDK
 if [ "$INSTALL_FIREFLY" = true ]; then
-    echo -e "${BLUE}[6/6] Installing FLIR Firefly Spinnaker SDK...${NC}"
+    echo -e "${BLUE}[6/7] Installing FLIR Firefly Spinnaker SDK...${NC}"
 
     # Check architecture
     if [ "$ARCH" = "aarch64" ]; then
@@ -193,29 +213,138 @@ if [ "$INSTALL_FIREFLY" = true ]; then
         echo -e "  2. Run: ./install_linux.sh --with-firefly"
     fi
 else
-    echo -e "${BLUE}[6/6] Skipping FLIR Firefly support (use --with-firefly to enable)${NC}"
+    echo -e "${BLUE}[6/7] Skipping FLIR Firefly support (use --with-firefly to enable)${NC}"
+fi
+
+# Step 7: Verify installation
+echo -e "${BLUE}[7/7] Verifying installation...${NC}"
+echo ""
+
+VERIFICATION_FAILED=false
+
+# Test 1: Python imports
+echo -e "${BLUE}Testing Python modules...${NC}"
+python3 << 'EOF'
+import sys
+exit_code = 0
+
+# Required modules
+modules = [
+    ('numpy', 'NumPy'),
+    ('cv2', 'OpenCV'),
+    ('PyQt5.QtWidgets', 'PyQt5'),
+    ('ultralytics', 'Ultralytics YOLO'),
+]
+
+for module, name in modules:
+    try:
+        __import__(module)
+        print(f'  ✓ {name}')
+    except ImportError:
+        print(f'  ✗ {name} - FAILED')
+        exit_code = 1
+
+sys.exit(exit_code)
+EOF
+
+if [ $? -ne 0 ]; then
+    VERIFICATION_FAILED=true
+    echo -e "${RED}✗ Some Python modules failed to import${NC}"
+else
+    echo -e "${GREEN}✓ All required Python modules available${NC}"
+fi
+
+# Test 2: Qt GUI components
+echo ""
+echo -e "${BLUE}Testing Qt GUI components...${NC}"
+python3 << 'EOF'
+import sys
+try:
+    from PyQt5.QtWidgets import QApplication, QPushButton, QLabel, QMainWindow
+    from PyQt5.QtCore import QThread, pyqtSignal
+    from PyQt5.QtGui import QImage, QPixmap
+    print('  ✓ Qt GUI components')
+    sys.exit(0)
+except Exception as e:
+    print(f'  ✗ Qt GUI components - {e}')
+    sys.exit(1)
+EOF
+
+if [ $? -ne 0 ]; then
+    VERIFICATION_FAILED=true
+    echo -e "${RED}✗ Qt GUI verification failed${NC}"
+else
+    echo -e "${GREEN}✓ Qt GUI ready${NC}"
+fi
+
+# Test 3: Project files
+echo ""
+echo -e "${BLUE}Checking project files...${NC}"
+required_files=(
+    "main.py"
+    "driver_gui_qt.py"
+    "video_worker.py"
+    "developer_panel.py"
+    "alert_overlay.py"
+    "config.py"
+    "object_detector.py"
+)
+
+for file in "${required_files[@]}"; do
+    if [ -f "$file" ]; then
+        echo -e "  ${GREEN}✓ $file${NC}"
+    else
+        echo -e "  ${RED}✗ $file - MISSING${NC}"
+        VERIFICATION_FAILED=true
+    fi
+done
+
+echo ""
+if [ "$VERIFICATION_FAILED" = true ]; then
+    echo -e "${RED}========================================${NC}"
+    echo -e "${RED}Verification Failed!${NC}"
+    echo -e "${RED}========================================${NC}"
+    echo -e "${YELLOW}Some components failed verification. Please check the errors above.${NC}"
+else
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${GREEN}Installation Complete & Verified!${NC}"
+    echo -e "${GREEN}========================================${NC}"
 fi
 
 echo ""
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}Installation Complete!${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo ""
-echo -e "${GREEN}✓ UVC webcam support: Ready${NC}"
+echo -e "${BLUE}System Status:${NC}"
+echo -e "  ${GREEN}✓ Python 3 & dependencies${NC}"
+echo -e "  ${GREEN}✓ OpenCV (computer vision)${NC}"
+echo -e "  ${GREEN}✓ PyQt5 (Qt GUI v3.x)${NC}"
+echo -e "  ${GREEN}✓ UVC webcam support${NC}"
 if [ "$INSTALL_FIREFLY" = true ] && [ -f "${SPINNAKER_VERSION}" ]; then
-    echo -e "${GREEN}✓ FLIR Firefly support: Installed${NC}"
+    echo -e "  ${GREEN}✓ FLIR Firefly support${NC}"
 else
-    echo -e "${YELLOW}⚠ FLIR Firefly support: Not installed (use --with-firefly)${NC}"
+    echo -e "  ${YELLOW}⚠ FLIR Firefly support: Not installed (use --with-firefly)${NC}"
 fi
 echo ""
-echo -e "${BLUE}Next steps:${NC}"
-echo -e "  1. Connect your RGB camera (UVC webcam or FLIR Firefly)"
-echo -e "  2. Test camera: python3 camera_factory.py"
-echo -e "  3. Run system: python3 main.py"
+echo -e "${BLUE}Qt GUI Features (v3.x):${NC}"
+echo -e "  • Multithreaded architecture (VideoProcessorWorker)"
+echo -e "  • Developer mode (Ctrl+D) with 8 controls:"
+echo -e "    - Palette cycling, Detection toggle, Device switch"
+echo -e "    - Model cycling (with custom model support)"
+echo -e "    - Fusion mode/alpha, Buffer flush, Frame skip"
+echo -e "  • ADAS-compliant alert overlays"
+echo -e "  • Light/Dark theme auto-switching"
 echo ""
-echo -e "${BLUE}Supported cameras:${NC}"
-echo -e "  • Generic UVC webcams (Logitech, Microsoft, etc.) - Works out-of-box"
-echo -e "  • FLIR Firefly (global shutter) - Requires Spinnaker SDK"
+echo -e "${BLUE}Next Steps:${NC}"
+echo -e "  ${BLUE}1.${NC} Connect RGB camera (UVC webcam or FLIR Firefly)"
+echo -e "  ${BLUE}2.${NC} (Optional) Add custom models to config.json"
+echo -e "  ${BLUE}3.${NC} Run system: ${GREEN}python3 main.py${NC}"
+echo -e "  ${BLUE}4.${NC} Press ${GREEN}Ctrl+D${NC} to toggle developer mode"
 echo ""
-echo -e "${YELLOW}For troubleshooting, see README.md${NC}"
+echo -e "${BLUE}Testing Commands:${NC}"
+echo -e "  • List cameras: ${GREEN}v4l2-ctl --list-devices${NC}"
+echo -e "  • Test camera: ${GREEN}python3 camera_factory.py${NC}"
+echo -e "  • Verify modules: ${GREEN}python3 -c 'import PyQt5; import cv2; print(\"OK\")'${NC}"
+echo ""
+echo -e "${BLUE}Documentation:${NC}"
+echo -e "  • Custom models: ${GREEN}CUSTOM_MODELS.md${NC}"
+echo -e "  • ADAS alerts: ${GREEN}LESSONS_LEARNED_ADAS_ALERTS.md${NC}"
+echo -e "  • General help: ${GREEN}README.md${NC}"
 echo ""

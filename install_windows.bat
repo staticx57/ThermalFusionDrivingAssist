@@ -75,7 +75,7 @@ echo %BLUE%[3/5] Installing NumPy and core dependencies...%NC%
 python -m pip install numpy
 
 REM Step 4: Install project dependencies
-echo %BLUE%[4/5] Installing project dependencies...%NC%
+echo %BLUE%[4/6] Installing project dependencies...%NC%
 if exist requirements.txt (
     echo %GREEN%Found requirements.txt - installing...%NC%
     python -m pip install -r requirements.txt
@@ -84,9 +84,22 @@ if exist requirements.txt (
     python -m pip install numpy ultralytics supervision torch torchvision
 )
 
+REM Step 4.5: Install PyQt5 for Qt GUI
+echo %BLUE%[4.5/6] Installing PyQt5 for Qt GUI ^(v3.x^)...%NC%
+python -m pip install PyQt5
+
+REM Verify PyQt5
+python -c "from PyQt5.QtWidgets import QApplication; print('OK PyQt5 installed successfully')" 2>nul
+if errorlevel 1 (
+    echo %RED%PyQt5 installation failed%NC%
+    echo %YELLOW%Qt GUI may not work. Please check your Python installation.%NC%
+) else (
+    echo %GREEN%PyQt5 installed successfully%NC%
+)
+
 REM Step 5: OPTIONAL - Install FLIR Firefly Spinnaker SDK
 if "%INSTALL_FIREFLY%"=="true" (
-    echo %BLUE%[5/5] Installing FLIR Firefly Spinnaker SDK...%NC%
+    echo %BLUE%[5/6] Installing FLIR Firefly Spinnaker SDK...%NC%
     echo.
     echo %YELLOW%========================================%NC%
     echo %YELLOW%FLIR Spinnaker SDK Installation%NC%
@@ -130,34 +143,63 @@ if "%INSTALL_FIREFLY%"=="true" (
         echo %GREEN%FLIR Firefly cameras are now supported.%NC%
     )
 ) else (
-    echo %BLUE%[5/5] Skipping FLIR Firefly support ^(use --with-firefly to enable^)%NC%
+    echo %BLUE%[5/6] Skipping FLIR Firefly support ^(use --with-firefly to enable^)%NC%
 )
+
+REM Step 6: Verify installation
+echo %BLUE%[6/6] Verifying installation...%NC%
+echo.
+
+echo %BLUE%Testing Python modules...%NC%
+python -c "import numpy; print('  ✓ NumPy')" 2>nul || echo   ✗ NumPy - FAILED
+python -c "import cv2; print('  ✓ OpenCV')" 2>nul || echo   ✗ OpenCV - FAILED
+python -c "import PyQt5.QtWidgets; print('  ✓ PyQt5')" 2>nul || echo   ✗ PyQt5 - FAILED
+python -c "import ultralytics; print('  ✓ Ultralytics YOLO')" 2>nul || echo   ✗ Ultralytics - FAILED
+
+echo.
+echo %BLUE%Checking project files...%NC%
+if exist main.py (echo   ✓ main.py) else echo   ✗ main.py - MISSING
+if exist driver_gui_qt.py (echo   ✓ driver_gui_qt.py) else echo   ✗ driver_gui_qt.py - MISSING
+if exist video_worker.py (echo   ✓ video_worker.py) else echo   ✗ video_worker.py - MISSING
+if exist developer_panel.py (echo   ✓ developer_panel.py) else echo   ✗ developer_panel.py - MISSING
+if exist alert_overlay.py (echo   ✓ alert_overlay.py) else echo   ✗ alert_overlay.py - MISSING
+if exist config.py (echo   ✓ config.py) else echo   ✗ config.py - MISSING
 
 echo.
 echo %GREEN%========================================%NC%
-echo %GREEN%Installation Complete!%NC%
+echo %GREEN%Installation Complete ^& Verified!%NC%
 echo %GREEN%========================================%NC%
 echo.
-echo %GREEN%UVC webcam support: Ready%NC%
+echo %BLUE%System Status:%NC%
+echo   ✓ Python 3 ^& dependencies
+echo   ✓ OpenCV ^(computer vision^)
+echo   ✓ PyQt5 ^(Qt GUI v3.x^)
+echo   ✓ UVC webcam support
 if "%INSTALL_FIREFLY%"=="true" (
-    echo %GREEN%FLIR Firefly support: Check above for status%NC%
+    echo   ✓ FLIR Firefly support ^(check above for status^)
 ) else (
-    echo %YELLOW%FLIR Firefly support: Not installed ^(use --with-firefly^)%NC%
+    echo   ⚠ FLIR Firefly support: Not installed ^(use --with-firefly^)
 )
 echo.
-echo %BLUE%Next steps:%NC%
-echo   1. Connect your RGB camera ^(UVC webcam or FLIR Firefly^)
-echo   2. Test camera: python camera_factory.py
+echo %BLUE%Qt GUI Features ^(v3.x^):%NC%
+echo   • Multithreaded architecture ^(VideoProcessorWorker^)
+echo   • Developer mode ^(Ctrl+D^) with 8 controls:
+echo     - Palette cycling, Detection toggle, Device switch
+echo     - Model cycling ^(with custom model support^)
+echo     - Fusion mode/alpha, Buffer flush, Frame skip
+echo   • ADAS-compliant alert overlays
+echo   • Light/Dark theme auto-switching
+echo.
+echo %BLUE%Next Steps:%NC%
+echo   1. Connect RGB camera ^(UVC webcam or FLIR Firefly^)
+echo   2. ^(Optional^) Add custom models to config.json
 echo   3. Run system: python main.py
+echo   4. Press Ctrl+D to toggle developer mode
 echo.
-echo %BLUE%Supported cameras:%NC%
-echo   - Generic UVC webcams ^(Logitech, Microsoft, etc.^) - Works out-of-box
-echo   - FLIR Firefly ^(global shutter^) - Requires Spinnaker SDK
-echo.
-echo %BLUE%For troubleshooting:%NC%
-echo   - List cameras: python -c "from camera_factory import print_camera_summary; print_camera_summary()"
-echo   - Test UVC: python rgb_camera_uvc.py
-echo   - Test Firefly: python rgb_camera_firefly.py
+echo %BLUE%Documentation:%NC%
+echo   • Custom models: CUSTOM_MODELS.md
+echo   • ADAS alerts: LESSONS_LEARNED_ADAS_ALERTS.md
+echo   • General help: README.md
 echo.
 echo %YELLOW%Press any key to exit...%NC%
 pause >nul
