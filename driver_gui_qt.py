@@ -527,6 +527,33 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.update_theme_mode(theme_name)
         logger.debug(f"Applied {theme_name} theme")
 
+    def connect_worker_signals(self, worker):
+        """
+        Connect VideoProcessorWorker signals to GUI slots (Phase 3)
+        This enables thread-safe communication from worker to GUI
+        """
+        worker.frame_ready.connect(self._on_frame_ready)
+        worker.metrics_update.connect(self._on_metrics_update)
+        logger.info("Worker signals connected to GUI")
+
+    def _on_frame_ready(self, frame):
+        """Handle frame_ready signal from worker thread (runs in main thread)"""
+        self.update_frame(frame)
+
+    def _on_metrics_update(self, metrics):
+        """Handle metrics_update signal from worker thread (runs in main thread)"""
+        self.update_metrics(
+            fps=metrics.get('fps', 0.0),
+            detections=metrics.get('detections', 0),
+            thermal_connected=metrics.get('thermal_connected', False),
+            rgb_connected=metrics.get('rgb_connected', False)
+        )
+        # Update control panel states
+        if self.app:
+            self.set_view_mode(self.app.view_mode)
+            self.control_panel.set_yolo_enabled(self.app.yolo_enabled)
+            self.control_panel.set_audio_enabled(self.app.audio_enabled)
+
     def update_frame(self, frame: np.ndarray):
         """Update video display (called from main loop)"""
         self.video_widget.update_frame(frame)
