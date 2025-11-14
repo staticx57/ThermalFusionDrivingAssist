@@ -13,15 +13,7 @@ from datetime import datetime
 from object_detector import Detection
 from road_analyzer import Alert, AlertLevel
 from config import get_config
-
-
-class ViewMode:
-    """Display view modes"""
-    THERMAL_ONLY = "thermal"
-    RGB_ONLY = "rgb"
-    FUSION = "fusion"
-    SIDE_BY_SIDE = "side_by_side"
-    PICTURE_IN_PICTURE = "pip"
+from view_mode import ViewMode
 
 
 class DriverGUI:

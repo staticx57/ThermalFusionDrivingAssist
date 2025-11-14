@@ -21,8 +21,8 @@ except ImportError:
     print("WARNING: PyQt5 not available. Install with: pip3 install PyQt5")
 
 import cv2
-from detection import Detection
-from alerts import Alert
+from object_detector import Detection
+from road_analyzer import Alert, AlertLevel
 from view_mode import ViewMode
 
 logger = logging.getLogger(__name__)
