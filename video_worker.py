@@ -219,12 +219,51 @@ class VideoProcessorWorker(QThread):
 
             # 10. Emit signals to GUI (thread-safe)
             self.frame_ready.emit(display_frame)
-            self.metrics_update.emit({
+
+            # Collect comprehensive metrics for developer panel
+            comprehensive_metrics = {
+                # Performance
                 'fps': self.app.smoothed_fps,
-                'detections': len(detections),
+                'frame_count': self.app.frame_count,
+
+                # System resources (from PerformanceMonitor)
+                'cpu_usage': metrics.get('cpu_usage', 0.0),
+                'gpu_usage': metrics.get('gpu_usage', 0.0),
+                'memory_usage': metrics.get('memory_usage', 0.0),
+                'memory_used_mb': metrics.get('memory_used_mb', 0),
+                'memory_total_mb': metrics.get('memory_total_mb', 0),
+                'temperature': metrics.get('temperature', 0.0),
+                'power_watts': metrics.get('power_watts', 0.0),
+
+                # Camera status
                 'thermal_connected': self.app.thermal_connected,
-                'rgb_connected': self.app.rgb_available
-            })
+                'rgb_connected': self.app.rgb_available,
+                'thermal_resolution': f"{self.app.args.width}x{self.app.args.height}" if hasattr(self.app, 'args') else 'N/A',
+                'rgb_resolution': '640x480' if self.app.rgb_available else 'N/A',
+
+                # Detection
+                'detections': len(detections),
+                'yolo_enabled': self.app.yolo_enabled if hasattr(self.app, 'yolo_enabled') else False,
+                'inference_time_ms': metrics.get('inference_time_ms', 0.0),
+                'frame_skip': self.app.frame_skip_value if hasattr(self.app, 'frame_skip_value') else 1,
+                'device': self.app.device if hasattr(self.app, 'device') else 'CPU',
+
+                # View mode
+                'view_mode': str(self.app.view_mode) if hasattr(self.app, 'view_mode') else 'thermal',
+                'fusion_mode': self.app.fusion_mode if hasattr(self.app, 'fusion_mode') else 'overlay',
+                'fusion_alpha': self.app.fusion_alpha if hasattr(self.app, 'fusion_alpha') else 0.5,
+
+                # Threading
+                'gui_type': self.app.gui_type if hasattr(self.app, 'gui_type') else 'Qt',
+                'worker_running': self.running,
+                'detection_thread_alive': self.app.detection_thread.is_alive() if hasattr(self.app, 'detection_thread') and self.app.detection_thread else False,
+
+                # ADAS Alerts (for alert overlay)
+                'alerts': alerts,
+                'detections_list': detections,
+            }
+
+            self.metrics_update.emit(comprehensive_metrics)
 
             self.app.frame_count += 1
 
