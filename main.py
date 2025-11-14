@@ -34,11 +34,52 @@ except ImportError:
 
 # GUI will be imported conditionally based on --use-qt-gui argument
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
+def setup_logging():
+    """
+    Configure logging with both console and file output
+    File: thermal_fusion_debug.log (rotating, keeps last 5 files, 10MB each)
+    """
+    from logging.handlers import RotatingFileHandler
+
+    # Create formatters
+    detailed_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    )
+    simple_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+    # Root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Console handler (simple format)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(simple_formatter)
+    root_logger.addHandler(console_handler)
+
+    # File handler (detailed format with line numbers)
+    # Rotating: 10MB per file, keep last 5 files
+    try:
+        file_handler = RotatingFileHandler(
+            'thermal_fusion_debug.log',
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=5
+        )
+        file_handler.setLevel(logging.DEBUG)  # Capture everything to file
+        file_handler.setFormatter(detailed_formatter)
+        root_logger.addHandler(file_handler)
+        logging.info("✓ Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)")
+    except Exception as e:
+        logging.warning(f"Could not create debug log file: {e}")
+
+    return logging.getLogger(__name__)
+
+
+# Initialize logging
+logger = setup_logging()
 
 
 def detect_platform():

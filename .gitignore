@@ -73,3 +73,6 @@ SpinnakerSDK*.exe
 
 # System files
 Thumbs.db
+
+# Debug logs
+thermal_fusion_debug.log*
