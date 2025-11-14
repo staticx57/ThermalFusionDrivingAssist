@@ -38,6 +38,7 @@ class Config:
         'night_start_hour': 19,  # Dark theme starts at 7 PM
         'use_ambient_light': True,  # Use RGB camera ambient light
         'ambient_threshold': 100,  # Brightness threshold (0-255)
+        'ambient_hysteresis': 15,  # Brightness dead zone to prevent jitter
         'theme_override': None,  # Manual override: None, 'light', or 'dark'
 
         # Sensor Settings
@@ -82,6 +83,9 @@ class Config:
         self.config_file = config_file
         self.config = self.DEFAULT_CONFIG.copy()
         self.load()
+
+        # Theme switching state (prevent jitter with hysteresis)
+        self.last_ambient_theme = None  # Track last theme from ambient light
 
     def load(self) -> bool:
         """
