@@ -647,14 +647,27 @@ class DriverGUI:
         x = canvas_w - panel_w - margin
         y = int(120 * self.scale_factor)  # Below top buttons
 
-        # Semi-transparent background
-        overlay = canvas[y:y+panel_h, x:x+panel_w].copy()
-        bg = np.full((panel_h, panel_w, 3), self.colors['panel_bg'], dtype=np.uint8)
-        cv2.addWeighted(bg, 0.85, overlay, 0.15, 0, overlay)
-        canvas[y:y+panel_h, x:x+panel_w] = overlay
+        # Clamp to canvas bounds
+        x = max(0, min(x, canvas_w - 1))
+        y = max(0, min(y, canvas_h - 1))
+        actual_panel_w = min(panel_w, canvas_w - x)
+        actual_panel_h = min(panel_h, canvas_h - y)
 
-        # Border
-        cv2.rectangle(canvas, (x, y), (x + panel_w, y + panel_h),
+        # Skip if panel doesn't fit
+        if actual_panel_w <= 0 or actual_panel_h <= 0:
+            return
+
+        # Semi-transparent background
+        overlay = canvas[y:y+actual_panel_h, x:x+actual_panel_w].copy()
+        bg = np.full((actual_panel_h, actual_panel_w, 3), self.colors['panel_bg'], dtype=np.uint8)
+
+        # Only blend if shapes match
+        if overlay.shape == bg.shape:
+            cv2.addWeighted(bg, 0.85, overlay, 0.15, 0, overlay)
+            canvas[y:y+actual_panel_h, x:x+actual_panel_w] = overlay
+
+        # Border (use actual dimensions)
+        cv2.rectangle(canvas, (x, y), (x + actual_panel_w, y + actual_panel_h),
                      self.colors['panel_accent'], 2)
 
         # Content
