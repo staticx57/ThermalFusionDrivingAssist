@@ -237,6 +237,8 @@ class ControlPanel(QWidget):
     info_toggled = pyqtSignal(bool)
     theme_clicked = pyqtSignal()
     retry_sensors_clicked = pyqtSignal()
+    buffer_flush_toggled = pyqtSignal(bool)  # Developer control
+    frame_skip_clicked = pyqtSignal()  # Developer control
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -249,10 +251,17 @@ class ControlPanel(QWidget):
         self.theme_btn = QPushButton("🎨 Theme: Auto")
         self.retry_btn = QPushButton("🔄 Retry Sensors")
 
+        # Developer control buttons (hidden by default)
+        self.buffer_flush_btn = QPushButton("💾 Flush: OFF")
+        self.frame_skip_btn = QPushButton("⏩ Skip: 1")
+        self.buffer_flush_btn.hide()
+        self.frame_skip_btn.hide()
+
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
         self.audio_btn.setCheckable(True)
         self.info_btn.setCheckable(True)
+        self.buffer_flush_btn.setCheckable(True)
 
         # Set initial checked states
         self.audio_btn.setChecked(True)  # Audio on by default
@@ -264,6 +273,8 @@ class ControlPanel(QWidget):
         self.info_btn.toggled.connect(self._on_info_toggled)
         self.theme_btn.clicked.connect(self.theme_clicked.emit)
         self.retry_btn.clicked.connect(self.retry_sensors_clicked.emit)
+        self.buffer_flush_btn.toggled.connect(self._on_buffer_flush_toggled)
+        self.frame_skip_btn.clicked.connect(self.frame_skip_clicked.emit)
 
         # Layout
         layout = QHBoxLayout()
@@ -271,6 +282,8 @@ class ControlPanel(QWidget):
         layout.addWidget(self.yolo_btn)
         layout.addWidget(self.audio_btn)
         layout.addWidget(self.info_btn)
+        layout.addWidget(self.buffer_flush_btn)  # Developer control
+        layout.addWidget(self.frame_skip_btn)  # Developer control
         layout.addStretch()  # Push theme/retry to right
         layout.addWidget(self.theme_btn)
         layout.addWidget(self.retry_btn)
@@ -314,6 +327,30 @@ class ControlPanel(QWidget):
     def set_audio_enabled(self, enabled: bool):
         """Set audio button state"""
         self.audio_btn.setChecked(enabled)
+
+    def _on_buffer_flush_toggled(self, checked: bool):
+        """Update buffer flush button text when toggled"""
+        self.buffer_flush_btn.setText(f"💾 Flush: {'ON' if checked else 'OFF'}")
+        self.buffer_flush_toggled.emit(checked)
+
+    def set_buffer_flush_enabled(self, enabled: bool):
+        """Set buffer flush button state"""
+        self.buffer_flush_btn.setChecked(enabled)
+
+    def set_frame_skip_value(self, value: int):
+        """Update frame skip button text"""
+        self.frame_skip_btn.setText(f"⏩ Skip: {value}")
+
+    def show_developer_controls(self, show: bool):
+        """Show or hide developer control buttons"""
+        if show:
+            self.buffer_flush_btn.show()
+            self.frame_skip_btn.show()
+            logger.info("Developer controls shown")
+        else:
+            self.buffer_flush_btn.hide()
+            self.frame_skip_btn.hide()
+            logger.info("Developer controls hidden")
 
 
 # ============================================================================
@@ -446,6 +483,9 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.info_toggled.connect(self._on_info_toggle)
         self.control_panel.theme_clicked.connect(self._on_theme_toggle)
         self.control_panel.retry_sensors_clicked.connect(self._on_retry_sensors)
+        # Developer controls
+        self.control_panel.buffer_flush_toggled.connect(self._on_buffer_flush_toggle)
+        self.control_panel.frame_skip_clicked.connect(self._on_frame_skip_cycle)
         logger.info("Control panel signals connected")
 
     def _on_view_mode_cycle(self):
@@ -499,14 +539,37 @@ class DriverAppWindow(QMainWindow):
         if hasattr(self.app, 'frame_count'):
             self.app.frame_count = 0  # Trigger RGB retry on next frame
 
+    def _on_buffer_flush_toggle(self, enabled: bool):
+        """Toggle buffer flush"""
+        if not self.app:
+            return
+        self.app.buffer_flush_enabled = enabled
+        logger.info(f"Buffer flush: {'enabled' if enabled else 'disabled'}")
+
+    def _on_frame_skip_cycle(self):
+        """Cycle through frame skip values (1, 2, 3, 5, back to 1)"""
+        if not self.app:
+            return
+        skip_values = [1, 2, 3, 5]
+        current_idx = skip_values.index(self.app.frame_skip_value) if self.app.frame_skip_value in skip_values else 0
+        next_idx = (current_idx + 1) % len(skip_values)
+        self.app.frame_skip_value = skip_values[next_idx]
+        self.control_panel.set_frame_skip_value(skip_values[next_idx])
+        logger.info(f"Frame skip set to: {skip_values[next_idx]}")
+
     def toggle_developer_mode(self):
-        """Toggle developer mode panel (Ctrl+D)"""
+        """
+        Toggle developer mode panel and controls (Ctrl+D)
+        Note: Developer panel not intended for use while driving
+        """
         self.developer_mode = not self.developer_mode
         if self.developer_mode:
             self.developer_panel.show()
-            logger.info("✓ Developer mode ENABLED (Ctrl+D to toggle)")
+            self.control_panel.show_developer_controls(True)
+            logger.info("✓ Developer mode ENABLED (panel + controls visible)")
         else:
             self.developer_panel.hide()
+            self.control_panel.show_developer_controls(False)
             logger.info("✗ Developer mode DISABLED")
 
     def keyPressEvent(self, event):
@@ -569,19 +632,27 @@ class DriverAppWindow(QMainWindow):
             super().keyPressEvent(event)
 
     def apply_theme(self, theme_name: str):
-        """Apply color theme"""
+        """
+        Apply color theme
+
+        Design principle for ADAS driving safety:
+        - 'light' mode = BRIGHT display for DAYTIME (offsets glare)
+        - 'dark' mode = DARK display for NIGHTTIME (preserves night vision)
+        """
         self.current_theme = theme_name
 
         if theme_name == 'dark':
+            # Night mode: DARK display to preserve night vision
             self.setStyleSheet(DARK_THEME)
         elif theme_name == 'light':
+            # Day mode: BRIGHT display to offset glare
             self.setStyleSheet(LIGHT_THEME)
         else:
-            # Auto mode - default to dark
+            # Auto mode - default to dark for safety
             self.setStyleSheet(DARK_THEME)
 
         self.control_panel.update_theme_mode(theme_name)
-        logger.debug(f"Applied {theme_name} theme")
+        logger.info(f"Applied '{theme_name}' theme (Day=bright, Night=dark)")
 
     def connect_worker_signals(self, worker):
         """
