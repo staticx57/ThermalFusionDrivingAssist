@@ -257,6 +257,10 @@ class VideoProcessorWorker(QThread):
                 'gui_type': self.app.gui_type if hasattr(self.app, 'gui_type') else 'Qt',
                 'worker_running': self.running,
                 'detection_thread_alive': self.app.detection_thread.is_alive() if hasattr(self.app, 'detection_thread') and self.app.detection_thread else False,
+
+                # ADAS Alerts (for alert overlay)
+                'alerts': alerts,
+                'detections_list': detections,
             }
 
             self.metrics_update.emit(comprehensive_metrics)

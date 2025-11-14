@@ -25,6 +25,7 @@ from object_detector import Detection
 from road_analyzer import Alert, AlertLevel
 from view_mode import ViewMode
 from developer_panel import DeveloperPanel
+from alert_overlay import AlertOverlayWidget
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ QLabel#info_panel {
 
 class VideoWidget(QLabel):
     """
-    High-performance video display widget
+    High-performance video display widget with ADAS alert overlay
     Optimized for Jetson with frame buffer reuse
     """
 
@@ -150,6 +151,10 @@ class VideoWidget(QLabel):
         # Performance optimization: Reuse buffers
         self._frame_buffer = None
         self._qimage_buffer = None
+
+        # Alert overlay (ADAS-compliant)
+        self.alert_overlay = AlertOverlayWidget(self)
+        self.alert_overlay.setGeometry(self.rect())  # Cover entire video widget
 
         # Placeholder
         self._show_placeholder()
@@ -192,6 +197,23 @@ class VideoWidget(QLabel):
 
         except Exception as e:
             logger.error(f"Error updating video frame: {e}")
+
+    def update_alerts(self, alerts: List[Alert], detections: List[Detection]):
+        """
+        Update ADAS alert overlay
+
+        Args:
+            alerts: List of Alert objects from RoadAnalyzer
+            detections: List of Detection objects for proximity zones
+        """
+        if self.alert_overlay:
+            self.alert_overlay.update_alerts(alerts, detections)
+
+    def resizeEvent(self, event):
+        """Handle resize to keep alert overlay sized correctly"""
+        super().resizeEvent(event)
+        if hasattr(self, 'alert_overlay') and self.alert_overlay:
+            self.alert_overlay.setGeometry(self.rect())
 
     def sizeHint(self):
         """Suggest reasonable default size"""
@@ -587,6 +609,12 @@ class DriverAppWindow(QMainWindow):
             self.set_view_mode(self.app.view_mode)
             self.control_panel.set_yolo_enabled(self.app.yolo_enabled)
             self.control_panel.set_audio_enabled(self.app.audio_enabled)
+
+        # Update ADAS alert overlay
+        alerts = metrics.get('alerts', [])
+        detections_list = metrics.get('detections_list', [])
+        if alerts or detections_list:
+            self.video_widget.update_alerts(alerts, detections_list)
 
         # Update developer panel if enabled
         if self.developer_mode and self.developer_panel:
