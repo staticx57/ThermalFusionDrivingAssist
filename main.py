@@ -18,9 +18,9 @@ from flir_camera import FLIRBosonCamera
 from camera_factory import create_rgb_camera, detect_all_rgb_cameras
 from camera_detector import CameraDetector
 from vpi_detector import VPIDetector
-from fusion_processor import FusionProcessor, ViewMode
+from fusion_processor import FusionProcessor
 from road_analyzer import RoadAnalyzer
-from driver_gui import DriverGUI
+from driver_gui import DriverGUI, ViewMode
 from performance_monitor import PerformanceMonitor
 
 logging.basicConfig(
