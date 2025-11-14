@@ -272,6 +272,14 @@ class VideoProcessorWorker(QThread):
                 logger.info(f"Frame {self.app.frame_count} | FPS: {self.app.smoothed_fps:.1f} | "
                           f"Detections: {len(detections)} | View: {self.app.view_mode}")
 
+            # Frame rate limiting: Target 30 FPS to avoid overwhelming GUI
+            # This prevents CPU spinning and excessive Qt event queue flooding
+            loop_time = time.time() - loop_start
+            target_frame_time = 1.0 / 30.0  # 30 FPS target
+            sleep_time = target_frame_time - loop_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
     def stop(self):
         """Stop the worker thread gracefully"""
         logger.info("Stopping VideoProcessorWorker...")
