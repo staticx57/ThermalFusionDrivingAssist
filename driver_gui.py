@@ -303,6 +303,7 @@ class DriverGUI:
             Rendered frame
         """
         # Select display frame based on view mode
+        # IMPORTANT: Keep canvas size CONSISTENT to prevent jitter
         if self.view_mode == ViewMode.THERMAL_ONLY:
             display_frame = thermal_frame
         elif self.view_mode == ViewMode.RGB_ONLY:
@@ -310,14 +311,19 @@ class DriverGUI:
         elif self.view_mode == ViewMode.FUSION:
             display_frame = fusion_frame if fusion_frame is not None else thermal_frame
         elif self.view_mode == ViewMode.SIDE_BY_SIDE:
+            # ALWAYS create double-width canvas (prevents jitter from RGB connect/disconnect)
+            h, w = thermal_frame.shape[:2]
             if rgb_frame is not None:
                 # Ensure same height
-                h = thermal_frame.shape[0]
                 if rgb_frame.shape[0] != h:
                     rgb_frame = cv2.resize(rgb_frame, (rgb_frame.shape[1], h))
-                display_frame = np.hstack([thermal_frame, rgb_frame])
             else:
-                display_frame = thermal_frame
+                # Create placeholder RGB frame (same size as thermal)
+                if len(thermal_frame.shape) == 3:
+                    rgb_frame = np.zeros((h, w, 3), dtype=thermal_frame.dtype)
+                else:
+                    rgb_frame = np.zeros((h, w), dtype=thermal_frame.dtype)
+            display_frame = np.hstack([thermal_frame, rgb_frame])
         elif self.view_mode == ViewMode.PICTURE_IN_PICTURE:
             if rgb_frame is not None and thermal_frame is not None:
                 display_frame = self._create_pip(thermal_frame, rgb_frame)
