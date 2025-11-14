@@ -20,7 +20,7 @@ from camera_detector import CameraDetector
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor, ViewMode
 from road_analyzer import RoadAnalyzer
-from driver_gui_v2 import DriverGUI
+from driver_gui import DriverGUI
 from performance_monitor import PerformanceMonitor
 
 logging.basicConfig(
