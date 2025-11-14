@@ -261,7 +261,11 @@ class Config:
         if self.config.get('use_ambient_light', True) and rgb_frame is not None:
             return self.get_theme_from_ambient(rgb_frame)
 
-        # Fall back to time-based
+        # If no RGB camera available, respect user's configured theme (don't auto-switch)
+        if rgb_frame is None:
+            return self.config.get('theme', 'dark')
+
+        # Only use time-based if RGB camera exists but ambient disabled
         return self.get_theme_from_time()
 
     def set_theme_override(self, override: Optional[str], save: bool = True) -> bool:
