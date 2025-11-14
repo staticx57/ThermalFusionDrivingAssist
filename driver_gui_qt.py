@@ -317,10 +317,12 @@ class ControlPanel(QWidget):
         main_layout.addWidget(self.theme_btn)
         main_layout.addWidget(self.retry_btn)
 
-        # Developer controls: Vertical grid layout (3 columns x 3 rows)
+        # Developer controls: 3x3 grid layout
         dev_controls_widget = QWidget()
+        dev_controls_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
+        dev_grid.setContentsMargins(5, 5, 5, 5)
 
         # Column 1: Camera & Detection
         dev_grid.addWidget(self.palette_btn, 0, 0)
@@ -468,11 +470,11 @@ class InfoPanel(QLabel):
         super().__init__(parent)
         self.setObjectName("info_panel")
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.setWordWrap(False)
+        self.setWordWrap(True)  # Allow wrap for long text
 
-        # Compact size - minimal intrusion
-        self.setMinimumSize(180, 60)
-        self.setMaximumSize(220, 80)
+        # Larger size to prevent truncation - still minimal
+        self.setMinimumSize(280, 60)
+        self.setMaximumSize(400, 100)
 
         # Top-left corner (SAE J2400: avoid center placement for non-critical info)
         self.move(10, 10)
@@ -505,17 +507,37 @@ class InfoPanel(QLabel):
             status_icon = "🟢"  # Good - system nominal
             hint = ""  # No action needed
 
-        # Sensor warnings (critical only)
-        sensor_status = ""
-        if not thermal_connected:
-            sensor_status = " | ⚠ THERM"
-        elif not rgb_connected and not thermal_connected:
-            sensor_status = " | ⚠ CAMS"
-        elif not rgb_connected:
-            sensor_status = " | ⚠ RGB"
+        # Two-row layout: Detection first (safety-critical), then system info
 
-        # Compact format: [Status] FPS | Detections [Sensor Warning] [Hint]
-        info_text = f"{status_icon} {fps:.0f} FPS | {detections} Det{sensor_status}{hint}"
+        # Row 1: DETECTION METRICS (most important - what driver needs)
+        if detections > 0:
+            # Emphasize when objects detected - safety critical
+            row1 = f"🎯 DETECTIONS: {detections} Objects"
+        else:
+            # Clear road - reassuring message
+            row1 = f"✓ Road Clear"
+
+        # Row 2: SYSTEM STATUS (diagnostic info)
+        # Include performance quality, FPS, and sensor warnings
+        sensor_warnings = []
+        if not thermal_connected and not rgb_connected:
+            sensor_warnings.append("⚠ No Cameras")
+        elif not thermal_connected:
+            sensor_warnings.append("⚠ No Thermal")
+        elif not rgb_connected:
+            sensor_warnings.append("⚠ No RGB")
+
+        # Build row 2: status icon + FPS + warnings + hints
+        row2_parts = [f"{status_icon} {fps:.0f} FPS"]
+        if sensor_warnings:
+            row2_parts.extend(sensor_warnings)
+        if hint:
+            row2_parts.append(hint.strip())
+
+        row2 = "  |  ".join(row2_parts)
+
+        # Combine rows
+        info_text = f"{row1}\n{row2}"
         self.setText(info_text)
 
 
@@ -560,13 +582,14 @@ class DriverAppWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Video display (90% of space)
+        # Video display (takes remaining space)
         self.video_widget = VideoWidget()
-        main_layout.addWidget(self.video_widget, stretch=9)
+        main_layout.addWidget(self.video_widget, stretch=1)
 
-        # Control panel (10% of space)
+        # Control panel (fixed size, no stretch - expands as needed)
         self.control_panel = ControlPanel()
-        main_layout.addWidget(self.control_panel, stretch=1)
+        self.control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        main_layout.addWidget(self.control_panel, stretch=0)
 
         left_widget.setLayout(main_layout)
         horizontal_layout.addWidget(left_widget)
