@@ -59,8 +59,9 @@ def detect_platform():
 class ThermalRoadMonitorFusion:
     """Main application with thermal-RGB fusion support"""
 
-    def __init__(self, args):
+    def __init__(self, args, qt_app=None):
         self.args = args
+        self.qt_app = qt_app  # QApplication instance (if using Qt GUI)
         self.platform_info = detect_platform()
 
         # Cameras
@@ -384,7 +385,7 @@ class ThermalRoadMonitorFusion:
                 logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
             # 7. Initialize GUI (Qt or OpenCV)
-            use_qt = getattr(self.args, 'use_qt_gui', False)
+            use_qt = getattr(self.args, 'use_qt_gui', False) and self.qt_app is not None
 
             if use_qt:
                 # Qt GUI - Professional interface
@@ -394,8 +395,14 @@ class ThermalRoadMonitorFusion:
                     self.gui = DriverAppWindow()
                     self.gui_type = 'qt'
                     # Qt GUI will be shown in run() method
-                except ImportError:
-                    logger.error("PyQt5 not available. Install with: pip3 install -r requirements_qt.txt")
+                    logger.info("Qt GUI window created successfully")
+                except ImportError as e:
+                    logger.error(f"PyQt5 import error: {e}")
+                    logger.error("Install with: pip3 install -r requirements_qt.txt")
+                    logger.info("Falling back to OpenCV GUI...")
+                    use_qt = False
+                except Exception as e:
+                    logger.error(f"Qt GUI creation error: {e}")
                     logger.info("Falling back to OpenCV GUI...")
                     use_qt = False
 
@@ -644,6 +651,11 @@ class ThermalRoadMonitorFusion:
         logger.info("Starting main loop...")
         self.running = True
 
+        # Show Qt GUI window if using Qt
+        if self.gui_type == 'qt':
+            self.gui.show()
+            logger.info("Qt GUI window shown")
+
         # Start async detection worker thread
         self.detection_thread = threading.Thread(target=self._detection_worker, daemon=True)
         self.detection_thread.start()
@@ -846,8 +858,24 @@ class ThermalRoadMonitorFusion:
                         lidar_available=False  # NEW (will be True when LiDAR integrated)
                     )
 
-                    key = self.gui.display(display_frame)
-                    self._handle_keypress(key, display_frame)
+                    # Display frame based on GUI type
+                    if self.gui_type == 'qt':
+                        # Qt GUI: Update frame and process events
+                        self.gui.update_frame(display_frame)
+                        self.gui.update_metrics(
+                            fps=self.smoothed_fps,
+                            detections=len(detections),
+                            thermal_connected=self.thermal_connected,
+                            rgb_connected=self.rgb_available
+                        )
+                        # Process Qt events (allows GUI to remain responsive)
+                        self.qt_app.processEvents()
+                        # Qt GUI doesn't return key codes in the same way, use a small delay
+                        time.sleep(0.001)
+                    else:
+                        # OpenCV GUI: Traditional display with key handling
+                        key = self.gui.display(display_frame)
+                        self._handle_keypress(key, display_frame)
                 except Exception as e:
                     logger.error(f"GUI error: {e}", exc_info=True)
 
@@ -1133,7 +1161,19 @@ def main():
     """)
 
     args = parse_arguments()
-    app = ThermalRoadMonitorFusion(args)
+
+    # Initialize QApplication if using Qt GUI (must be created before any Qt widgets)
+    qt_app = None
+    if getattr(args, 'use_qt_gui', False):
+        try:
+            from PyQt5.QtWidgets import QApplication
+            qt_app = QApplication(sys.argv)
+            qt_app.setApplicationName("Thermal Fusion Driving Assist")
+            logger.info("QApplication initialized")
+        except ImportError:
+            logger.warning("PyQt5 not available, will fall back to OpenCV GUI")
+
+    app = ThermalRoadMonitorFusion(args, qt_app=qt_app)
 
     if not app.initialize():
         logger.error("Failed to initialize application")
