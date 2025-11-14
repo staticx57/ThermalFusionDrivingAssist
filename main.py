@@ -462,10 +462,13 @@ class ThermalRoadMonitorFusion:
             button_id = self.gui.check_button_click(x, y)
 
             if button_id == 'palette_cycle':
-                self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
-                new_palette = self.available_palettes[self.current_palette_idx]
-                self.detector.set_palette(new_palette)
-                logger.info(f"Palette changed to: {new_palette}")
+                if self.detector:
+                    self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
+                    new_palette = self.available_palettes[self.current_palette_idx]
+                    self.detector.set_palette(new_palette)
+                    logger.info(f"Palette changed to: {new_palette}")
+                else:
+                    logger.warning("Palette change requires thermal camera connection")
 
             elif button_id == 'yolo_toggle':
                 self.yolo_enabled = not self.yolo_enabled
@@ -484,12 +487,15 @@ class ThermalRoadMonitorFusion:
                 logger.info(f"Frame skip set to: {self.frame_skip_value}")
 
             elif button_id == 'device_toggle':
-                self.device = 'cpu' if self.device == 'cuda' else 'cuda'
-                self.detector.set_device(self.device)
-                logger.info(f"Device switched to: {self.device.upper()}")
+                if self.detector:
+                    self.device = 'cpu' if self.device == 'cuda' else 'cuda'
+                    self.detector.set_device(self.device)
+                    logger.info(f"Device switched to: {self.device.upper()}")
+                else:
+                    logger.warning("Device toggle requires thermal camera connection")
 
             elif button_id == 'model_cycle':
-                if not self.model_switching and self.detector.detection_mode == 'model':
+                if self.detector and not self.model_switching and self.detector.detection_mode == 'model':
                     self.model_switching = True
                     self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
                     new_model = self.available_models[self.current_model_index]
@@ -498,6 +504,8 @@ class ThermalRoadMonitorFusion:
                     self.detector.load_yolo_model(new_model)
                     self.model_switching = False
                     logger.info(f"Model switched to: {new_model}")
+                elif not self.detector:
+                    logger.warning("Model switching requires thermal camera connection")
 
             elif button_id == 'view_mode_cycle':
                 # Cycle through view modes
@@ -714,11 +722,22 @@ class ThermalRoadMonitorFusion:
                             self.rgb_camera = None
 
                 # 3. Apply thermal color palette
-                try:
-                    thermal_colored = self.detector.apply_thermal_palette(thermal_frame)
-                except Exception as e:
-                    logger.error(f"Error applying palette: {e}")
-                    thermal_colored = thermal_frame
+                if self.detector:
+                    try:
+                        thermal_colored = self.detector.apply_thermal_palette(thermal_frame)
+                    except Exception as e:
+                        logger.error(f"Error applying palette: {e}")
+                        thermal_colored = thermal_frame
+                else:
+                    # No detector available (no thermal camera) - create grayscale placeholder
+                    if len(thermal_frame.shape) == 2:
+                        # Convert grayscale to BGR for consistent display
+                        thermal_colored = cv2.cvtColor(
+                            cv2.normalize(thermal_frame, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8),
+                            cv2.COLOR_GRAY2BGR
+                        )
+                    else:
+                        thermal_colored = thermal_frame
 
                 # 4. Create fused frame (if RGB available)
                 fusion_frame = None
@@ -846,14 +865,20 @@ class ThermalRoadMonitorFusion:
             print(self.perf_monitor.get_summary())
             print("="*50 + "\n")
         elif key == ord('c') or key == ord('C'):
-            self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
-            new_palette = self.available_palettes[self.current_palette_idx]
-            self.detector.set_palette(new_palette)
-            logger.info(f"Palette: {new_palette}")
+            if self.detector:
+                self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
+                new_palette = self.available_palettes[self.current_palette_idx]
+                self.detector.set_palette(new_palette)
+                logger.info(f"Palette: {new_palette}")
+            else:
+                logger.warning("Palette change requires thermal camera connection")
         elif key == ord('g') or key == ord('G'):
-            self.device = 'cpu' if self.device == 'cuda' else 'cuda'
-            self.detector.set_device(self.device)
-            logger.info(f"Device: {self.device.upper()}")
+            if self.detector:
+                self.device = 'cpu' if self.device == 'cuda' else 'cuda'
+                self.detector.set_device(self.device)
+                logger.info(f"Device: {self.device.upper()}")
+            else:
+                logger.warning("Device toggle requires thermal camera connection")
         elif key == ord('a') or key == ord('A'):
             # Toggle audio alerts (v3.0)
             self.audio_enabled = not self.audio_enabled

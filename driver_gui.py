@@ -960,9 +960,19 @@ class DriverGUI:
         x = max(0, min(x, canvas_w - panel_w))
         y = max(0, min(y, canvas_h - panel_h))
 
-        roi = canvas[y:y+panel_h, x:x+panel_w]
-        cv2.addWeighted(panel, 0.75, roi, 0.25, 0, roi)
-        canvas[y:y+panel_h, x:x+panel_w] = roi
+        # Ensure panel fits within canvas bounds
+        actual_panel_h = min(panel_h, canvas_h - y)
+        actual_panel_w = min(panel_w, canvas_w - x)
+
+        # Only overlay if we have valid dimensions
+        if actual_panel_h > 0 and actual_panel_w > 0:
+            roi = canvas[y:y+actual_panel_h, x:x+actual_panel_w]
+            panel_crop = panel[0:actual_panel_h, 0:actual_panel_w]
+
+            # Ensure dimensions match exactly
+            if roi.shape == panel_crop.shape:
+                cv2.addWeighted(panel_crop, 0.75, roi, 0.25, 0, roi)
+                canvas[y:y+actual_panel_h, x:x+actual_panel_w] = roi
 
     def _create_metrics_overlay(self, metrics: dict, detections: List[Detection]) -> np.ndarray:
         """Create metrics panel"""
