@@ -1,0 +1,666 @@
+#!/usr/bin/env python3
+"""
+FLIR Boson Thermal + RGB Fusion Road Monitor
+Cross-platform: Jetson Orin (ARM + CUDA) and x86-64 workstations
+Features: Thermal-RGB fusion, multi-view display, smart proximity alerts
+"""
+import sys
+import time
+import logging
+import argparse
+import threading
+import platform
+from queue import Queue
+import cv2
+import os
+
+from flir_camera import FLIRBosonCamera
+from rgb_camera import RGBCamera, detect_rgb_cameras
+from camera_detector import CameraDetector
+from vpi_detector import VPIDetector
+from fusion_processor import FusionProcessor, ViewMode
+from road_analyzer import RoadAnalyzer
+from driver_gui_v2 import DriverGUI
+from performance_monitor import PerformanceMonitor
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+def detect_platform():
+    """
+    Detect platform (Jetson ARM or x86-64 workstation)
+
+    Returns:
+        dict with platform info
+    """
+    machine = platform.machine()
+    is_jetson = os.path.exists('/etc/nv_tegra_release') or 'tegra' in platform.platform().lower()
+
+    platform_info = {
+        'machine': machine,
+        'is_jetson': is_jetson,
+        'is_arm': machine in ['aarch64', 'arm64', 'armv7l'],
+        'is_x86': machine in ['x86_64', 'AMD64', 'i386', 'i686'],
+        'system': platform.system(),
+        'platform': platform.platform()
+    }
+
+    logger.info(f"Platform detection: {platform_info}")
+    return platform_info
+
+
+class ThermalRoadMonitorFusion:
+    """Main application with thermal-RGB fusion support"""
+
+    def __init__(self, args):
+        self.args = args
+        self.platform_info = detect_platform()
+
+        # Cameras
+        self.thermal_camera = None
+        self.rgb_camera = None
+        self.rgb_available = False
+
+        # Processing
+        self.detector = None
+        self.fusion_processor = None
+        self.analyzer = None
+        self.gui = None
+        self.perf_monitor = None
+
+        # Runtime state
+        self.running = False
+        self.show_detections = True
+        self.yolo_enabled = (getattr(args, 'detection_mode', 'edge') == 'model')
+        self.frame_count = 0
+        self.device = getattr(args, 'device', 'cuda')
+
+        # Performance tuning
+        self.buffer_flush_enabled = False
+        self.frame_skip_value = 1
+
+        # Model management
+        self.available_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt']
+        self.current_model = getattr(args, 'model', 'yolov8s.pt')
+        self.current_model_index = 0
+        if self.current_model in self.available_models:
+            self.current_model_index = self.available_models.index(self.current_model)
+        self.model_switching = False
+
+        # Fusion settings
+        self.fusion_mode = getattr(args, 'fusion_mode', 'alpha_blend')
+        self.fusion_alpha = getattr(args, 'fusion_alpha', 0.5)
+        self.available_fusion_modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                                       'side_by_side', 'picture_in_picture', 'max_intensity',
+                                       'feature_weighted']
+        self.current_fusion_mode_index = 0
+        if self.fusion_mode in self.available_fusion_modes:
+            self.current_fusion_mode_index = self.available_fusion_modes.index(self.fusion_mode)
+
+        # View mode
+        self.view_mode = ViewMode.THERMAL_ONLY  # Start with thermal
+
+        # FPS smoothing
+        from collections import deque
+        self.frame_times = deque(maxlen=60)
+        self.smoothed_fps = 60.0
+        self.min_frame_time = 1.0 / 60.0
+
+        # Async detection
+        self.detection_thread = None
+        self.detection_queue = Queue(maxsize=2)
+        self.result_queue = Queue(maxsize=2)
+        self.detection_lock = threading.Lock()
+        self.latest_detections = []
+        self.latest_alerts = []
+
+    def initialize(self) -> bool:
+        """Initialize all components"""
+        logger.info("Initializing Thermal + RGB Fusion Road Monitor...")
+        logger.info(f"Platform: {'Jetson' if self.platform_info['is_jetson'] else 'x86-64'} "
+                   f"({self.platform_info['machine']})")
+
+        try:
+            # 1. Detect thermal camera
+            if self.args.camera_id is None:
+                logger.info("Auto-detecting thermal cameras...")
+                cameras = CameraDetector.detect_all_cameras()
+                CameraDetector.print_camera_list(cameras)
+
+                flir_camera = CameraDetector.find_flir_boson()
+                if flir_camera:
+                    self.args.camera_id = flir_camera.device_id
+                    self.args.width = flir_camera.resolution[0] if flir_camera.resolution[0] > 0 else self.args.width
+                    self.args.height = flir_camera.resolution[1] if flir_camera.resolution[1] > 0 else self.args.height
+                else:
+                    logger.error("No thermal camera detected")
+                    return False
+
+            # 2. Initialize thermal camera
+            logger.info(f"Opening thermal camera device {self.args.camera_id}...")
+            self.thermal_camera = FLIRBosonCamera(
+                device_id=self.args.camera_id,
+                resolution=(self.args.width, self.args.height)
+            )
+            if not self.thermal_camera.open():
+                return False
+
+            actual_res = self.thermal_camera.get_actual_resolution()
+            logger.info(f"Thermal camera opened: {actual_res[0]}x{actual_res[1]}")
+
+            # 3. Detect and initialize RGB camera (optional)
+            if not self.args.disable_rgb:
+                logger.info("Detecting RGB cameras...")
+                rgb_cameras = detect_rgb_cameras()
+
+                if rgb_cameras:
+                    # Use first available RGB camera (USB or CSI)
+                    rgb_cam_info = rgb_cameras[0]
+                    logger.info(f"Found {rgb_cam_info['type']} RGB camera: ID {rgb_cam_info['id']}")
+
+                    use_gstreamer = (rgb_cam_info['type'] == 'CSI')
+                    self.rgb_camera = RGBCamera(
+                        device_id=rgb_cam_info['id'],
+                        resolution=(640, 480),  # Standard RGB resolution
+                        fps=30,
+                        use_gstreamer=use_gstreamer
+                    )
+
+                    if self.rgb_camera.open():
+                        self.rgb_available = True
+                        rgb_res = self.rgb_camera.get_actual_resolution()
+                        logger.info(f"RGB camera opened: {rgb_res[0]}x{rgb_res[1]}")
+                    else:
+                        logger.warning("RGB camera failed to open - continuing with thermal only")
+                        self.rgb_camera = None
+                else:
+                    logger.info("No RGB cameras found - continuing with thermal only")
+            else:
+                logger.info("RGB camera disabled by user")
+
+            # 4. Initialize fusion processor (if RGB available)
+            if self.rgb_available:
+                calibration_file = getattr(self.args, 'calibration_file', None)
+                self.fusion_processor = FusionProcessor(
+                    fusion_mode=self.fusion_mode,
+                    alpha=self.fusion_alpha,
+                    calibration_file=calibration_file
+                )
+                logger.info(f"Fusion processor initialized (mode: {self.fusion_mode})")
+
+                # Set default view to fusion if RGB available
+                self.view_mode = ViewMode.FUSION
+            else:
+                logger.info("Fusion processor not initialized (no RGB camera)")
+                self.view_mode = ViewMode.THERMAL_ONLY
+
+            # 5. Initialize VPI detector
+            detection_mode = getattr(self.args, 'detection_mode', 'edge')
+            model_path = getattr(self.args, 'model', None) if detection_mode == 'model' else None
+            logger.info(f"Initializing VPI detector (mode: {detection_mode}, device: {self.device})...")
+            palette = getattr(self.args, 'palette', 'ironbow')
+
+            # Check VPI availability (may not be on x86)
+            try:
+                import vpi
+                vpi_available = True
+            except ImportError:
+                vpi_available = False
+                logger.warning("VPI not available on this platform - using CPU-only processing")
+                if self.device == 'cuda':
+                    logger.info("Forcing device to CPU (VPI not available)")
+                    self.device = 'cpu'
+
+            self.detector = VPIDetector(
+                confidence_threshold=self.args.confidence,
+                thermal_palette=palette,
+                model_path=model_path,
+                detection_mode=detection_mode,
+                device=self.device
+            )
+
+            if not self.detector.initialize():
+                logger.error("Failed to initialize VPI detector")
+                return False
+
+            self.available_palettes = self.detector.get_available_palettes()
+            self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
+
+            # 6. Initialize road analyzer
+            self.analyzer = RoadAnalyzer(
+                frame_width=actual_res[0],
+                frame_height=actual_res[1]
+            )
+
+            # 7. Initialize enhanced GUI
+            scale_factor = getattr(self.args, 'scale', 2.0)
+            self.gui = DriverGUI(
+                window_name="Thermal Fusion Driving Assist",
+                scale_factor=scale_factor
+            )
+
+            # Calculate window size
+            video_width = int(actual_res[0] * scale_factor)
+            video_height = int(actual_res[1] * scale_factor)
+            window_width = video_width * 2
+            window_height = video_height * 2
+
+            self.gui.create_window(
+                fullscreen=self.args.fullscreen,
+                window_width=window_width,
+                window_height=window_height
+            )
+
+            # Set up mouse callback
+            cv2.setMouseCallback(self.gui.window_name, self._mouse_callback)
+
+            # 8. Initialize performance monitor
+            self.perf_monitor = PerformanceMonitor()
+
+            logger.info("Initialization complete!")
+            logger.info(f"RGB camera: {'ENABLED' if self.rgb_available else 'DISABLED'}")
+            logger.info(f"View mode: {self.view_mode}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Initialization failed: {e}", exc_info=True)
+            return False
+
+    def _detection_worker(self):
+        """Background thread for async YOLO detection"""
+        logger.info("Detection worker thread started")
+
+        while self.running:
+            try:
+                if self.yolo_enabled and not self.detection_queue.empty():
+                    frame = self.detection_queue.get(timeout=0.1)
+
+                    self.detector.frame_skip = self.frame_skip_value
+
+                    detections = self.detector.detect(frame, filter_road_objects=True)
+                    alerts = self.analyzer.analyze(detections)
+
+                    with self.detection_lock:
+                        self.latest_detections = detections
+                        self.latest_alerts = alerts
+
+                    self.perf_monitor.update_inference_metrics(
+                        self.detector.fps,
+                        self.detector.last_inference_time * 1000
+                    )
+                elif not self.yolo_enabled:
+                    with self.detection_lock:
+                        self.latest_detections = []
+                        self.latest_alerts = []
+                    while not self.detection_queue.empty():
+                        try:
+                            self.detection_queue.get_nowait()
+                        except:
+                            break
+                    time.sleep(0.05)
+                else:
+                    time.sleep(0.001)
+
+            except Exception as e:
+                logger.error(f"Detection worker error: {e}")
+                time.sleep(0.1)
+
+        logger.info("Detection worker thread stopped")
+
+    def _mouse_callback(self, event, x, y, flags, param):
+        """Handle mouse clicks on GUI buttons"""
+        if event == cv2.EVENT_LBUTTONDOWN:
+            button_id = self.gui.check_button_click(x, y)
+
+            if button_id == 'palette_cycle':
+                self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
+                new_palette = self.available_palettes[self.current_palette_idx]
+                self.detector.set_palette(new_palette)
+                logger.info(f"Palette changed to: {new_palette}")
+
+            elif button_id == 'yolo_toggle':
+                self.yolo_enabled = not self.yolo_enabled
+                logger.info(f"YOLO detection {'enabled' if self.yolo_enabled else 'disabled'}")
+
+            elif button_id == 'detection_toggle':
+                self.show_detections = not self.show_detections
+                logger.info(f"Detection boxes {'enabled' if self.show_detections else 'disabled'}")
+
+            elif button_id == 'buffer_flush_toggle':
+                self.buffer_flush_enabled = not self.buffer_flush_enabled
+                logger.info(f"Buffer flush {'enabled' if self.buffer_flush_enabled else 'disabled'}")
+
+            elif button_id == 'frame_skip_cycle':
+                self.frame_skip_value = (self.frame_skip_value + 1) % 4
+                logger.info(f"Frame skip set to: {self.frame_skip_value}")
+
+            elif button_id == 'device_toggle':
+                self.device = 'cpu' if self.device == 'cuda' else 'cuda'
+                self.detector.set_device(self.device)
+                logger.info(f"Device switched to: {self.device.upper()}")
+
+            elif button_id == 'model_cycle':
+                if not self.model_switching and self.detector.detection_mode == 'model':
+                    self.model_switching = True
+                    self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
+                    new_model = self.available_models[self.current_model_index]
+                    self.current_model = new_model
+                    logger.info(f"Switching to model: {new_model}")
+                    self.detector.load_yolo_model(new_model)
+                    self.model_switching = False
+                    logger.info(f"Model switched to: {new_model}")
+
+            elif button_id == 'view_mode_cycle':
+                # Cycle through view modes
+                modes = [ViewMode.THERMAL_ONLY]
+                if self.rgb_available:
+                    modes.extend([ViewMode.RGB_ONLY, ViewMode.FUSION,
+                                 ViewMode.SIDE_BY_SIDE, ViewMode.PICTURE_IN_PICTURE])
+
+                current_idx = modes.index(self.view_mode) if self.view_mode in modes else 0
+                next_idx = (current_idx + 1) % len(modes)
+                self.view_mode = modes[next_idx]
+                self.gui.set_view_mode(self.view_mode)
+                logger.info(f"View mode changed to: {self.view_mode}")
+
+            elif button_id == 'fusion_mode_cycle':
+                if self.fusion_processor:
+                    self.current_fusion_mode_index = (self.current_fusion_mode_index + 1) % len(self.available_fusion_modes)
+                    self.fusion_mode = self.available_fusion_modes[self.current_fusion_mode_index]
+                    self.fusion_processor.set_fusion_mode(self.fusion_mode)
+                    logger.info(f"Fusion mode changed to: {self.fusion_mode}")
+
+            elif button_id == 'fusion_alpha_adjust':
+                if self.fusion_processor:
+                    # Cycle through alpha values: 0.3, 0.5, 0.7
+                    alpha_values = [0.3, 0.5, 0.7]
+                    current_idx = min(range(len(alpha_values)),
+                                     key=lambda i: abs(alpha_values[i] - self.fusion_alpha))
+                    next_idx = (current_idx + 1) % len(alpha_values)
+                    self.fusion_alpha = alpha_values[next_idx]
+                    self.fusion_processor.set_alpha(self.fusion_alpha)
+                    logger.info(f"Fusion alpha set to: {self.fusion_alpha}")
+
+    def run(self):
+        """Main application loop"""
+        logger.info("Starting main loop...")
+        self.running = True
+
+        # Start async detection worker thread
+        self.detection_thread = threading.Thread(target=self._detection_worker, daemon=True)
+        self.detection_thread.start()
+        logger.info("Async detection thread started")
+
+        try:
+            while self.running:
+                loop_start = time.time()
+
+                # 1. Capture thermal frame
+                try:
+                    ret_thermal, thermal_frame = self.thermal_camera.read(flush_buffer=self.buffer_flush_enabled)
+                    if not ret_thermal or thermal_frame is None:
+                        logger.warning("Failed to read thermal frame")
+                        time.sleep(0.1)
+                        continue
+                except Exception as e:
+                    logger.error(f"Error reading thermal camera: {e}", exc_info=True)
+                    break
+
+                # 2. Capture RGB frame (if available)
+                rgb_frame = None
+                if self.rgb_available and self.rgb_camera:
+                    try:
+                        ret_rgb, rgb_frame = self.rgb_camera.read(flush_buffer=self.buffer_flush_enabled)
+                        if not ret_rgb:
+                            rgb_frame = None
+                    except Exception as e:
+                        logger.debug(f"RGB camera read error: {e}")
+                        rgb_frame = None
+
+                # 3. Apply thermal color palette
+                try:
+                    thermal_colored = self.detector.apply_thermal_palette(thermal_frame)
+                except Exception as e:
+                    logger.error(f"Error applying palette: {e}")
+                    thermal_colored = thermal_frame
+
+                # 4. Create fused frame (if RGB available)
+                fusion_frame = None
+                if self.rgb_available and rgb_frame is not None and self.fusion_processor:
+                    try:
+                        fusion_frame = self.fusion_processor.fuse_frames(thermal_colored, rgb_frame)
+                    except Exception as e:
+                        logger.debug(f"Fusion error: {e}")
+                        fusion_frame = None
+
+                # 5. Select frame for detection based on view mode
+                if self.view_mode == ViewMode.RGB_ONLY and rgb_frame is not None:
+                    detection_frame = rgb_frame
+                elif self.view_mode == ViewMode.FUSION and fusion_frame is not None:
+                    detection_frame = fusion_frame
+                else:
+                    detection_frame = thermal_colored
+
+                # 6. Send frame to async detection
+                if not self.detection_queue.full():
+                    try:
+                        self.detection_queue.put_nowait(detection_frame.copy())
+                    except:
+                        pass
+
+                # 7. Get latest detections
+                with self.detection_lock:
+                    detections = self.latest_detections.copy()
+                    alerts = self.latest_alerts.copy()
+
+                # 8. Update metrics
+                if self.frame_count % 5 == 0:
+                    self.perf_monitor.update()
+
+                metrics = self.perf_monitor.get_metrics()
+
+                # Calculate smoothed FPS
+                loop_time = time.time() - loop_start
+                clamped_time = min(loop_time, self.min_frame_time)
+                self.frame_times.append(clamped_time)
+
+                if len(self.frame_times) > 0:
+                    avg_frame_time = sum(self.frame_times) / len(self.frame_times)
+                    self.smoothed_fps = 1.0 / avg_frame_time if avg_frame_time > 0 else 60.0
+                    self.smoothed_fps = min(self.smoothed_fps, 60.0)
+
+                metrics['fps'] = self.smoothed_fps
+
+                # 9. Render and display
+                try:
+                    current_palette = self.available_palettes[self.current_palette_idx]
+                    display_frame = self.gui.render_frame_with_controls(
+                        thermal_frame=thermal_colored,
+                        rgb_frame=rgb_frame,
+                        fusion_frame=fusion_frame,
+                        detections=detections,
+                        alerts=alerts,
+                        metrics=metrics,
+                        show_detections=self.show_detections,
+                        current_palette=current_palette,
+                        yolo_enabled=self.yolo_enabled,
+                        buffer_flush_enabled=self.buffer_flush_enabled,
+                        frame_skip_value=self.frame_skip_value,
+                        device=self.device,
+                        current_model=self.current_model,
+                        fusion_mode=self.fusion_mode,
+                        fusion_alpha=self.fusion_alpha
+                    )
+
+                    key = self.gui.display(display_frame)
+                    self._handle_keypress(key, display_frame)
+                except Exception as e:
+                    logger.error(f"GUI error: {e}", exc_info=True)
+
+                self.frame_count += 1
+
+                # Print stats
+                if self.frame_count % 100 == 0:
+                    logger.info(f"Frame {self.frame_count} | FPS: {self.smoothed_fps:.1f} | "
+                              f"Detections: {len(detections)} | View: {self.view_mode}")
+
+        except KeyboardInterrupt:
+            logger.info("Interrupted by user")
+        except Exception as e:
+            logger.error(f"Error in main loop: {e}", exc_info=True)
+        finally:
+            self.shutdown()
+
+    def _handle_keypress(self, key: int, frame):
+        """Handle keyboard input"""
+        if key == ord('q') or key == 27:
+            self.running = False
+        elif key == ord('f'):
+            self.gui.toggle_fullscreen()
+        elif key == ord('d'):
+            self.show_detections = not self.show_detections
+        elif key == ord('y') or key == ord('Y'):
+            self.yolo_enabled = not self.yolo_enabled
+            logger.info(f"YOLO detection {'enabled' if self.yolo_enabled else 'disabled'}")
+        elif key == ord('v') or key == ord('V'):
+            # Cycle view modes
+            modes = [ViewMode.THERMAL_ONLY]
+            if self.rgb_available:
+                modes.extend([ViewMode.RGB_ONLY, ViewMode.FUSION,
+                             ViewMode.SIDE_BY_SIDE, ViewMode.PICTURE_IN_PICTURE])
+            current_idx = modes.index(self.view_mode) if self.view_mode in modes else 0
+            next_idx = (current_idx + 1) % len(modes)
+            self.view_mode = modes[next_idx]
+            self.gui.set_view_mode(self.view_mode)
+            logger.info(f"View mode: {self.view_mode}")
+        elif key == ord('s'):
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_{timestamp}.png"
+            cv2.imwrite(filename, frame)
+            logger.info(f"Screenshot saved: {filename}")
+        elif key == ord('p'):
+            print("\n" + "="*50)
+            print(self.perf_monitor.get_summary())
+            print("="*50 + "\n")
+        elif key == ord('c') or key == ord('C'):
+            self.current_palette_idx = (self.current_palette_idx + 1) % len(self.available_palettes)
+            new_palette = self.available_palettes[self.current_palette_idx]
+            self.detector.set_palette(new_palette)
+            logger.info(f"Palette: {new_palette}")
+        elif key == ord('g') or key == ord('G'):
+            self.device = 'cpu' if self.device == 'cuda' else 'cuda'
+            self.detector.set_device(self.device)
+            logger.info(f"Device: {self.device.upper()}")
+
+    def shutdown(self):
+        """Cleanup resources"""
+        logger.info("Shutting down...")
+
+        self.running = False
+        if self.detection_thread and self.detection_thread.is_alive():
+            logger.info("Waiting for detection thread...")
+            self.detection_thread.join(timeout=2.0)
+
+        if self.thermal_camera:
+            self.thermal_camera.release()
+        if self.rgb_camera:
+            self.rgb_camera.release()
+        if self.detector:
+            self.detector.release()
+        if self.gui:
+            self.gui.close()
+        if self.perf_monitor:
+            self.perf_monitor.release()
+        logger.info("Shutdown complete")
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description="FLIR Boson Thermal + RGB Fusion Road Monitor",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    # Camera options
+    parser.add_argument('--camera-id', type=int, default=None,
+                       help='Thermal camera device ID (auto-detect if not specified)')
+    parser.add_argument('--width', type=int, default=640, help='Camera frame width')
+    parser.add_argument('--height', type=int, default=512, help='Camera frame height')
+    parser.add_argument('--disable-rgb', action='store_true',
+                       help='Disable RGB camera (thermal only mode)')
+
+    # Detection options
+    parser.add_argument('--confidence', type=float, default=0.25,
+                       help='Detection confidence threshold')
+    parser.add_argument('--detection-mode', type=str, default='model',
+                       choices=['edge', 'model'], help='Detection mode')
+    parser.add_argument('--model', type=str, default='yolov8n.pt',
+                       help='YOLO model path')
+    parser.add_argument('--device', type=str, default='cuda',
+                       choices=['cuda', 'cpu'], help='Processing device')
+
+    # Display options
+    parser.add_argument('--fullscreen', action='store_true', help='Start in fullscreen')
+    parser.add_argument('--scale', type=float, default=2.0, help='Display scale factor')
+    parser.add_argument('--palette', type=str, default='ironbow',
+                       choices=['white_hot', 'black_hot', 'ironbow', 'rainbow',
+                               'arctic', 'lava', 'medical', 'plasma'],
+                       help='Thermal color palette')
+
+    # Fusion options
+    parser.add_argument('--fusion-mode', type=str, default='alpha_blend',
+                       choices=['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                               'side_by_side', 'picture_in_picture', 'max_intensity',
+                               'feature_weighted'],
+                       help='Fusion algorithm')
+    parser.add_argument('--fusion-alpha', type=float, default=0.5,
+                       help='Fusion blend ratio (0.0=RGB, 1.0=Thermal)')
+    parser.add_argument('--calibration-file', type=str, default=None,
+                       help='Camera calibration file (JSON)')
+
+    return parser.parse_args()
+
+
+def main():
+    print("""
+╔══════════════════════════════════════════════════════════════╗
+║   FLIR Thermal + RGB Fusion Road Monitor                    ║
+║   Cross-Platform: Jetson Orin & x86-64 Workstations        ║
+╠══════════════════════════════════════════════════════════════╣
+║  Keyboard Controls:                                          ║
+║    Q/ESC - Quit          F - Fullscreen      D - Detections  ║
+║    Y - Toggle YOLO       V - Cycle Views     S - Screenshot  ║
+║    C - Cycle Palettes    G - Device Toggle   P - Stats       ║
+║                                                               ║
+║  GUI Buttons (click):                                        ║
+║    Row 1: PAL, YOLO, BOX, DEV, MODEL                        ║
+║    Row 2: FLUSH, SKIP, VIEW, FUS, α                         ║
+║                                                               ║
+║  View Modes: Thermal, RGB, Fusion, Side-by-Side, PIP       ║
+║  Fusion Modes: Alpha Blend, Edge Enhanced, Thermal Overlay  ║
+║                Side-by-Side, PIP, Max Intensity, Weighted   ║
+║                                                               ║
+║  Smart Features:                                             ║
+║    • RED PULSE alerts on sides for pedestrians/animals      ║
+║    • Directional proximity warnings (left/right/center)     ║
+║    • Multi-view support for optimal situational awareness   ║
+╚══════════════════════════════════════════════════════════════╝
+    """)
+
+    args = parse_arguments()
+    app = ThermalRoadMonitorFusion(args)
+
+    if not app.initialize():
+        logger.error("Failed to initialize application")
+        sys.exit(1)
+
+    app.run()
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

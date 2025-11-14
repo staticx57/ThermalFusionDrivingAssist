@@ -1,0 +1,467 @@
+"""
+Thermal-RGB Fusion Processor
+Combines thermal and RGB imagery for enhanced object detection
+Optimized for Jetson Orin with GPU acceleration
+"""
+import cv2
+import numpy as np
+import logging
+from typing import Tuple, Optional, Dict
+import json
+import os
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class FusionProcessor:
+    """
+    Multi-modal fusion processor for thermal and RGB cameras
+    Supports multiple fusion strategies optimized for driving assistance
+    """
+
+    def __init__(self, fusion_mode: str = 'alpha_blend', alpha: float = 0.5,
+                 calibration_file: Optional[str] = None):
+        """
+        Initialize fusion processor
+
+        Args:
+            fusion_mode: Fusion strategy
+                - 'alpha_blend': Simple weighted average of thermal + RGB
+                - 'edge_enhanced': RGB base with thermal edges overlaid
+                - 'thermal_overlay': Thermal hotspots overlaid on RGB
+                - 'side_by_side': Concatenate thermal and RGB horizontally
+                - 'picture_in_picture': Thermal in corner of RGB (or vice versa)
+                - 'max_intensity': Take maximum intensity from both sources
+                - 'feature_weighted': Adaptive blending based on edge strength
+            alpha: Blend ratio for alpha_blend mode (0.0 = all RGB, 1.0 = all thermal)
+            calibration_file: Path to camera calibration file (JSON with homography matrix)
+        """
+        self.fusion_mode = fusion_mode
+        self.alpha = alpha
+        self.calibration_matrix = None
+        self.calibration_file = calibration_file
+
+        # Load calibration if available
+        if calibration_file and os.path.exists(calibration_file):
+            self.load_calibration(calibration_file)
+        else:
+            logger.warning("No calibration file provided - using identity transform")
+
+    def load_calibration(self, calibration_file: str) -> bool:
+        """
+        Load camera calibration from file
+
+        Args:
+            calibration_file: Path to JSON file with homography matrix
+
+        Returns:
+            True if successful
+        """
+        try:
+            with open(calibration_file, 'r') as f:
+                calib_data = json.load(f)
+
+            # Load homography matrix (3x3)
+            if 'homography' in calib_data:
+                self.calibration_matrix = np.array(calib_data['homography'], dtype=np.float32)
+                logger.info(f"Loaded calibration from {calibration_file}")
+                return True
+            else:
+                logger.error("Calibration file missing 'homography' key")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to load calibration: {e}")
+            return False
+
+    def save_calibration(self, calibration_file: str) -> bool:
+        """
+        Save camera calibration to file
+
+        Args:
+            calibration_file: Path to output JSON file
+
+        Returns:
+            True if successful
+        """
+        try:
+            if self.calibration_matrix is None:
+                logger.error("No calibration matrix to save")
+                return False
+
+            calib_data = {
+                'homography': self.calibration_matrix.tolist()
+            }
+
+            with open(calibration_file, 'w') as f:
+                json.dump(calib_data, f, indent=2)
+
+            logger.info(f"Saved calibration to {calibration_file}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save calibration: {e}")
+            return False
+
+    def align_rgb_to_thermal(self, rgb: np.ndarray, thermal_shape: Tuple[int, int]) -> np.ndarray:
+        """
+        Align RGB frame to thermal frame coordinate system
+
+        Args:
+            rgb: RGB frame (any size)
+            thermal_shape: Target thermal resolution (height, width)
+
+        Returns:
+            Aligned RGB frame matching thermal dimensions
+        """
+        target_h, target_w = thermal_shape
+
+        try:
+            if self.calibration_matrix is not None:
+                # Use calibration matrix for precise alignment
+                rgb_aligned = cv2.warpPerspective(
+                    rgb, self.calibration_matrix,
+                    (target_w, target_h),
+                    flags=cv2.INTER_LINEAR
+                )
+            else:
+                # Simple resize as fallback
+                rgb_aligned = cv2.resize(rgb, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+
+            return rgb_aligned
+
+        except Exception as e:
+            logger.error(f"Error aligning RGB frame: {e}")
+            return cv2.resize(rgb, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+
+    def fuse_frames(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Fuse thermal and RGB frames using selected strategy
+
+        Args:
+            thermal: Thermal frame (colorized, BGR format)
+            rgb: RGB frame (BGR format)
+
+        Returns:
+            Fused frame (BGR format)
+        """
+        # Validate inputs
+        if thermal is None or rgb is None:
+            logger.error("Invalid input frames for fusion")
+            return thermal if thermal is not None else rgb
+
+        # Ensure both frames are BGR
+        if len(thermal.shape) == 2:
+            thermal = cv2.cvtColor(thermal, cv2.COLOR_GRAY2BGR)
+        if len(rgb.shape) == 2:
+            rgb = cv2.cvtColor(rgb, cv2.COLOR_GRAY2BGR)
+
+        # Align RGB to thermal dimensions
+        thermal_h, thermal_w = thermal.shape[:2]
+        rgb_aligned = self.align_rgb_to_thermal(rgb, (thermal_h, thermal_w))
+
+        # Apply fusion strategy
+        if self.fusion_mode == 'alpha_blend':
+            return self._alpha_blend(thermal, rgb_aligned)
+        elif self.fusion_mode == 'edge_enhanced':
+            return self._edge_enhanced(thermal, rgb_aligned)
+        elif self.fusion_mode == 'thermal_overlay':
+            return self._thermal_overlay(thermal, rgb_aligned)
+        elif self.fusion_mode == 'side_by_side':
+            return self._side_by_side(thermal, rgb_aligned)
+        elif self.fusion_mode == 'picture_in_picture':
+            return self._picture_in_picture(thermal, rgb_aligned)
+        elif self.fusion_mode == 'max_intensity':
+            return self._max_intensity(thermal, rgb_aligned)
+        elif self.fusion_mode == 'feature_weighted':
+            return self._feature_weighted(thermal, rgb_aligned)
+        else:
+            logger.warning(f"Unknown fusion mode: {self.fusion_mode}, using alpha_blend")
+            return self._alpha_blend(thermal, rgb_aligned)
+
+    def _alpha_blend(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Simple weighted average fusion
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Blended frame
+        """
+        try:
+            return cv2.addWeighted(thermal, self.alpha, rgb, 1.0 - self.alpha, 0)
+        except Exception as e:
+            logger.error(f"Alpha blend error: {e}")
+            return thermal
+
+    def _edge_enhanced(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        RGB base with thermal edge information overlaid
+        Good for preserving RGB detail while highlighting thermal boundaries
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Edge-enhanced frame
+        """
+        try:
+            # Extract edges from thermal
+            thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(thermal_gray, 50, 150)
+
+            # Create colored edge overlay (red for hot edges)
+            edge_color = np.zeros_like(thermal)
+            edge_color[edges > 0] = [0, 0, 255]  # Red edges
+
+            # Blend: RGB base + thermal edges
+            result = rgb.copy()
+            result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Edge enhanced error: {e}")
+            return self._alpha_blend(thermal, rgb)
+
+    def _thermal_overlay(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Overlay thermal hotspots on RGB base
+        Only shows thermal data above threshold
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Overlaid frame
+        """
+        try:
+            # Convert thermal to grayscale for threshold
+            thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+
+            # Create mask for hot regions (top 30% intensity)
+            threshold = np.percentile(thermal_gray, 70)
+            hot_mask = thermal_gray > threshold
+
+            # Start with RGB base
+            result = rgb.copy()
+
+            # Overlay thermal hotspots with transparency
+            result[hot_mask] = cv2.addWeighted(
+                thermal[hot_mask], 0.7,
+                rgb[hot_mask], 0.3,
+                0
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Thermal overlay error: {e}")
+            return self._alpha_blend(thermal, rgb)
+
+    def _side_by_side(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Concatenate thermal and RGB horizontally
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Concatenated frame
+        """
+        try:
+            # Ensure same height
+            h = thermal.shape[0]
+            if rgb.shape[0] != h:
+                rgb = cv2.resize(rgb, (rgb.shape[1], h))
+
+            # Concatenate horizontally
+            return np.hstack([thermal, rgb])
+
+        except Exception as e:
+            logger.error(f"Side-by-side error: {e}")
+            return thermal
+
+    def _picture_in_picture(self, thermal: np.ndarray, rgb: np.ndarray,
+                            pip_size: float = 0.25, position: str = 'top-right') -> np.ndarray:
+        """
+        Picture-in-picture: thermal inset in RGB (or vice versa)
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+            pip_size: Size of inset as fraction of main frame (0.0-1.0)
+            position: 'top-right', 'top-left', 'bottom-right', 'bottom-left'
+
+        Returns:
+            Picture-in-picture frame
+        """
+        try:
+            # Use RGB as main, thermal as inset
+            main = rgb.copy()
+            inset = thermal
+
+            # Calculate inset dimensions
+            main_h, main_w = main.shape[:2]
+            inset_w = int(main_w * pip_size)
+            inset_h = int(main_h * pip_size)
+            inset_resized = cv2.resize(inset, (inset_w, inset_h))
+
+            # Determine position
+            margin = 10
+            if position == 'top-right':
+                x, y = main_w - inset_w - margin, margin
+            elif position == 'top-left':
+                x, y = margin, margin
+            elif position == 'bottom-right':
+                x, y = main_w - inset_w - margin, main_h - inset_h - margin
+            else:  # bottom-left
+                x, y = margin, main_h - inset_h - margin
+
+            # Add border to inset
+            inset_with_border = cv2.copyMakeBorder(
+                inset_resized, 2, 2, 2, 2,
+                cv2.BORDER_CONSTANT, value=[255, 255, 255]
+            )
+
+            # Overlay inset on main
+            ih, iw = inset_with_border.shape[:2]
+            main[y:y+ih, x:x+iw] = inset_with_border
+
+            return main
+
+        except Exception as e:
+            logger.error(f"Picture-in-picture error: {e}")
+            return self._side_by_side(thermal, rgb)
+
+    def _max_intensity(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Take maximum intensity from thermal and RGB at each pixel
+        Preserves brightest features from both sources
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Max intensity frame
+        """
+        try:
+            return np.maximum(thermal, rgb)
+        except Exception as e:
+            logger.error(f"Max intensity error: {e}")
+            return self._alpha_blend(thermal, rgb)
+
+    def _feature_weighted(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
+        """
+        Adaptive fusion based on edge strength
+        Uses thermal where edges are strong (heat boundaries)
+        Uses RGB where texture is rich
+
+        Args:
+            thermal: Thermal frame (BGR)
+            rgb: RGB frame (BGR, aligned)
+
+        Returns:
+            Adaptively blended frame
+        """
+        try:
+            # Convert to grayscale
+            thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+            rgb_gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
+
+            # Calculate edge strength
+            thermal_edges = cv2.Sobel(thermal_gray, cv2.CV_64F, 1, 1, ksize=3)
+            rgb_edges = cv2.Sobel(rgb_gray, cv2.CV_64F, 1, 1, ksize=3)
+
+            thermal_strength = np.abs(thermal_edges)
+            rgb_strength = np.abs(rgb_edges)
+
+            # Normalize to [0, 1]
+            thermal_strength = thermal_strength / (thermal_strength.max() + 1e-6)
+            rgb_strength = rgb_strength / (rgb_strength.max() + 1e-6)
+
+            # Compute adaptive weights
+            total_strength = thermal_strength + rgb_strength + 1e-6
+            thermal_weight = (thermal_strength / total_strength)[:, :, np.newaxis]
+            rgb_weight = (rgb_strength / total_strength)[:, :, np.newaxis]
+
+            # Weighted blend
+            result = (thermal * thermal_weight + rgb * rgb_weight).astype(np.uint8)
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Feature weighted error: {e}")
+            return self._alpha_blend(thermal, rgb)
+
+    def set_fusion_mode(self, mode: str):
+        """Change fusion mode"""
+        valid_modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                      'side_by_side', 'picture_in_picture', 'max_intensity',
+                      'feature_weighted']
+        if mode in valid_modes:
+            self.fusion_mode = mode
+            logger.info(f"Fusion mode changed to: {mode}")
+        else:
+            logger.warning(f"Invalid fusion mode: {mode}")
+
+    def set_alpha(self, alpha: float):
+        """
+        Set alpha blend ratio
+
+        Args:
+            alpha: Blend ratio (0.0 = all RGB, 1.0 = all thermal)
+        """
+        self.alpha = np.clip(alpha, 0.0, 1.0)
+        logger.info(f"Alpha blend ratio set to: {self.alpha:.2f}")
+
+    def get_available_modes(self) -> list:
+        """Get list of available fusion modes"""
+        return ['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                'side_by_side', 'picture_in_picture', 'max_intensity',
+                'feature_weighted']
+
+
+if __name__ == "__main__":
+    """Test fusion processor with synthetic data"""
+    print("="*60)
+    print("Fusion Processor Test")
+    print("="*60)
+
+    # Create synthetic thermal and RGB frames
+    thermal = np.random.randint(0, 255, (512, 640, 3), dtype=np.uint8)
+    thermal = cv2.applyColorMap(cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY), cv2.COLORMAP_HOT)
+
+    rgb = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+
+    # Draw some test patterns
+    cv2.circle(thermal, (320, 256), 50, (0, 0, 255), -1)  # Hot spot
+    cv2.rectangle(rgb, (200, 200), (400, 400), (0, 255, 0), 3)  # Green box
+
+    # Test all fusion modes
+    processor = FusionProcessor()
+
+    modes = processor.get_available_modes()
+    print(f"\nTesting {len(modes)} fusion modes...")
+
+    for mode in modes:
+        print(f"\nMode: {mode}")
+        processor.set_fusion_mode(mode)
+        fused = processor.fuse_frames(thermal, rgb)
+
+        if fused is not None:
+            cv2.imshow(f"Fusion Mode: {mode}", fused)
+            print(f"  Output shape: {fused.shape}")
+            key = cv2.waitKey(0)
+            if key == ord('q'):
+                break
+
+    cv2.destroyAllWindows()
+    print("\nTest complete!")
