@@ -1,0 +1,37 @@
+{
+  "theme": "light",
+  "theme_mode": "auto",
+  "developer_mode": false,
+  "show_info_panel": false,
+  "auto_theme_enabled": true,
+  "day_start_hour": 7,
+  "night_start_hour": 19,
+  "use_ambient_light": true,
+  "ambient_threshold": 100,
+  "theme_override": "dark",
+  "auto_retry_sensors": true,
+  "thermal_retry_interval": 3,
+  "rgb_retry_interval": 100,
+  "yolo_model": "yolov8s.pt",
+  "confidence_threshold": 0.25,
+  "detection_mode": "model",
+  "audio_enabled": true,
+  "audio_volume": 0.7,
+  "view_mode": "thermal",
+  "thermal_palette": "ironbow",
+  "fusion_mode": "alpha_blend",
+  "fusion_alpha": 0.5,
+  "buffer_flush_enabled": false,
+  "frame_skip_value": 1,
+  "device": "cuda",
+  "rgb_camera_type": "auto",
+  "rgb_resolution": [
+    640,
+    480
+  ],
+  "rgb_fps": 30,
+  "thermal_resolution": [
+    640,
+    512
+  ]
+}
