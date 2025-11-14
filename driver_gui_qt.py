@@ -246,6 +246,7 @@ class ControlPanel(QWidget):
     model_clicked = pyqtSignal()
     fusion_mode_clicked = pyqtSignal()
     fusion_alpha_clicked = pyqtSignal()
+    sim_thermal_toggled = pyqtSignal(bool)  # Simulated thermal camera
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -266,6 +267,7 @@ class ControlPanel(QWidget):
         self.model_btn = QPushButton("🤖 MDL: V8N")
         self.fusion_mode_btn = QPushButton("🔀 FUS: ALPHA")
         self.fusion_alpha_btn = QPushButton("⚖️ α: 0.50")
+        self.sim_thermal_btn = QPushButton("🧪 SIM: OFF")
 
         # Hide all developer controls by default
         self.buffer_flush_btn.hide()
@@ -276,12 +278,14 @@ class ControlPanel(QWidget):
         self.model_btn.hide()
         self.fusion_mode_btn.hide()
         self.fusion_alpha_btn.hide()
+        self.sim_thermal_btn.hide()
 
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
         self.audio_btn.setCheckable(True)
         self.buffer_flush_btn.setCheckable(True)
         self.detection_btn.setCheckable(True)
+        self.sim_thermal_btn.setCheckable(True)
 
         # Set initial checked states
         self.audio_btn.setChecked(True)  # Audio on by default
@@ -302,6 +306,7 @@ class ControlPanel(QWidget):
         self.model_btn.clicked.connect(self.model_clicked.emit)
         self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
         self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
+        self.sim_thermal_btn.toggled.connect(self._on_sim_thermal_toggled)
 
         # Main layout: Standard controls in horizontal row
         main_layout = QHBoxLayout()
@@ -312,7 +317,7 @@ class ControlPanel(QWidget):
         main_layout.addWidget(self.theme_btn)
         main_layout.addWidget(self.retry_btn)
 
-        # Developer controls: Vertical grid layout (2 columns x 4 rows)
+        # Developer controls: Vertical grid layout (3 columns x 3 rows)
         dev_controls_widget = QWidget()
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
@@ -321,13 +326,16 @@ class ControlPanel(QWidget):
         dev_grid.addWidget(self.palette_btn, 0, 0)
         dev_grid.addWidget(self.detection_btn, 1, 0)
         dev_grid.addWidget(self.device_btn, 2, 0)
-        dev_grid.addWidget(self.model_btn, 3, 0)
 
-        # Column 2: Performance & View
-        dev_grid.addWidget(self.buffer_flush_btn, 0, 1)
-        dev_grid.addWidget(self.frame_skip_btn, 1, 1)
-        dev_grid.addWidget(self.fusion_mode_btn, 2, 1)
-        dev_grid.addWidget(self.fusion_alpha_btn, 3, 1)
+        # Column 2: Model & Performance
+        dev_grid.addWidget(self.model_btn, 0, 1)
+        dev_grid.addWidget(self.buffer_flush_btn, 1, 1)
+        dev_grid.addWidget(self.frame_skip_btn, 2, 1)
+
+        # Column 3: Fusion & Debug
+        dev_grid.addWidget(self.fusion_mode_btn, 0, 2)
+        dev_grid.addWidget(self.fusion_alpha_btn, 1, 2)
+        dev_grid.addWidget(self.sim_thermal_btn, 2, 2)
 
         dev_controls_widget.setLayout(dev_grid)
         dev_controls_widget.hide()  # Hidden by default
@@ -393,6 +401,11 @@ class ControlPanel(QWidget):
         self.detection_btn.setText(f"📦 BOX: {'ON' if checked else 'OFF'}")
         self.detection_toggled.emit(checked)
 
+    def _on_sim_thermal_toggled(self, checked: bool):
+        """Update simulated thermal button text when toggled"""
+        self.sim_thermal_btn.setText(f"🧪 SIM: {'ON' if checked else 'OFF'}")
+        self.sim_thermal_toggled.emit(checked)
+
     def set_palette(self, palette_name: str):
         """Update palette button text"""
         # Truncate palette name to fit button (8 chars max)
@@ -423,11 +436,15 @@ class ControlPanel(QWidget):
         """Update fusion alpha button text"""
         self.fusion_alpha_btn.setText(f"⚖️ α: {alpha:.2f}")
 
+    def set_sim_thermal_enabled(self, enabled: bool):
+        """Set simulated thermal camera button state"""
+        self.sim_thermal_btn.setChecked(enabled)
+
     def show_developer_controls(self, show: bool):
         """Show or hide developer control buttons widget"""
         if show:
             self.dev_controls_widget.show()
-            logger.info("Developer controls shown (8 controls in 2x4 grid)")
+            logger.info("Developer controls shown (9 controls in 3x3 grid)")
         else:
             self.dev_controls_widget.hide()
             logger.info("Developer controls hidden")
@@ -441,6 +458,7 @@ class InfoPanel(QLabel):
     """
     Minimal ADAS-compliant status overlay
     Shows only essential driving-relevant information:
+    - Performance quality (color-coded: green=good, yellow=degraded, red=critical)
     - System health (FPS)
     - Threat awareness (Active detections)
     - Sensor status (Critical alerts only)
@@ -454,7 +472,7 @@ class InfoPanel(QLabel):
 
         # Compact size - minimal intrusion
         self.setMinimumSize(180, 60)
-        self.setMaximumSize(200, 80)
+        self.setMaximumSize(220, 80)
 
         # Top-left corner (SAE J2400: avoid center placement for non-critical info)
         self.move(10, 10)
@@ -465,19 +483,39 @@ class InfoPanel(QLabel):
     def update_info(self, fps: float, detections: int,
                     thermal_connected: bool, rgb_connected: bool):
         """
-        Update minimal status display
-        ADAS principle: Show only safety-critical information
+        Update minimal status display with performance quality indicator
+
+        Performance Quality Thresholds:
+        - Green (●): FPS ≥ 20, all sensors nominal
+        - Yellow (●): FPS 10-19 or sensor degraded (prompts: check dev mode)
+        - Red (●): FPS < 10 or critical sensor failure (prompts: adjust settings)
         """
-        # Compact single-line format
+        # Determine performance quality
+        performance_critical = fps < 10
+        performance_degraded = (10 <= fps < 20) or not thermal_connected
+
+        # Color-coded status indicator
+        if performance_critical:
+            status_icon = "🔴"  # Critical - immediate action needed
+            hint = " (⚙ Ctrl+D)"  # Prompt to open dev mode
+        elif performance_degraded or not rgb_connected:
+            status_icon = "🟡"  # Degraded - consider tweaking
+            hint = " (⚙)"  # Subtle hint
+        else:
+            status_icon = "🟢"  # Good - system nominal
+            hint = ""  # No action needed
+
+        # Sensor warnings (critical only)
         sensor_status = ""
         if not thermal_connected:
             sensor_status = " | ⚠ THERM"
-        if not rgb_connected and not thermal_connected:
+        elif not rgb_connected and not thermal_connected:
             sensor_status = " | ⚠ CAMS"
         elif not rgb_connected:
             sensor_status = " | ⚠ RGB"
 
-        info_text = f"{fps:.0f} FPS | {detections} Det{sensor_status}"
+        # Compact format: [Status] FPS | Detections [Sensor Warning] [Hint]
+        info_text = f"{status_icon} {fps:.0f} FPS | {detections} Det{sensor_status}{hint}"
         self.setText(info_text)
 
 
@@ -593,6 +631,10 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.set_fusion_mode(fusion_mode)
         self.control_panel.set_fusion_alpha(fusion_alpha)
 
+        # Simulated thermal camera (debug mode)
+        sim_thermal = getattr(self.app, 'use_simulated_thermal', False)
+        self.control_panel.set_sim_thermal_enabled(sim_thermal)
+
         logger.info("All control states initialized from app configuration")
 
     def _connect_controls(self):
@@ -611,7 +653,8 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.model_clicked.connect(self._on_model_cycle)
         self.control_panel.fusion_mode_clicked.connect(self._on_fusion_mode_cycle)
         self.control_panel.fusion_alpha_clicked.connect(self._on_fusion_alpha_adjust)
-        logger.info("Control panel signals connected (all 14 controls)")
+        self.control_panel.sim_thermal_toggled.connect(self._on_sim_thermal_toggle)
+        logger.info("Control panel signals connected (all 15 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
@@ -792,6 +835,13 @@ class DriverAppWindow(QMainWindow):
 
         self.control_panel.set_fusion_alpha(next_alpha)
         logger.info(f"Fusion alpha: {next_alpha}")
+
+    def _on_sim_thermal_toggle(self, enabled: bool):
+        """Toggle simulated thermal camera for debugging"""
+        if not self.app:
+            return
+        self.app.use_simulated_thermal = enabled
+        logger.info(f"Simulated thermal camera: {'enabled' if enabled else 'disabled'}")
 
     def toggle_developer_mode(self):
         """
