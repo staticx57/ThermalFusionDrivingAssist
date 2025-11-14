@@ -51,6 +51,17 @@ class Config:
         'confidence_threshold': 0.25,
         'detection_mode': 'model',  # 'model' or 'edge'
 
+        # Model Selection (Enhanced)
+        'model_presets': {
+            'yolov8n': 'yolov8n.pt',  # Nano - fastest, lower accuracy
+            'yolov8s': 'yolov8s.pt',  # Small - balanced (default)
+            'yolov8m': 'yolov8m.pt',  # Medium - higher accuracy
+            'yolov8l': 'yolov8l.pt',  # Large - highest accuracy, slower
+        },
+        'thermal_model': None,  # Optional: Dedicated thermal model (e.g., FLIR-COCO trained)
+        'rgb_model': None,  # Optional: Dedicated RGB model
+        'custom_models': [],  # User-defined custom model paths: ['path/to/custom1.pt', ...]
+
         # Audio Settings
         'audio_enabled': True,
         'audio_volume': 0.7,

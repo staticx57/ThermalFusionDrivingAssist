@@ -73,7 +73,7 @@ QPushButton:disabled {
 
 QLabel#info_panel {
     background-color: rgba(0, 0, 0, 180);
-    color: #00ff00;
+    color: #006600;
     border: 1px solid #404040;
     border-radius: 5px;
     padding: 10px;
@@ -121,7 +121,7 @@ QPushButton:disabled {
 
 QLabel#info_panel {
     background-color: rgba(255, 255, 255, 220);
-    color: #006600;
+    color: #00ff00;
     border: 1px solid #c0c0c0;
     border-radius: 5px;
     padding: 10px;
@@ -237,8 +237,16 @@ class ControlPanel(QWidget):
     info_toggled = pyqtSignal(bool)
     theme_clicked = pyqtSignal()
     retry_sensors_clicked = pyqtSignal()
-    buffer_flush_toggled = pyqtSignal(bool)  # Developer control
-    frame_skip_clicked = pyqtSignal()  # Developer control
+
+    # Developer control signals
+    buffer_flush_toggled = pyqtSignal(bool)
+    frame_skip_clicked = pyqtSignal()
+    palette_clicked = pyqtSignal()
+    detection_toggled = pyqtSignal(bool)
+    device_clicked = pyqtSignal()
+    model_clicked = pyqtSignal()
+    fusion_mode_clicked = pyqtSignal()
+    fusion_alpha_clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -254,14 +262,29 @@ class ControlPanel(QWidget):
         # Developer control buttons (hidden by default)
         self.buffer_flush_btn = QPushButton("💾 Flush: OFF")
         self.frame_skip_btn = QPushButton("⏩ Skip: 1")
+        self.palette_btn = QPushButton("🎨 PAL: IRONBOW")
+        self.detection_btn = QPushButton("📦 BOX: ON")
+        self.device_btn = QPushButton("🖥️ DEV: CPU")
+        self.model_btn = QPushButton("🤖 MDL: V8N")
+        self.fusion_mode_btn = QPushButton("🔀 FUS: ALPHA")
+        self.fusion_alpha_btn = QPushButton("⚖️ α: 0.50")
+
+        # Hide all developer controls by default
         self.buffer_flush_btn.hide()
         self.frame_skip_btn.hide()
+        self.palette_btn.hide()
+        self.detection_btn.hide()
+        self.device_btn.hide()
+        self.model_btn.hide()
+        self.fusion_mode_btn.hide()
+        self.fusion_alpha_btn.hide()
 
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
         self.audio_btn.setCheckable(True)
         self.info_btn.setCheckable(True)
         self.buffer_flush_btn.setCheckable(True)
+        self.detection_btn.setCheckable(True)
 
         # Set initial checked states
         self.audio_btn.setChecked(True)  # Audio on by default
@@ -273,8 +296,16 @@ class ControlPanel(QWidget):
         self.info_btn.toggled.connect(self._on_info_toggled)
         self.theme_btn.clicked.connect(self.theme_clicked.emit)
         self.retry_btn.clicked.connect(self.retry_sensors_clicked.emit)
+
+        # Developer control connections
         self.buffer_flush_btn.toggled.connect(self._on_buffer_flush_toggled)
         self.frame_skip_btn.clicked.connect(self.frame_skip_clicked.emit)
+        self.palette_btn.clicked.connect(self.palette_clicked.emit)
+        self.detection_btn.toggled.connect(self._on_detection_toggled)
+        self.device_btn.clicked.connect(self.device_clicked.emit)
+        self.model_btn.clicked.connect(self.model_clicked.emit)
+        self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
+        self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
 
         # Layout
         layout = QHBoxLayout()
@@ -282,8 +313,19 @@ class ControlPanel(QWidget):
         layout.addWidget(self.yolo_btn)
         layout.addWidget(self.audio_btn)
         layout.addWidget(self.info_btn)
-        layout.addWidget(self.buffer_flush_btn)  # Developer control
-        layout.addWidget(self.frame_skip_btn)  # Developer control
+
+        # Developer controls row 1 (camera & detection)
+        layout.addWidget(self.palette_btn)
+        layout.addWidget(self.detection_btn)
+        layout.addWidget(self.device_btn)
+        layout.addWidget(self.model_btn)
+
+        # Developer controls row 2 (performance & view)
+        layout.addWidget(self.buffer_flush_btn)
+        layout.addWidget(self.frame_skip_btn)
+        layout.addWidget(self.fusion_mode_btn)
+        layout.addWidget(self.fusion_alpha_btn)
+
         layout.addStretch()  # Push theme/retry to right
         layout.addWidget(self.theme_btn)
         layout.addWidget(self.retry_btn)
@@ -341,15 +383,62 @@ class ControlPanel(QWidget):
         """Update frame skip button text"""
         self.frame_skip_btn.setText(f"⏩ Skip: {value}")
 
+    def _on_detection_toggled(self, checked: bool):
+        """Update detection toggle button text when toggled"""
+        self.detection_btn.setText(f"📦 BOX: {'ON' if checked else 'OFF'}")
+        self.detection_toggled.emit(checked)
+
+    def set_palette(self, palette_name: str):
+        """Update palette button text"""
+        # Truncate palette name to fit button (8 chars max)
+        short_name = palette_name[:8].upper()
+        self.palette_btn.setText(f"🎨 PAL: {short_name}")
+
+    def set_detection_enabled(self, enabled: bool):
+        """Set detection toggle button state"""
+        self.detection_btn.setChecked(enabled)
+
+    def set_device(self, device: str):
+        """Update device button text"""
+        self.device_btn.setText(f"🖥️ DEV: {device.upper()}")
+
+    def set_model(self, model_name: str):
+        """Update model button text"""
+        # Convert yolov8n.pt -> V8N
+        short_name = model_name.replace('.pt', '').replace('yolov8', 'V8').upper()
+        self.model_btn.setText(f"🤖 MDL: {short_name}")
+
+    def set_fusion_mode(self, mode: str):
+        """Update fusion mode button text"""
+        # Truncate mode name (max 6 chars)
+        short_name = mode[:6].upper()
+        self.fusion_mode_btn.setText(f"🔀 FUS: {short_name}")
+
+    def set_fusion_alpha(self, alpha: float):
+        """Update fusion alpha button text"""
+        self.fusion_alpha_btn.setText(f"⚖️ α: {alpha:.2f}")
+
     def show_developer_controls(self, show: bool):
         """Show or hide developer control buttons"""
         if show:
             self.buffer_flush_btn.show()
             self.frame_skip_btn.show()
-            logger.info("Developer controls shown")
+            self.palette_btn.show()
+            self.detection_btn.show()
+            self.device_btn.show()
+            self.model_btn.show()
+            self.fusion_mode_btn.show()
+            self.fusion_alpha_btn.show()
+            logger.info("Developer controls shown (all 8 controls)")
         else:
             self.buffer_flush_btn.hide()
             self.frame_skip_btn.hide()
+            self.palette_btn.hide()
+            self.detection_btn.hide()
+            self.device_btn.hide()
+            self.model_btn.hide()
+            self.fusion_mode_btn.hide()
+            self.fusion_alpha_btn.hide()
             logger.info("Developer controls hidden")
 
 
@@ -473,7 +562,42 @@ class DriverAppWindow(QMainWindow):
     def set_app(self, app):
         """Set reference to main application after initialization"""
         self.app = app
+        self._initialize_control_states()
         logger.info("Application reference set in Qt GUI")
+
+    def _initialize_control_states(self):
+        """Initialize all control button states from app configuration"""
+        if not self.app:
+            return
+
+        # Standard controls
+        self.control_panel.set_yolo_enabled(getattr(self.app, 'yolo_enabled', True))
+        self.control_panel.set_audio_enabled(getattr(self.app, 'audio_enabled', True))
+        self.control_panel.update_view_mode(getattr(self.app, 'view_mode', ViewMode.THERMAL_ONLY))
+
+        # Developer controls - initial states
+        self.control_panel.set_buffer_flush_enabled(getattr(self.app, 'buffer_flush_enabled', False))
+        self.control_panel.set_frame_skip_value(getattr(self.app, 'frame_skip_value', 1))
+        self.control_panel.set_detection_enabled(getattr(self.app, 'show_detections', True))
+        self.control_panel.set_device(getattr(self.app, 'device', 'cpu'))
+
+        # Get palette from detector if available
+        if self.app.detector and hasattr(self.app.detector, 'palette_name'):
+            self.control_panel.set_palette(self.app.detector.palette_name)
+        else:
+            self.control_panel.set_palette('ironbow')
+
+        # Get model name
+        model_name = getattr(self.app, 'model_name', 'yolov8n.pt')
+        self.control_panel.set_model(model_name)
+
+        # Get fusion settings
+        fusion_mode = getattr(self.app, 'fusion_mode', 'alpha_blend')
+        fusion_alpha = getattr(self.app, 'fusion_alpha', 0.5)
+        self.control_panel.set_fusion_mode(fusion_mode)
+        self.control_panel.set_fusion_alpha(fusion_alpha)
+
+        logger.info("All control states initialized from app configuration")
 
     def _connect_controls(self):
         """Connect control panel button signals to handlers"""
@@ -486,7 +610,13 @@ class DriverAppWindow(QMainWindow):
         # Developer controls
         self.control_panel.buffer_flush_toggled.connect(self._on_buffer_flush_toggle)
         self.control_panel.frame_skip_clicked.connect(self._on_frame_skip_cycle)
-        logger.info("Control panel signals connected")
+        self.control_panel.palette_clicked.connect(self._on_palette_cycle)
+        self.control_panel.detection_toggled.connect(self._on_detection_toggle)
+        self.control_panel.device_clicked.connect(self._on_device_toggle)
+        self.control_panel.model_clicked.connect(self._on_model_cycle)
+        self.control_panel.fusion_mode_clicked.connect(self._on_fusion_mode_cycle)
+        self.control_panel.fusion_alpha_clicked.connect(self._on_fusion_alpha_adjust)
+        logger.info("Control panel signals connected (all 14 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
@@ -556,6 +686,122 @@ class DriverAppWindow(QMainWindow):
         self.app.frame_skip_value = skip_values[next_idx]
         self.control_panel.set_frame_skip_value(skip_values[next_idx])
         logger.info(f"Frame skip set to: {skip_values[next_idx]}")
+
+    def _on_palette_cycle(self):
+        """Cycle through thermal color palettes"""
+        if not self.app or not self.app.detector:
+            return
+        # Available palettes in ThermalObjectDetector
+        palettes = ['ironbow', 'whitehot', 'blackhot', 'rainbow', 'arctic', 'grayscale']
+        current = getattr(self.app.detector, 'palette_name', 'ironbow')
+        current_idx = palettes.index(current) if current in palettes else 0
+        next_idx = (current_idx + 1) % len(palettes)
+        next_palette = palettes[next_idx]
+
+        # Update detector palette
+        if hasattr(self.app.detector, 'set_palette'):
+            self.app.detector.set_palette(next_palette)
+        self.control_panel.set_palette(next_palette)
+        logger.info(f"Thermal palette: {next_palette}")
+
+    def _on_detection_toggle(self, enabled: bool):
+        """Toggle detection bounding box display"""
+        if not self.app:
+            return
+        self.app.show_detections = enabled
+        logger.info(f"Detection bounding boxes: {'shown' if enabled else 'hidden'}")
+
+    def _on_device_toggle(self):
+        """Toggle between CPU and CUDA for detection"""
+        if not self.app:
+            return
+        current_device = getattr(self.app, 'device', 'cpu')
+        new_device = 'cuda' if current_device == 'cpu' else 'cpu'
+
+        # Update device (requires detector reload)
+        self.app.device = new_device
+        if self.app.detector and hasattr(self.app.detector, 'model'):
+            try:
+                self.app.detector.model.to(new_device)
+                logger.info(f"Detection device switched to: {new_device.upper()}")
+            except Exception as e:
+                logger.error(f"Failed to switch device to {new_device}: {e}")
+                # Revert on failure
+                self.app.device = current_device
+                new_device = current_device
+
+        self.control_panel.set_device(new_device)
+
+    def _on_model_cycle(self):
+        """Cycle through YOLO model variants (presets + custom models from config)"""
+        if not self.app:
+            return
+
+        # Get models from config
+        from config import get_config
+        config = get_config()
+
+        # Build list of available models: presets + custom
+        model_presets = config.get('model_presets', {})
+        preset_models = list(model_presets.values())
+        custom_models = config.get('custom_models', [])
+        all_models = preset_models + custom_models
+
+        if not all_models:
+            all_models = ['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt', 'yolov8l.pt']  # Fallback
+
+        # Get current model
+        current = getattr(self.app, 'model_name', all_models[0])
+        current_idx = all_models.index(current) if current in all_models else 0
+        next_idx = (current_idx + 1) % len(all_models)
+        next_model = all_models[next_idx]
+
+        # Update model (requires detector reload)
+        self.app.model_name = next_model
+        config.set('yolo_model', next_model, save=True)
+
+        # Check if it's a custom model
+        is_custom = next_model in custom_models
+        model_source = "Custom" if is_custom else "Preset"
+
+        logger.info(f"YOLO model changed to: {next_model} ({model_source}) - restart detector to apply")
+        self.control_panel.set_model(next_model)
+
+    def _on_fusion_mode_cycle(self):
+        """Cycle through fusion blend modes"""
+        if not self.app:
+            return
+        # Fusion modes from FusionProcessor
+        modes = ['alpha_blend', 'weighted', 'overlay', 'highlight']
+        current = getattr(self.app, 'fusion_mode', 'alpha_blend')
+        current_idx = modes.index(current) if current in modes else 0
+        next_idx = (current_idx + 1) % len(modes)
+        next_mode = modes[next_idx]
+
+        self.app.fusion_mode = next_mode
+        if self.app.fusion_processor and hasattr(self.app.fusion_processor, 'set_mode'):
+            self.app.fusion_processor.set_mode(next_mode)
+
+        self.control_panel.set_fusion_mode(next_mode)
+        logger.info(f"Fusion mode: {next_mode}")
+
+    def _on_fusion_alpha_adjust(self):
+        """Adjust fusion alpha value (0.3, 0.5, 0.7, 0.9, back to 0.3)"""
+        if not self.app:
+            return
+        alpha_values = [0.3, 0.5, 0.7, 0.9]
+        current = getattr(self.app, 'fusion_alpha', 0.5)
+        # Find closest value
+        current_idx = min(range(len(alpha_values)), key=lambda i: abs(alpha_values[i] - current))
+        next_idx = (current_idx + 1) % len(alpha_values)
+        next_alpha = alpha_values[next_idx]
+
+        self.app.fusion_alpha = next_alpha
+        if self.app.fusion_processor and hasattr(self.app.fusion_processor, 'set_alpha'):
+            self.app.fusion_processor.set_alpha(next_alpha)
+
+        self.control_panel.set_fusion_alpha(next_alpha)
+        logger.info(f"Fusion alpha: {next_alpha}")
 
     def toggle_developer_mode(self):
         """
