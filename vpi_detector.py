@@ -49,10 +49,15 @@ class VPIDetector:
         self.detection_mode = detection_mode
         self.model_path = model_path
         self.model = None
+        self.model_loading = False  # Track model loading state to prevent race conditions
         self.device = device
 
-        # VPI backend - use CUDA for GPU, CPU for CPU-only mode
-        self.vpi_backend = vpi.Backend.CUDA if device == 'cuda' else vpi.Backend.CPU
+        # VPI backend - use CUDA for GPU, CPU for CPU-only mode (only if VPI available)
+        if VPI_AVAILABLE:
+            self.vpi_backend = vpi.Backend.CUDA if device == 'cuda' else vpi.Backend.CPU
+        else:
+            self.vpi_backend = None
+            logger.info("VPI not available - using OpenCV fallback for image processing")
 
         # Simple motion/heat detection instead of full object detection
         self.use_simple_detection = (detection_mode == "edge")
@@ -72,6 +77,10 @@ class VPIDetector:
         # Temporal filtering - track motion persistence
         self.motion_history = {}  # Track motion detections across frames
         self.motion_persistence_frames = 2  # Motion must persist for 2 frames (faster response)
+
+        # Detection toggles (allow independent control of motion and object detection)
+        self.motion_detection_enabled = True  # Motion detection (thermal movement)
+        self.object_detection_enabled = True  # Object detection (YOLO/edge)
 
         # Thermal color palettes (lookup tables)
         self.color_palettes = self._create_color_palettes()
@@ -158,26 +167,85 @@ class VPIDetector:
             logger.info(f"Device switched from {old_device} to {device}")
             logger.info(f"VPI backend: {self.vpi_backend}")
 
+    def set_detection_mode(self, mode: str, model_path: str = None):
+        """
+        Dynamically switch between edge and model detection modes
+
+        Args:
+            mode: 'edge' or 'model'
+            model_path: Path to YOLO model (required for 'model' mode)
+        """
+        if mode not in ['edge', 'model']:
+            logger.error(f"Invalid detection mode: {mode}. Use 'edge' or 'model'")
+            return False
+
+        old_mode = self.detection_mode
+        self.detection_mode = mode
+        self.use_simple_detection = (mode == "edge")
+
+        logger.info(f"Detection mode changed: {old_mode} -> {mode}")
+
+        if mode == 'model':
+            # Set loading flag to prevent "Model not loaded" errors during loading
+            self.model_loading = True
+
+            # Load YOLO model if switching to model mode
+            if not self.model:
+                if not model_path:
+                    model_path = self.model_path or 'yolov8n.pt'
+                logger.info(f"Loading YOLO model for model mode: {model_path}")
+                result = self.load_yolo_model(model_path)
+            else:
+                result = True
+
+            self.model_loading = False
+            return result
+        else:
+            # Switching to edge mode - no model needed
+            return True
+
+    def set_motion_detection_enabled(self, enabled: bool):
+        """
+        Enable or disable motion detection
+
+        Args:
+            enabled: True to enable, False to disable
+        """
+        self.motion_detection_enabled = enabled
+        logger.info(f"Motion detection: {'enabled' if enabled else 'disabled'}")
+
+    def set_object_detection_enabled(self, enabled: bool):
+        """
+        Enable or disable object detection (YOLO/edge)
+
+        Args:
+            enabled: True to enable, False to disable
+        """
+        self.object_detection_enabled = enabled
+        logger.info(f"Object detection: {'enabled' if enabled else 'disabled'}")
+
     def load_yolo_model(self, model_path: str):
         """
         Load or reload a YOLO model
 
         Args:
             model_path: Path to YOLO model file (.pt)
-        """
-        if self.detection_mode != 'model':
-            logger.warning("Cannot load YOLO model in edge detection mode")
-            return
 
+        Returns:
+            True if successful, False otherwise
+        """
         try:
             from ultralytics import YOLO
             logger.info(f"Loading YOLO model: {model_path}")
             self.model = YOLO(model_path)
+            self.model_path = model_path
             logger.info(f"YOLO model loaded successfully: {model_path}")
             # Clear cached detections when model changes
             self.last_detections = []
+            return True
         except Exception as e:
             logger.error(f"Failed to load YOLO model {model_path}: {e}")
+            return False
             # Keep the old model if loading fails
 
     def _get_colormap_id(self, palette_name: str) -> int:
@@ -229,13 +297,15 @@ class VPIDetector:
             return frame
 
     def initialize(self) -> bool:
-        """Initialize VPI detector"""
+        """Initialize detector (VPI-accelerated if available, OpenCV fallback otherwise)"""
         try:
             if not VPI_AVAILABLE:
-                logger.error("VPI not available")
-                return False
-
-            logger.info(f"VPI version: {vpi.__version__}")
+                logger.warning("VPI not available - using OpenCV fallback mode")
+                logger.info("Cross-platform mode: Windows/macOS/Linux (non-Jetson)")
+                # Continue initialization without VPI
+                self.vpi_backend = None
+            else:
+                logger.info(f"VPI version: {vpi.__version__}")
             logger.info(f"Initializing VPI-accelerated detector (mode: {self.detection_mode})...")
 
             # Initialize YOLO model if in model mode
@@ -261,40 +331,60 @@ class VPIDetector:
                     logger.error(f"Failed to load YOLO model: {e}")
                     return False
 
-            # Try different backends based on device selection
-            if self.device == 'cuda':
-                # GPU acceleration - try CUDA, PVA, VIC, then CPU fallback
-                backends_to_try = [
-                    (vpi.Backend.CUDA, "CUDA"),
-                    (vpi.Backend.PVA, "PVA"),
-                    (vpi.Backend.VIC, "VIC"),
-                    (vpi.Backend.CPU, "CPU")
-                ]
+            # Try different VPI backends (only if VPI available)
+            if VPI_AVAILABLE:
+                if self.device == 'cuda':
+                    # GPU acceleration - try CUDA, PVA, VIC (avoid CPU fallback unless necessary)
+                    backends_to_try = [
+                        (vpi.Backend.CUDA, "CUDA"),
+                        (vpi.Backend.PVA, "PVA"),
+                        (vpi.Backend.VIC, "VIC")
+                    ]
+                else:
+                    # CPU-only mode explicitly requested
+                    backends_to_try = [
+                        (vpi.Backend.CPU, "CPU")
+                    ]
+
+                test_img = np.zeros((100, 100, 3), dtype=np.uint8)
+
+                for backend, name in backends_to_try:
+                    try:
+                        logger.info(f"Trying VPI backend: {name}")
+                        with backend:
+                            test_vpi = vpi.asimage(test_img, vpi.Format.BGR8)
+                            test_gray = test_vpi.convert(vpi.Format.U8)
+
+                        logger.info(f"VPI {name} backend initialized successfully!")
+                        self.vpi_backend = backend
+                        self.is_initialized = True
+                        return True  # Exit on first success
+                    except Exception as e:
+                        logger.warning(f"VPI {name} backend failed: {e}")
+                        continue
+
+                # All VPI backends failed - only now try VPI CPU as last resort (Jetson only)
+                if self.device == 'cuda':
+                    logger.warning("All GPU VPI backends failed, trying VPI CPU as last resort...")
+                    try:
+                        backend = vpi.Backend.CPU
+                        with backend:
+                            test_vpi = vpi.asimage(test_img, vpi.Format.BGR8)
+                            test_gray = test_vpi.convert(vpi.Format.U8)
+                        logger.info("VPI CPU backend initialized (fallback)")
+                        self.vpi_backend = backend
+                        self.is_initialized = True
+                        return True
+                    except Exception as e:
+                        logger.error(f"VPI CPU fallback also failed: {e}")
+
+                logger.error("All VPI backends failed")
+                return False
             else:
-                # CPU-only mode
-                backends_to_try = [
-                    (vpi.Backend.CPU, "CPU")
-                ]
-
-            test_img = np.zeros((100, 100, 3), dtype=np.uint8)
-
-            for backend, name in backends_to_try:
-                try:
-                    logger.info(f"Trying VPI backend: {name}")
-                    with backend:
-                        test_vpi = vpi.asimage(test_img, vpi.Format.BGR8)
-                        test_gray = test_vpi.convert(vpi.Format.U8)
-
-                    logger.info(f"VPI {name} backend initialized successfully!")
-                    self.vpi_backend = backend
-                    self.is_initialized = True
-                    return True
-                except Exception as e:
-                    logger.warning(f"VPI {name} backend failed: {e}")
-                    continue
-
-            logger.error("All VPI backends failed")
-            return False
+                # VPI not available (Windows/macOS) - use OpenCV fallback
+                logger.info("VPI not available - using OpenCV fallback (full functionality)")
+                self.is_initialized = True
+                return True
 
         except Exception as e:
             logger.error(f"Failed to initialize VPI detector: {e}")
@@ -311,6 +401,10 @@ class VPIDetector:
         Returns:
             List of Detection objects
         """
+        # If model is loading, return cached detections without error (prevents race condition)
+        if self.model_loading:
+            return self.last_detections
+
         if not self.model:
             logger.error("Model not loaded")
             return []
@@ -323,14 +417,21 @@ class VPIDetector:
 
         start_time = time.time()
         detections = []
+        logger.debug(f"Starting YOLO detection on frame {self.frame_count}")
 
         try:
             # Run YOLO inference with selected device
             # imgsz=416 balances speed and accuracy for thermal imagery
-            # conf threshold lowered for thermal detection (YOLO trained on RGB)
+            # For thermal imagery, use lower confidence threshold
+            # YOLO was trained on RGB images, thermal is out-of-distribution
+            thermal_conf_adjustment = 0.6  # 40% lower threshold for thermal imagery
+            effective_conf = max(0.1, self.confidence_threshold * thermal_conf_adjustment)
+
             yolo_device = 'cuda' if self.device == 'cuda' else 'cpu'
+            logger.debug(f"About to call YOLO model - frame shape: {frame.shape}, device: {yolo_device}, imgsz: {self.yolo_input_size}, conf: {effective_conf:.2f}")
             results = self.model(frame, verbose=False, device=yolo_device,
-                               imgsz=self.yolo_input_size, conf=self.confidence_threshold)[0]
+                               imgsz=self.yolo_input_size, conf=effective_conf)[0]
+            logger.debug(f"YOLO model call completed successfully")
 
             # Road-relevant classes (COCO dataset)
             road_classes = {
@@ -386,7 +487,9 @@ class VPIDetector:
             return detections
 
         except Exception as e:
+            import traceback
             logger.error(f"Model detection error: {e}")
+            logger.error(f"Full traceback:\n{traceback.format_exc()}")
             # Update timing metrics even on error so GUI shows inference is running
             self.last_inference_time = time.time() - start_time
             self.fps = 1.0 / self.last_inference_time if self.last_inference_time > 0 else 0
@@ -408,22 +511,36 @@ class VPIDetector:
         detections = []
 
         try:
-            # Use VPI for hardware-accelerated image processing
-            with self.vpi_backend:
-                # Convert to VPI image
-                vpi_img = vpi.asimage(frame, vpi.Format.BGR8)
+            # Use VPI for hardware-accelerated image processing (if available)
+            if VPI_AVAILABLE and self.vpi_backend is not None:
+                with self.vpi_backend:
+                    # Convert to VPI image
+                    vpi_img = vpi.asimage(frame, vpi.Format.BGR8)
 
-                # Convert to grayscale using hardware acceleration
-                gray = vpi_img.convert(vpi.Format.U8)
+                    # Convert to grayscale using hardware acceleration
+                    gray = vpi_img.convert(vpi.Format.U8)
 
-                # Apply Gaussian blur for noise reduction
-                blurred = gray.gaussian_filter(7, sigma=1.5, border=vpi.Border.CLAMP)
+                    # Apply Gaussian blur for noise reduction
+                    blurred = gray.gaussian_filter(7, sigma=1.5, border=vpi.Border.CLAMP)
 
-                # Edge detection (hardware-accelerated)
-                edges = blurred.canny(thresh_weak=50, thresh_strong=150)
+                    # Edge detection (hardware-accelerated)
+                    edges = blurred.canny(thresh_weak=50, thresh_strong=150)
 
-                # Convert back to numpy for contour detection
-                edges_np = edges.cpu()
+                    # Convert back to numpy for contour detection
+                    edges_np = edges.cpu()
+            else:
+                # OpenCV fallback (cross-platform)
+                # Convert to grayscale
+                if len(frame.shape) == 3:
+                    gray_np = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                else:
+                    gray_np = frame
+
+                # Apply Gaussian blur
+                blurred_np = cv2.GaussianBlur(gray_np, (7, 7), 1.5)
+
+                # Edge detection using OpenCV Canny
+                edges_np = cv2.Canny(blurred_np, 50, 150)
 
             # Find contours (CPU - fast enough for this operation)
             contours, _ = cv2.findContours(edges_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -604,16 +721,20 @@ class VPIDetector:
         if not self.is_initialized:
             return []
 
-        # Get primary detections (YOLO or edge-based)
-        if self.detection_mode == "model":
-            detections = self._detect_with_model(frame, filter_road_objects)
-        else:
-            detections = self._detect_with_edges(frame, filter_road_objects)
+        # Get primary detections (YOLO or edge-based) if object detection enabled
+        detections = []
+        if self.object_detection_enabled:
+            if self.detection_mode == "model":
+                detections = self._detect_with_model(frame, filter_road_objects)
+            else:
+                detections = self._detect_with_edges(frame, filter_road_objects)
 
-        # Add motion detections for road safety (deer, animals, etc.)
-        motion_detections = self._detect_motion(frame)
+        # Add motion detections for road safety (deer, animals, etc.) if motion detection enabled
+        motion_detections = []
+        if self.motion_detection_enabled:
+            motion_detections = self._detect_motion(frame)
 
-        # Combine detections, filtering out motion that overlaps with YOLO detections
+        # Combine detections, filtering out motion that overlaps with object detections
         combined = list(detections)  # Start with YOLO/edge detections
 
         for motion_det in motion_detections:
@@ -624,7 +745,7 @@ class VPIDetector:
                     overlaps = True
                     break
 
-            # Only add motion detection if it doesn't overlap with YOLO detection
+            # Only add motion detection if it doesn't overlap with object detection
             if not overlaps:
                 combined.append(motion_det)
 

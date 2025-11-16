@@ -14,6 +14,10 @@ from queue import Queue
 import cv2
 import os
 import numpy as np
+import faulthandler
+
+# Enable faulthandler to catch segfaults and C++ crashes
+faulthandler.enable()
 
 from flir_camera import FLIRBosonCamera
 from camera_factory import create_rgb_camera, detect_all_rgb_cameras
@@ -71,7 +75,7 @@ def setup_logging():
         file_handler.setLevel(logging.DEBUG)  # Capture everything to file
         file_handler.setFormatter(detailed_formatter)
         root_logger.addHandler(file_handler)
-        logging.info("✓ Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)")
+        logging.info("[OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)")
     except Exception as e:
         logging.warning(f"Could not create debug log file: {e}")
 
@@ -259,7 +263,7 @@ class ThermalRoadMonitorFusion:
 
             if self.thermal_camera.open():
                 actual_res = self.thermal_camera.get_actual_resolution()
-                logger.info(f"✓ Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
+                logger.info(f"[OK] Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
                 self.thermal_connected = True
                 return True
             else:
@@ -293,7 +297,7 @@ class ThermalRoadMonitorFusion:
             if self.detector.initialize():
                 self.available_palettes = self.detector.get_available_palettes()
                 self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
-                logger.info("✓ Detector initialized successfully")
+                logger.info("[OK] Detector initialized successfully")
             else:
                 logger.error("Failed to initialize detector after thermal connect")
                 self.detector = None
@@ -391,7 +395,7 @@ class ThermalRoadMonitorFusion:
                     if self.rgb_camera.open():
                         self.rgb_available = True
                         rgb_res = self.rgb_camera.get_actual_resolution()
-                        logger.info(f"✓ RGB camera opened: {self.rgb_camera.camera_type}")
+                        logger.info(f"[OK] RGB camera opened: {self.rgb_camera.camera_type}")
                         logger.info(f"  Resolution: {rgb_res[0]}x{rgb_res[1]}")
                     else:
                         logger.warning("RGB camera failed to open - continuing with thermal only")
@@ -485,11 +489,11 @@ class ThermalRoadMonitorFusion:
             if use_qt:
                 # Qt GUI - Professional interface (v3.x default)
                 from driver_gui_qt import DriverAppWindow
-                logger.info("✓ Using Qt GUI (professional mode)")
+                logger.info("[OK] Using Qt GUI (professional mode)")
                 self.gui = DriverAppWindow(app=self)  # Pass self reference for button callbacks
                 self.gui_type = 'qt'
                 # Qt GUI will be shown in run() method
-                logger.info("✓ Qt GUI window created successfully with app reference")
+                logger.info("[OK] Qt GUI window created successfully with app reference")
 
             else:
                 # OpenCV GUI - Legacy fallback (deprecated)
@@ -727,11 +731,11 @@ class ThermalRoadMonitorFusion:
                                 self.rgb_camera.release()
                             self.rgb_camera = rgb_camera
                             self.rgb_available = True
-                            logger.info("  ✓ RGB camera reconnected successfully!")
+                            logger.info("  [OK] RGB camera reconnected successfully!")
                         else:
-                            logger.warning("  ✗ RGB camera failed to open")
+                            logger.warning("  [X] RGB camera failed to open")
                     except Exception as e:
-                        logger.warning(f"  ✗ RGB camera retry failed: {e}")
+                        logger.warning(f"  [X] RGB camera retry failed: {e}")
                 else:
                     logger.info("  RGB camera already connected")
 
@@ -782,7 +786,7 @@ class ThermalRoadMonitorFusion:
                         self.last_thermal_scan_time = current_time
                         logger.info("Scanning for thermal camera...")
                         if self._try_connect_thermal():
-                            logger.info("✓ Thermal camera connected! Initializing detector...")
+                            logger.info("[OK] Thermal camera connected! Initializing detector...")
                             # Initialize detector now that thermal is connected
                             self._initialize_detector_after_thermal_connect()
                         else:
@@ -878,7 +882,7 @@ class ThermalRoadMonitorFusion:
                             )
                             if self.rgb_camera.open():
                                 self.rgb_available = True
-                                logger.info(f"✓ RGB camera reconnected: {self.rgb_camera.camera_type}")
+                                logger.info(f"[OK] RGB camera reconnected: {self.rgb_camera.camera_type}")
                             else:
                                 self.rgb_camera = None
                         except Exception as e:

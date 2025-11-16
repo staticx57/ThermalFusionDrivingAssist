@@ -28,13 +28,32 @@ class FLIRBosonCamera:
         self.is_opened = False
 
     def open(self) -> bool:
-        """Open camera connection"""
+        """Open camera connection (cross-platform: Linux/Windows)"""
         try:
-            # Try V4L2 backend first (best for Linux/Jetson)
-            self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_V4L2)
+            import platform
+            system = platform.system()
 
+            # Try platform-specific backend first
+            if system == "Linux":
+                # Linux: Use V4L2 backend
+                logger.info("Linux detected - trying V4L2 backend")
+                self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_V4L2)
+            elif system == "Windows":
+                # Windows: Try DirectShow first, then MSMF
+                logger.info("Windows detected - trying DirectShow backend")
+                try:
+                    self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_DSHOW)
+                except:
+                    logger.info("DirectShow failed, trying MSMF backend")
+                    self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_MSMF)
+            else:
+                # macOS or other: use default backend
+                logger.info(f"{system} detected - using default backend")
+                self.cap = cv2.VideoCapture(self.device_id)
+
+            # Fallback to default backend if platform-specific failed
             if not self.cap.isOpened():
-                logger.warning("V4L2 backend failed, trying default backend")
+                logger.warning(f"Platform-specific backend failed, trying default backend")
                 self.cap = cv2.VideoCapture(self.device_id)
 
             if self.cap.isOpened():

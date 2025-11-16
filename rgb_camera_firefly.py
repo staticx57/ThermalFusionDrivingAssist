@@ -14,9 +14,14 @@ Advantages over rolling shutter:
 - Accurate object detection in high-speed scenarios
 - Better for automotive/driving applications
 
-Installation:
-- Linux: Install Spinnaker SDK + PySpin from FLIR website
-- Windows: Install Spinnaker SDK + PySpin from FLIR website
+Installation (Cross-Platform):
+- Windows: Download and install Spinnaker SDK + PySpin from FLIR website
+  https://www.flir.com/products/spinnaker-sdk/
+- Linux: Download and install Spinnaker SDK + PySpin from FLIR website
+  For Ubuntu: Use .deb packages, then pip install spinnaker_python-*.whl
+- macOS: Download and install Spinnaker SDK + PySpin from FLIR website
+
+Note: The SDK is cross-platform and works identically on Windows/Linux/macOS
 """
 import numpy as np
 import logging

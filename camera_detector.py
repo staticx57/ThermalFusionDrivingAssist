@@ -32,19 +32,28 @@ class CameraDetector:
     @staticmethod
     def detect_all_cameras() -> List[CameraInfo]:
         """
-        Detect all available cameras
+        Detect all available cameras (cross-platform: Linux/Windows/macOS)
 
         Returns:
             List of CameraInfo objects
         """
+        import platform
         cameras = []
+        system = platform.system()
 
-        # Try v4l2-ctl first (Linux)
-        v4l2_cameras = CameraDetector._detect_v4l2()
-        if v4l2_cameras:
-            cameras.extend(v4l2_cameras)
+        if system == "Linux":
+            # Try v4l2-ctl first (Linux)
+            v4l2_cameras = CameraDetector._detect_v4l2()
+            if v4l2_cameras:
+                cameras.extend(v4l2_cameras)
+            else:
+                # Fallback: probe video devices directly
+                cameras = CameraDetector._probe_video_devices()
+        elif system == "Windows":
+            # Windows: probe cameras using DirectShow/MSMF
+            cameras = CameraDetector._probe_windows_cameras()
         else:
-            # Fallback: probe video devices directly
+            # macOS or other: probe using default backend
             cameras = CameraDetector._probe_video_devices()
 
         return cameras
@@ -149,7 +158,7 @@ class CameraDetector:
 
     @staticmethod
     def _probe_video_devices(max_devices: int = 10) -> List[CameraInfo]:
-        """Probe /dev/video* devices directly"""
+        """Probe /dev/video* devices directly (Linux)"""
         cameras = []
 
         for device_id in range(max_devices):
@@ -170,6 +179,55 @@ class CameraDetector:
 
             except:
                 pass
+
+        return cameras
+
+    @staticmethod
+    def _probe_windows_cameras(max_devices: int = 10) -> List[CameraInfo]:
+        """Probe cameras on Windows using DirectShow/MSMF"""
+        cameras = []
+
+        for device_id in range(max_devices):
+            cap = None
+            try:
+                # Try DirectShow first (better compatibility with UVC devices)
+                cap = cv2.VideoCapture(device_id, cv2.CAP_DSHOW)
+
+                if not cap.isOpened():
+                    # Fall back to MSMF
+                    cap = cv2.VideoCapture(device_id, cv2.CAP_MSMF)
+
+                if cap.isOpened():
+                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+                    # Try to get camera name (backend-specific property)
+                    name = f"Camera {device_id}"
+                    try:
+                        # Some backends support camera name property
+                        backend_name = cap.getBackendName()
+                        name = f"Camera {device_id} ({backend_name})"
+                    except:
+                        pass
+
+                    # Detect if this looks like a FLIR Boson based on resolution
+                    if (width, height) in [(640, 512), (320, 256)]:
+                        name = f"FLIR Boson {width}x{height} (Camera {device_id})"
+
+                    cap.release()
+
+                    cameras.append(CameraInfo(
+                        device_id=device_id,
+                        name=name,
+                        driver="DirectShow/MSMF",
+                        resolution=(width, height)
+                    ))
+
+            except Exception as e:
+                logger.debug(f"Failed to probe camera {device_id}: {e}")
+            finally:
+                if cap is not None:
+                    cap.release()
 
         return cameras
 

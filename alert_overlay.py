@@ -61,6 +61,10 @@ class AlertOverlayWidget(QWidget):
         self.persistent_alerts = {}
         self.alert_persistence_seconds = 3.0
 
+        # Proximity alert timeout (clear after no detections)
+        self.last_detection_time = 0
+        self.proximity_timeout_seconds = 2.0  # Clear after 2 seconds of no detections
+
         # Update timer for animations
         self.animation_timer = QTimer()
         self.animation_timer.timeout.connect(self._update_animation)
@@ -88,8 +92,18 @@ class AlertOverlayWidget(QWidget):
         self.alerts = alerts
         self.detections = detections
 
-        # Update proximity zones (left/right/center based on x-position)
-        self._update_proximity_zones()
+        # Update last detection time if we have detections
+        if len(detections) > 0:
+            self.last_detection_time = time.time()
+
+        # Check for timeout - clear proximity zones if no recent detections
+        current_time = time.time()
+        if current_time - self.last_detection_time > self.proximity_timeout_seconds:
+            self.proximity_zones = {'left': [], 'right': [], 'center': []}
+            self.detections = []  # Also clear detections to stop rendering
+        else:
+            # Update proximity zones (left/right/center based on x-position)
+            self._update_proximity_zones()
 
         # Update persistent alerts
         self._update_persistent_alerts()
@@ -128,6 +142,10 @@ class AlertOverlayWidget(QWidget):
                 zones['center'].append(det)
 
         self.proximity_zones = zones
+
+        # Debug logging to verify zone classification
+        if len(zones['left']) > 0 or len(zones['right']) > 0 or len(zones['center']) > 0:
+            logger.debug(f"Proximity zones: LEFT={len(zones['left'])}, CENTER={len(zones['center'])}, RIGHT={len(zones['right'])}")
 
     def _update_persistent_alerts(self):
         """
@@ -179,7 +197,8 @@ class AlertOverlayWidget(QWidget):
         self._draw_proximity_alerts(painter)
 
         # 2. Draw critical text alerts (center, for CRITICAL level only)
-        self._draw_critical_text_alerts(painter)
+        # DISABLED: Distracting for driving, proximity alerts are sufficient
+        # self._draw_critical_text_alerts(painter)
 
         painter.end()
 
@@ -187,6 +206,8 @@ class AlertOverlayWidget(QWidget):
         """
         Draw pulsing proximity zone alerts on left/right sides
         Peripheral placement per SAE J2400 (not center dashboard)
+
+        Center detections show alerts on BOTH sides (threat from both directions)
 
         Args:
             painter: QPainter instance
@@ -203,11 +224,18 @@ class AlertOverlayWidget(QWidget):
         alert_width = 50
         alert_margin = 10
 
+        # Determine which sides should show alerts
+        # Center detections trigger BOTH sides (bi-directional threat)
+        show_left = len(self.proximity_zones['left']) > 0 or len(self.proximity_zones['center']) > 0
+        show_right = len(self.proximity_zones['right']) > 0 or len(self.proximity_zones['center']) > 0
+
         # LEFT SIDE PROXIMITY ALERT
-        if len(self.proximity_zones['left']) > 0:
+        if show_left:
+            # Combine left and center detections for criticality check
+            combined_left = self.proximity_zones['left'] + self.proximity_zones['center']
             # Determine alert level based on object types
             has_critical = any(d.class_name in ['person', 'bicycle', 'motorcycle', 'dog', 'cat']
-                             for d in self.proximity_zones['left'])
+                             for d in combined_left)
 
             if has_critical:
                 color = self.colors['critical']
@@ -228,18 +256,20 @@ class AlertOverlayWidget(QWidget):
             painter.setPen(QPen(self.colors['text']))
             painter.setFont(QFont("Arial", 14, QFont.Bold))
 
-            icon = "⚠"
+            icon = "[!]"
             painter.drawText(QRect(alert_margin, h // 2 - 30, alert_width, 30),
                            Qt.AlignCenter, icon)
 
-            count = str(len(self.proximity_zones['left']))
+            count = str(len(combined_left))
             painter.drawText(QRect(alert_margin, h // 2 + 10, alert_width, 30),
                            Qt.AlignCenter, count)
 
         # RIGHT SIDE PROXIMITY ALERT
-        if len(self.proximity_zones['right']) > 0:
+        if show_right:
+            # Combine right and center detections for criticality check
+            combined_right = self.proximity_zones['right'] + self.proximity_zones['center']
             has_critical = any(d.class_name in ['person', 'bicycle', 'motorcycle', 'dog', 'cat']
-                             for d in self.proximity_zones['right'])
+                             for d in combined_right)
 
             if has_critical:
                 color = self.colors['critical']
@@ -260,12 +290,12 @@ class AlertOverlayWidget(QWidget):
             painter.setPen(QPen(self.colors['text']))
             painter.setFont(QFont("Arial", 14, QFont.Bold))
 
-            icon = "⚠"
+            icon = "[!]"
             painter.drawText(QRect(w - alert_margin - alert_width, h // 2 - 30,
                                   alert_width, 30),
                            Qt.AlignCenter, icon)
 
-            count = str(len(self.proximity_zones['right']))
+            count = str(len(combined_right))
             painter.drawText(QRect(w - alert_margin - alert_width, h // 2 + 10,
                                   alert_width, 30),
                            Qt.AlignCenter, count)
@@ -288,12 +318,15 @@ class AlertOverlayWidget(QWidget):
 
         w = self.width()
 
+        # Calculate pulse intensity for animation (same as proximity alerts)
+        pulse_intensity = (math.sin(self.pulse_phase * 2 * math.pi) + 1.0) / 2.0
+
         # Draw at top-center (non-intrusive but visible)
         y_offset = 60
 
         for i, alert in enumerate(critical_alerts[:3]):  # Max 3 critical alerts
             # Background box
-            text = f"⚠ {alert.message}"
+            text = f"[!] {alert.message}"
 
             painter.setFont(QFont("Arial", 16, QFont.Bold))
             fm = painter.fontMetrics()

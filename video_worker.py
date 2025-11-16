@@ -52,7 +52,7 @@ class VideoProcessorWorker(QThread):
                     self.app.last_thermal_scan_time = current_time
                     logger.info("Scanning for thermal camera...")
                     if self.app._try_connect_thermal():
-                        logger.info("✓ Thermal camera connected! Initializing detector...")
+                        logger.info("[OK] Thermal camera connected! Initializing detector...")
                         self.app._initialize_detector_after_thermal_connect()
                     else:
                         logger.debug("Thermal camera not found, will retry in 3s...")
@@ -126,7 +126,7 @@ class VideoProcessorWorker(QThread):
                         )
                         if self.app.rgb_camera.open():
                             self.app.rgb_available = True
-                            logger.info(f"✓ RGB camera reconnected: {self.app.rgb_camera.camera_type}")
+                            logger.info(f"[OK] RGB camera reconnected: {self.app.rgb_camera.camera_type}")
                         else:
                             self.app.rgb_camera = None
                     except Exception as e:
@@ -216,12 +216,26 @@ class VideoProcessorWorker(QThread):
 
             # Draw detections if enabled
             if self.app.show_detections and len(detections) > 0:
+                h, w = display_frame.shape[:2]
                 for det in detections:
-                    x1, y1, x2, y2 = map(int, det.bbox)
-                    cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    label = f"{det.class_name}: {det.confidence:.2f}"
-                    cv2.putText(display_frame, label, (x1, y1 - 10),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    try:
+                        x1, y1, x2, y2 = map(int, det.bbox)
+                        # Clamp coordinates to frame bounds to prevent crashes
+                        x1 = max(0, min(x1, w - 1))
+                        y1 = max(0, min(y1, h - 1))
+                        x2 = max(0, min(x2, w - 1))
+                        y2 = max(0, min(y2, h - 1))
+
+                        # Only draw if box is valid (has area)
+                        if x2 > x1 and y2 > y1:
+                            cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            label = f"{det.class_name}: {det.confidence:.2f}"
+                            # Ensure label position is within frame
+                            label_y = max(10, y1 - 10)
+                            cv2.putText(display_frame, label, (x1, label_y),
+                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    except Exception as e:
+                        logger.error(f"Error drawing detection box: {e}")
 
             # 10. Emit signals to GUI (thread-safe)
             self.frame_ready.emit(display_frame)
@@ -267,6 +281,9 @@ class VideoProcessorWorker(QThread):
                 # ADAS Alerts (for alert overlay)
                 'alerts': alerts,
                 'detections_list': detections,
+
+                # RGB frame for auto day/night ambient light detection
+                'rgb_frame': rgb_frame if rgb_frame is not None and self.app.rgb_available else None,
             }
 
             self.metrics_update.emit(comprehensive_metrics)
@@ -292,7 +309,7 @@ class VideoProcessorWorker(QThread):
             # Print stats with performance debug info
             if self.app.frame_count % 100 == 0:
                 actual_loop_time = loop_time + (sleep_time if throttle_active else 0)
-                throttle_status = "✓" if throttle_active else "✗ OVERRUN"
+                throttle_status = "[OK]" if throttle_active else "[X] OVERRUN"
                 logger.info(
                     f"Frame {self.app.frame_count} | "
                     f"FPS: {self.app.smoothed_fps:.1f}/{target_fps} | "

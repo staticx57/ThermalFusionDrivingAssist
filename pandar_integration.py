@@ -147,7 +147,7 @@ class PandarIntegration:
             self.socket.settimeout(1.0)
 
             self.connected = True
-            logger.info(f"✓ Pandar 40P connected on UDP port {self.udp_port}")
+            logger.info(f"[OK] Pandar 40P connected on UDP port {self.udp_port}")
             return True
 
         except Exception as e:

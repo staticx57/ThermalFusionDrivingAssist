@@ -26,6 +26,7 @@ from road_analyzer import Alert, AlertLevel
 from view_mode import ViewMode
 from developer_panel import DeveloperPanel
 from alert_overlay import AlertOverlayWidget
+from auto_daynight import get_detector as get_auto_daynight_detector
 
 logger = logging.getLogger(__name__)
 
@@ -181,9 +182,17 @@ class VideoWidget(QLabel):
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb.shape
 
-            # Create QImage from numpy array
+            # CRITICAL FIX: Create QImage with proper data ownership
+            # Problem: QImage(data, w, h, ...) doesn't copy - just holds pointer to numpy buffer
+            # Solution: Convert to bytes() which creates a true copy that QImage owns
             bytes_per_line = ch * w
-            qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+            # Make contiguous copy and convert to bytes for QImage to own
+            rgb_bytes = rgb.tobytes()
+            qimg = QImage(rgb_bytes, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+
+            # .copy() at end ensures QImage has its own deep copy of pixel data
+            # Now completely isolated from worker thread's frame buffer
 
             # Convert to pixmap and scale to fit widget
             pixmap = QPixmap.fromImage(qimg)
@@ -230,55 +239,63 @@ class ControlPanel(QWidget):
     Emits signals for button clicks
     """
 
-    # Signals for button actions
+    # Simple mode signals (driving-relevant controls)
+    palette_clicked = pyqtSignal()  # Thermal palette cycling
+    audio_toggled = pyqtSignal(bool)  # Audio alerts toggle
+    day_night_clicked = pyqtSignal()  # Day/Night brightness mode
+
+    # Developer control signals (configuration, not for use while driving)
     view_mode_clicked = pyqtSignal()
     yolo_toggled = pyqtSignal(bool)
-    audio_toggled = pyqtSignal(bool)
-    theme_clicked = pyqtSignal()
     retry_sensors_clicked = pyqtSignal()
-
-    # Developer control signals
     buffer_flush_toggled = pyqtSignal(bool)
     frame_skip_clicked = pyqtSignal()
-    palette_clicked = pyqtSignal()
     detection_toggled = pyqtSignal(bool)
     device_clicked = pyqtSignal()
     model_clicked = pyqtSignal()
     fusion_mode_clicked = pyqtSignal()
     fusion_alpha_clicked = pyqtSignal()
     sim_thermal_toggled = pyqtSignal(bool)  # Simulated thermal camera
+    motion_detection_toggled = pyqtSignal(bool)  # Motion detection toggle
+    object_detection_toggled = pyqtSignal(bool)  # Object detection toggle
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Create buttons
+        # Simple mode buttons (always visible, driving-relevant)
+        self.palette_btn = QPushButton("🌡️ Palette: IRONBOW")
+        self.audio_btn = QPushButton("🔊 Audio: ON")
+        self.day_night_btn = QPushButton("☀️ Day")
+
+        # Developer control buttons (visible only in dev mode)
         self.view_btn = QPushButton("🎥 View: Thermal")
         self.yolo_btn = QPushButton("🎯 YOLO: OFF")
-        self.audio_btn = QPushButton("🔊 Audio: ON")
-        self.theme_btn = QPushButton("🎨 Theme: Auto")
         self.retry_btn = QPushButton("🔄 Retry Sensors")
-
-        # Developer control buttons (hidden by default)
         self.buffer_flush_btn = QPushButton("💾 Flush: OFF")
         self.frame_skip_btn = QPushButton("⏩ Skip: 1")
-        self.palette_btn = QPushButton("🎨 PAL: IRONBOW")
         self.detection_btn = QPushButton("📦 BOX: ON")
         self.device_btn = QPushButton("🖥️ DEV: CPU")
         self.model_btn = QPushButton("🤖 MDL: V8N")
         self.fusion_mode_btn = QPushButton("🔀 FUS: ALPHA")
         self.fusion_alpha_btn = QPushButton("⚖️ α: 0.50")
         self.sim_thermal_btn = QPushButton("🧪 SIM: OFF")
+        self.motion_detect_btn = QPushButton("🏃 MOT: ON")
+        self.object_detect_btn = QPushButton("🎯 OBJ: ON")
 
         # Hide all developer controls by default
+        self.view_btn.hide()
+        self.yolo_btn.hide()
+        self.retry_btn.hide()
         self.buffer_flush_btn.hide()
         self.frame_skip_btn.hide()
-        self.palette_btn.hide()
         self.detection_btn.hide()
         self.device_btn.hide()
         self.model_btn.hide()
         self.fusion_mode_btn.hide()
         self.fusion_alpha_btn.hide()
         self.sim_thermal_btn.hide()
+        self.motion_detect_btn.hide()
+        self.object_detect_btn.hide()
 
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
@@ -286,57 +303,65 @@ class ControlPanel(QWidget):
         self.buffer_flush_btn.setCheckable(True)
         self.detection_btn.setCheckable(True)
         self.sim_thermal_btn.setCheckable(True)
+        self.motion_detect_btn.setCheckable(True)
+        self.object_detect_btn.setCheckable(True)
 
         # Set initial checked states
         self.audio_btn.setChecked(True)  # Audio on by default
+        self.motion_detect_btn.setChecked(True)  # Motion detection on by default
+        self.object_detect_btn.setChecked(True)  # Object detection on by default
 
-        # Connect signals
+        # Simple mode signal connections (always visible)
+        self.palette_btn.clicked.connect(self.palette_clicked.emit)
+        self.audio_btn.toggled.connect(self._on_audio_toggled)
+        self.day_night_btn.clicked.connect(self.day_night_clicked.emit)
+
+        # Developer control signal connections (visible only in dev mode)
         self.view_btn.clicked.connect(self.view_mode_clicked.emit)
         self.yolo_btn.toggled.connect(self._on_yolo_toggled)
-        self.audio_btn.toggled.connect(self._on_audio_toggled)
-        self.theme_btn.clicked.connect(self.theme_clicked.emit)
         self.retry_btn.clicked.connect(self.retry_sensors_clicked.emit)
-
-        # Developer control connections
         self.buffer_flush_btn.toggled.connect(self._on_buffer_flush_toggled)
         self.frame_skip_btn.clicked.connect(self.frame_skip_clicked.emit)
-        self.palette_btn.clicked.connect(self.palette_clicked.emit)
         self.detection_btn.toggled.connect(self._on_detection_toggled)
         self.device_btn.clicked.connect(self.device_clicked.emit)
         self.model_btn.clicked.connect(self.model_clicked.emit)
         self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
         self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
         self.sim_thermal_btn.toggled.connect(self._on_sim_thermal_toggled)
+        self.motion_detect_btn.toggled.connect(self._on_motion_detect_toggled)
+        self.object_detect_btn.toggled.connect(self._on_object_detect_toggled)
 
-        # Main layout: Standard controls in horizontal row
+        # Main layout: Simple mode controls (SAE J2400 compliant - minimal, driving-relevant)
         main_layout = QHBoxLayout()
-        main_layout.addWidget(self.view_btn)
-        main_layout.addWidget(self.yolo_btn)
+        main_layout.addWidget(self.palette_btn)
         main_layout.addWidget(self.audio_btn)
-        main_layout.addStretch()  # Push theme/retry to right
-        main_layout.addWidget(self.theme_btn)
-        main_layout.addWidget(self.retry_btn)
+        main_layout.addStretch()  # Push day/night to right
+        main_layout.addWidget(self.day_night_btn)
 
-        # Developer controls: 3x3 grid layout
+        # Developer controls: 5x3 grid layout (14 buttons)
         dev_controls_widget = QWidget()
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
         dev_grid.setContentsMargins(5, 5, 5, 5)
 
-        # Column 1: Camera & Detection
-        dev_grid.addWidget(self.palette_btn, 0, 0)
+        # Column 1: View & Detection
+        dev_grid.addWidget(self.view_btn, 0, 0)
         dev_grid.addWidget(self.detection_btn, 1, 0)
         dev_grid.addWidget(self.device_btn, 2, 0)
+        dev_grid.addWidget(self.motion_detect_btn, 3, 0)
 
-        # Column 2: Model & Performance
-        dev_grid.addWidget(self.model_btn, 0, 1)
+        # Column 2: YOLO & Performance
+        dev_grid.addWidget(self.yolo_btn, 0, 1)
         dev_grid.addWidget(self.buffer_flush_btn, 1, 1)
         dev_grid.addWidget(self.frame_skip_btn, 2, 1)
+        dev_grid.addWidget(self.object_detect_btn, 3, 1)
 
-        # Column 3: Fusion & Debug
-        dev_grid.addWidget(self.fusion_mode_btn, 0, 2)
-        dev_grid.addWidget(self.fusion_alpha_btn, 1, 2)
-        dev_grid.addWidget(self.sim_thermal_btn, 2, 2)
+        # Column 3: Model, Fusion & Debug
+        dev_grid.addWidget(self.model_btn, 0, 2)
+        dev_grid.addWidget(self.fusion_mode_btn, 1, 2)
+        dev_grid.addWidget(self.fusion_alpha_btn, 2, 2)
+        dev_grid.addWidget(self.sim_thermal_btn, 3, 2)
+        dev_grid.addWidget(self.retry_btn, 4, 2)
 
         dev_controls_widget.setLayout(dev_grid)
         dev_controls_widget.hide()  # Hidden by default
@@ -407,6 +432,16 @@ class ControlPanel(QWidget):
         self.sim_thermal_btn.setText(f"🧪 SIM: {'ON' if checked else 'OFF'}")
         self.sim_thermal_toggled.emit(checked)
 
+    def _on_motion_detect_toggled(self, checked: bool):
+        """Update motion detection button text when toggled"""
+        self.motion_detect_btn.setText(f"🏃 MOT: {'ON' if checked else 'OFF'}")
+        self.motion_detection_toggled.emit(checked)
+
+    def _on_object_detect_toggled(self, checked: bool):
+        """Update object detection button text when toggled"""
+        self.object_detect_btn.setText(f"🎯 OBJ: {'ON' if checked else 'OFF'}")
+        self.object_detection_toggled.emit(checked)
+
     def set_palette(self, palette_name: str):
         """Update palette button text"""
         # Truncate palette name to fit button (8 chars max)
@@ -445,12 +480,40 @@ class ControlPanel(QWidget):
         """Show or hide developer control buttons widget"""
         if show:
             self.dev_controls_widget.show()
+            # Explicitly show all individual buttons (required in Qt - hidden children stay hidden)
+            self.view_btn.show()
+            self.yolo_btn.show()
+            self.retry_btn.show()
+            self.buffer_flush_btn.show()
+            self.frame_skip_btn.show()
+            self.detection_btn.show()
+            self.device_btn.show()
+            self.model_btn.show()
+            self.fusion_mode_btn.show()
+            self.fusion_alpha_btn.show()
+            self.sim_thermal_btn.show()
+            self.motion_detect_btn.show()
+            self.object_detect_btn.show()
             # Force layout update to ensure visibility
             self.layout().invalidate()
             self.layout().activate()
-            logger.info("Developer controls shown (9 controls in 3x3 grid)")
+            logger.info("Developer controls shown (14 controls in 5x3 grid)")
         else:
             self.dev_controls_widget.hide()
+            # Hide individual buttons
+            self.view_btn.hide()
+            self.yolo_btn.hide()
+            self.retry_btn.hide()
+            self.buffer_flush_btn.hide()
+            self.frame_skip_btn.hide()
+            self.detection_btn.hide()
+            self.device_btn.hide()
+            self.model_btn.hide()
+            self.fusion_mode_btn.hide()
+            self.fusion_alpha_btn.hide()
+            self.sim_thermal_btn.hide()
+            self.motion_detect_btn.hide()
+            self.object_detect_btn.hide()
             self.layout().invalidate()
             self.layout().activate()
             logger.info("Developer controls hidden")
@@ -473,16 +536,13 @@ class InfoPanel(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("info_panel")
-        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.setWordWrap(False)  # No wrap - performance optimization
+        self.setAlignment(Qt.AlignCenter)  # Center text
+        self.setWordWrap(True)  # Allow wrapping for long text
 
-        # Sized for two-line layout without truncation
-        self.setMinimumSize(300, 50)
-        self.setMaximumSize(350, 70)
+        # Fixed size for stable positioning (SAE J2400: peripheral, non-moving)
+        self.setFixedSize(280, 70)
 
-        # Top-left corner (SAE J2400: avoid center placement for non-critical info)
-        self.move(10, 10)
-
+        # Will be positioned in resizeEvent (top-right corner per SAE J2400)
         # Always visible in simple mode - essential safety info
         self.show()
 
@@ -517,7 +577,7 @@ class InfoPanel(QLabel):
         if detections > 0:
             row1 = f"🎯 {detections} Objects Detected"
         else:
-            row1 = "✓ Clear"
+            row1 = "[OK] Clear"
 
         # Row 2: SYSTEM STATUS (diagnostic info)
         # Build compact status line
@@ -564,6 +624,11 @@ class DriverAppWindow(QMainWindow):
         self.current_theme = 'dark'
         self.view_mode = ViewMode.THERMAL_ONLY
         self.developer_mode = False  # Developer panel hidden by default
+
+        # Auto day/night detection
+        self.auto_mode_enabled = False  # Auto theme switching disabled by default
+        self.auto_daynight_detector = get_auto_daynight_detector()
+        self.last_rgb_frame = None  # Store latest RGB frame for ambient light detection
 
         # Create central widget and layout
         central_widget = QWidget()
@@ -659,22 +724,26 @@ class DriverAppWindow(QMainWindow):
 
     def _connect_controls(self):
         """Connect control panel button signals to handlers"""
+        # Simple mode controls (always visible)
+        self.control_panel.palette_clicked.connect(self._on_palette_cycle)
+        self.control_panel.audio_toggled.connect(self._on_audio_toggle)
+        self.control_panel.day_night_clicked.connect(self._on_day_night_toggle)
+
+        # Developer controls (visible only in dev mode)
         self.control_panel.view_mode_clicked.connect(self._on_view_mode_cycle)
         self.control_panel.yolo_toggled.connect(self._on_yolo_toggle)
-        self.control_panel.audio_toggled.connect(self._on_audio_toggle)
-        self.control_panel.theme_clicked.connect(self._on_theme_toggle)
         self.control_panel.retry_sensors_clicked.connect(self._on_retry_sensors)
-        # Developer controls
         self.control_panel.buffer_flush_toggled.connect(self._on_buffer_flush_toggle)
         self.control_panel.frame_skip_clicked.connect(self._on_frame_skip_cycle)
-        self.control_panel.palette_clicked.connect(self._on_palette_cycle)
         self.control_panel.detection_toggled.connect(self._on_detection_toggle)
         self.control_panel.device_clicked.connect(self._on_device_toggle)
         self.control_panel.model_clicked.connect(self._on_model_cycle)
         self.control_panel.fusion_mode_clicked.connect(self._on_fusion_mode_cycle)
         self.control_panel.fusion_alpha_clicked.connect(self._on_fusion_alpha_adjust)
         self.control_panel.sim_thermal_toggled.connect(self._on_sim_thermal_toggle)
-        logger.info("Control panel signals connected (all 15 controls)")
+        self.control_panel.motion_detection_toggled.connect(self._on_motion_detection_toggle)
+        self.control_panel.object_detection_toggled.connect(self._on_object_detection_toggle)
+        logger.info("Control panel signals connected (all 17 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
@@ -690,11 +759,27 @@ class DriverAppWindow(QMainWindow):
         logger.info(f"View mode changed to: {view_modes[next_idx]}")
 
     def _on_yolo_toggle(self, enabled: bool):
-        """Toggle YOLO detection"""
-        if not self.app:
+        """Toggle YOLO detection - switches detector between model and edge modes"""
+        if not self.app or not self.app.detector:
             return
+
         self.app.yolo_enabled = enabled
-        logger.info(f"YOLO detection: {'enabled' if enabled else 'disabled'}")
+
+        # Switch detector mode dynamically
+        if enabled:
+            # Switch to YOLO model mode
+            model_path = getattr(self.app, 'model_path', 'yolov8n.pt')
+            success = self.app.detector.set_detection_mode('model', model_path)
+            if success:
+                logger.info(f"YOLO detection enabled (model mode with {model_path})")
+            else:
+                logger.error("Failed to enable YOLO - model loading failed")
+                self.app.yolo_enabled = False
+                self.control_panel.set_yolo_enabled(False)
+        else:
+            # Switch to edge detection mode
+            self.app.detector.set_detection_mode('edge')
+            logger.info("YOLO detection disabled (edge detection mode)")
 
     def _on_audio_toggle(self, enabled: bool):
         """Toggle audio alerts"""
@@ -704,13 +789,24 @@ class DriverAppWindow(QMainWindow):
         logger.info(f"Audio alerts: {'enabled' if enabled else 'disabled'}")
 
 
-    def _on_theme_toggle(self):
-        """Cycle through themes"""
-        themes = ['dark', 'light', 'auto']
+    def _on_day_night_toggle(self):
+        """Cycle between Day (light), Night (dark), and Auto modes for driving visibility"""
+        # Cycle: Day → Night → Auto
+        themes = ['light', 'dark', 'auto']
+        theme_names = {'light': 'Day', 'dark': 'Night', 'auto': 'Auto'}
+        theme_icons = {'light': '☀️', 'dark': '🌙', 'auto': '🌓'}
+
         current_idx = themes.index(self.current_theme) if self.current_theme in themes else 0
         next_idx = (current_idx + 1) % len(themes)
-        self.apply_theme(themes[next_idx])
-        logger.info(f"Theme changed to: {themes[next_idx]}")
+        new_theme = themes[next_idx]
+
+        self.apply_theme(new_theme)
+
+        # Update button text
+        button_text = f"{theme_icons[new_theme]} {theme_names[new_theme]}"
+        self.control_panel.day_night_btn.setText(button_text)
+
+        logger.info(f"{theme_names[new_theme]} mode enabled (theme: {new_theme})")
 
     def _on_retry_sensors(self):
         """Retry sensor connections"""
@@ -744,9 +840,9 @@ class DriverAppWindow(QMainWindow):
         """Cycle through thermal color palettes"""
         if not self.app or not self.app.detector:
             return
-        # Available palettes in ThermalObjectDetector
-        palettes = ['ironbow', 'whitehot', 'blackhot', 'rainbow', 'arctic', 'grayscale']
-        current = getattr(self.app.detector, 'palette_name', 'ironbow')
+        # Available palettes in VPIDetector (must match exact names)
+        palettes = ['ironbow', 'white_hot', 'black_hot', 'rainbow', 'arctic', 'lava', 'medical', 'plasma']
+        current = getattr(self.app.detector, 'thermal_palette', 'ironbow')
         current_idx = palettes.index(current) if current in palettes else 0
         next_idx = (current_idx + 1) % len(palettes)
         next_palette = palettes[next_idx]
@@ -863,6 +959,20 @@ class DriverAppWindow(QMainWindow):
         self.app.use_simulated_thermal = enabled
         logger.info(f"Simulated thermal camera: {'enabled' if enabled else 'disabled'}")
 
+    def _on_motion_detection_toggle(self, enabled: bool):
+        """Toggle motion detection"""
+        if not self.app or not self.app.detector:
+            return
+        self.app.detector.set_motion_detection_enabled(enabled)
+        logger.info(f"Motion detection: {'enabled' if enabled else 'disabled'}")
+
+    def _on_object_detection_toggle(self, enabled: bool):
+        """Toggle object detection (YOLO/edge)"""
+        if not self.app or not self.app.detector:
+            return
+        self.app.detector.set_object_detection_enabled(enabled)
+        logger.info(f"Object detection: {'enabled' if enabled else 'disabled'}")
+
     def toggle_developer_mode(self):
         """
         Toggle developer mode panel and controls (Ctrl+D)
@@ -870,15 +980,26 @@ class DriverAppWindow(QMainWindow):
         Note: Developer panel not intended for use while driving
         """
         self.developer_mode = not self.developer_mode
+
+        # Get current window size
+        current_width = self.width()
+        current_height = self.height()
+
         if self.developer_mode:
             self.developer_panel.show()
             self.control_panel.show_developer_controls(True)
             self.info_panel.hide()  # Hide basic info - dev panel has everything
-            logger.info("✓ Developer mode ENABLED (panel + controls visible, basic info hidden)")
+
+            # Expand window width to accommodate developer panel (300px)
+            self.resize(current_width + 300, current_height)
+            logger.info("[OK] Developer mode ENABLED (panel + controls visible, basic info hidden)")
         else:
             self.developer_panel.hide()
             self.control_panel.show_developer_controls(False)
             self.info_panel.show()  # Show minimal ADAS info in simple mode
+
+            # Shrink window width back (remove 300px for developer panel)
+            self.resize(current_width - 300, current_height)
             logger.info("✗ Developer mode DISABLED (basic info visible)")
 
     def keyPressEvent(self, event):
@@ -904,8 +1025,9 @@ class DriverAppWindow(QMainWindow):
         elif key == Qt.Key_Y:
             # Toggle YOLO
             if self.app:
-                self.app.yolo_enabled = not self.app.yolo_enabled
-                self.control_panel.set_yolo_enabled(self.app.yolo_enabled)
+                new_state = not self.app.yolo_enabled
+                self.control_panel.yolo_btn.setChecked(new_state)
+                # This will trigger _on_yolo_toggle() which handles mode switching
 
         elif key == Qt.Key_A:
             # Toggle audio
@@ -944,21 +1066,32 @@ class DriverAppWindow(QMainWindow):
         Design principle for ADAS driving safety:
         - 'light' mode = BRIGHT display for DAYTIME (offsets glare)
         - 'dark' mode = DARK display for NIGHTTIME (preserves night vision)
+        - 'auto' mode = AUTOMATIC switching based on ambient/time/sunset
         """
         self.current_theme = theme_name
 
-        if theme_name == 'dark':
-            # Night mode: DARK display to preserve night vision
-            self.setStyleSheet(DARK_THEME)
-        elif theme_name == 'light':
-            # Day mode: BRIGHT display to offset glare
-            self.setStyleSheet(LIGHT_THEME)
+        # Enable/disable auto detection based on theme
+        if theme_name == 'auto':
+            self.auto_mode_enabled = True
+            # Initial detection (will be updated regularly)
+            detected_theme, method = self.auto_daynight_detector.detect_theme(self.last_rgb_frame)
+            logger.info(f"Auto mode enabled: detected '{detected_theme}' via {method}")
+            # Apply detected theme
+            if detected_theme == 'dark':
+                self.setStyleSheet(DARK_THEME)
+            else:
+                self.setStyleSheet(LIGHT_THEME)
         else:
-            # Auto mode - default to dark for safety
-            self.setStyleSheet(DARK_THEME)
+            self.auto_mode_enabled = False
+            if theme_name == 'dark':
+                # Night mode: DARK display to preserve night vision
+                self.setStyleSheet(DARK_THEME)
+            elif theme_name == 'light':
+                # Day mode: BRIGHT display to offset glare
+                self.setStyleSheet(LIGHT_THEME)
 
         self.control_panel.update_theme_mode(theme_name)
-        logger.info(f"Applied '{theme_name}' theme (Day=bright, Night=dark)")
+        logger.info(f"Applied '{theme_name}' theme (Day=bright, Night=dark, Auto=intelligent)")
 
     def connect_worker_signals(self, worker):
         """
@@ -997,6 +1130,26 @@ class DriverAppWindow(QMainWindow):
         if self.developer_mode and self.developer_panel:
             self.developer_panel.update_metrics(metrics)
 
+        # Auto day/night detection (when enabled)
+        if self.auto_mode_enabled:
+            # Get RGB frame from metrics if available (for ambient light detection)
+            rgb_frame = metrics.get('rgb_frame', None)
+            if rgb_frame is not None:
+                self.last_rgb_frame = rgb_frame
+
+            # Detect optimal theme
+            detected_theme, method = self.auto_daynight_detector.detect_theme(self.last_rgb_frame)
+
+            # Apply detected theme if it changed
+            # Compare against actual applied theme (not self.current_theme which is 'auto')
+            current_applied = 'dark' if DARK_THEME in self.styleSheet() else 'light'
+            if detected_theme != current_applied:
+                logger.info(f"Auto theme switch: {current_applied} → {detected_theme} (method: {method})")
+                if detected_theme == 'dark':
+                    self.setStyleSheet(DARK_THEME)
+                else:
+                    self.setStyleSheet(LIGHT_THEME)
+
     def update_frame(self, frame: np.ndarray):
         """Update video display (called from main loop)"""
         self.video_widget.update_frame(frame)
@@ -1025,11 +1178,10 @@ class DriverAppWindow(QMainWindow):
         """Handle window resize - reposition info panel"""
         super().resizeEvent(event)
         if self.info_panel:
-            # Position in top-right corner of video widget
-            self.info_panel.move(
-                self.video_widget.width() - self.info_panel.width() - 20,
-                10
-            )
+            # Top-right corner with fixed offset (SAE J2400: peripheral, stable position)
+            # Panel is 280px wide, position 10px from right edge
+            panel_x = self.video_widget.width() - 290  # 280px width + 10px margin
+            self.info_panel.move(panel_x, 10)
 
     def closeEvent(self, event):
         """Handle window close"""

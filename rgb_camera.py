@@ -1,6 +1,6 @@
 """
-RGB Camera Interface for Jetson Orin
-Supports USB webcams and CSI cameras via GStreamer
+RGB Camera Interface - Cross-platform (Windows/Linux/macOS)
+Supports USB webcams and CSI cameras (Jetson only)
 Designed to match FLIR camera interface for easy integration
 """
 import cv2
@@ -59,22 +59,47 @@ class RGBCamera:
 
     def open(self) -> bool:
         """
-        Open camera connection
+        Open camera connection (cross-platform: Windows/Linux/macOS)
 
         Returns:
             True if successful
         """
+        import platform
+        system = platform.system()
+
         try:
             if self.use_gstreamer:
-                # Use GStreamer for CSI cameras on Jetson
-                pipeline = self._create_gstreamer_pipeline()
-                logger.info(f"Opening CSI camera with GStreamer pipeline")
-                logger.debug(f"Pipeline: {pipeline}")
-                self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-            else:
-                # Use V4L2 for USB cameras
-                logger.info(f"Opening USB camera {self.device_id}")
-                self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_V4L2)
+                # Use GStreamer for CSI cameras on Jetson (Linux only)
+                if system != "Linux":
+                    logger.warning(f"GStreamer CSI mode only supported on Linux/Jetson")
+                    logger.warning(f"Falling back to USB camera mode")
+                    self.use_gstreamer = False
+                else:
+                    pipeline = self._create_gstreamer_pipeline()
+                    logger.info(f"Opening CSI camera with GStreamer pipeline")
+                    logger.debug(f"Pipeline: {pipeline}")
+                    self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+
+            if not self.use_gstreamer:
+                # Platform-specific backend for USB cameras
+                if system == "Linux":
+                    logger.info(f"Linux detected - opening USB camera {self.device_id} with V4L2")
+                    self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_V4L2)
+                elif system == "Windows":
+                    logger.info(f"Windows detected - opening camera {self.device_id} with DirectShow")
+                    try:
+                        self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_DSHOW)
+                    except:
+                        logger.info("DirectShow failed, trying MSMF")
+                        self.cap = cv2.VideoCapture(self.device_id, cv2.CAP_MSMF)
+                else:
+                    logger.info(f"{system} detected - using default backend")
+                    self.cap = cv2.VideoCapture(self.device_id)
+
+                # Fallback if platform-specific backend failed
+                if not self.cap.isOpened():
+                    logger.warning("Platform-specific backend failed, trying default")
+                    self.cap = cv2.VideoCapture(self.device_id)
 
             if not self.cap.isOpened():
                 logger.error(f"Failed to open camera {self.device_id}")

@@ -151,7 +151,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
             try:
                 firefly_cams = detect_firefly_cameras()
                 if firefly_cams and len(firefly_cams) > 0:
-                    logger.info(f"✓ Found {len(firefly_cams)} FLIR Firefly camera(s)")
+                    logger.info(f"[OK] Found {len(firefly_cams)} FLIR Firefly camera(s)")
                     logger.info(f"  Model: {firefly_cams[0]['model']}")
                     logger.info(f"  Serial: {firefly_cams[0]['serial']}")
                     logger.info("  Features: Global shutter, no motion blur")
@@ -172,7 +172,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
             try:
                 uvc_cams = detect_uvc_cameras()
                 if uvc_cams and len(uvc_cams) > 0:
-                    logger.info(f"✓ Found {len(uvc_cams)} UVC camera(s)")
+                    logger.info(f"[OK] Found {len(uvc_cams)} UVC camera(s)")
                     logger.info(f"  Type: {uvc_cams[0]['type']}")
                     logger.info(f"  Resolution: {uvc_cams[0]['resolution']}")
                     logger.info("Creating UVC webcam...")
