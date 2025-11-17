@@ -228,7 +228,7 @@ class FusionProcessor:
 
     def _alpha_blend(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
         """
-        Simple weighted average fusion
+        Simple weighted average fusion with priority control
 
         Args:
             thermal: Thermal frame (BGR)
@@ -238,7 +238,12 @@ class FusionProcessor:
             Blended frame
         """
         try:
-            return cv2.addWeighted(thermal, self.alpha, rgb, 1.0 - self.alpha, 0)
+            if self.fusion_priority == 'thermal':
+                # Thermal-weighted: alpha controls thermal contribution
+                return cv2.addWeighted(thermal, self.alpha, rgb, 1.0 - self.alpha, 0)
+            else:
+                # RGB-weighted: alpha controls RGB contribution
+                return cv2.addWeighted(rgb, self.alpha, thermal, 1.0 - self.alpha, 0)
         except Exception as e:
             logger.error(f"Alpha blend error: {e}")
             return thermal
@@ -291,8 +296,8 @@ class FusionProcessor:
 
     def _thermal_overlay(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
         """
-        Overlay thermal hotspots on RGB base
-        Only shows thermal data above threshold
+        Overlay hotspots on base with priority control
+        Priority determines which is base and which is overlay
 
         Args:
             thermal: Thermal frame (BGR)
@@ -302,22 +307,30 @@ class FusionProcessor:
             Overlaid frame
         """
         try:
-            # Convert thermal to grayscale for threshold
-            thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+            if self.fusion_priority == 'rgb':
+                # RGB base + thermal hotspots overlay (original behavior)
+                thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+                threshold = np.percentile(thermal_gray, 70)
+                hot_mask = thermal_gray > threshold
 
-            # Create mask for hot regions (top 30% intensity)
-            threshold = np.percentile(thermal_gray, 70)
-            hot_mask = thermal_gray > threshold
+                result = rgb.copy()
+                result[hot_mask] = cv2.addWeighted(
+                    thermal[hot_mask], 0.7,
+                    rgb[hot_mask], 0.3,
+                    0
+                )
+            else:
+                # Thermal base + RGB highlights overlay (inverted priority)
+                rgb_gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
+                threshold = np.percentile(rgb_gray, 70)
+                bright_mask = rgb_gray > threshold
 
-            # Start with RGB base
-            result = rgb.copy()
-
-            # Overlay thermal hotspots with transparency
-            result[hot_mask] = cv2.addWeighted(
-                thermal[hot_mask], 0.7,
-                rgb[hot_mask], 0.3,
-                0
-            )
+                result = thermal.copy()
+                result[bright_mask] = cv2.addWeighted(
+                    rgb[bright_mask], 0.7,
+                    thermal[bright_mask], 0.3,
+                    0
+                )
 
             return result
 
@@ -327,7 +340,8 @@ class FusionProcessor:
 
     def _side_by_side(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
         """
-        Concatenate thermal and RGB horizontally
+        Concatenate thermal and RGB horizontally with priority control
+        Priority determines left/right order
 
         Args:
             thermal: Thermal frame (BGR)
@@ -342,8 +356,11 @@ class FusionProcessor:
             if rgb.shape[0] != h:
                 rgb = cv2.resize(rgb, (rgb.shape[1], h))
 
-            # Concatenate horizontally
-            return np.hstack([thermal, rgb])
+            # Concatenate horizontally (priority determines order)
+            if self.fusion_priority == 'thermal':
+                return np.hstack([thermal, rgb])  # Thermal on left
+            else:
+                return np.hstack([rgb, thermal])  # RGB on left
 
         except Exception as e:
             logger.error(f"Side-by-side error: {e}")
@@ -352,7 +369,8 @@ class FusionProcessor:
     def _picture_in_picture(self, thermal: np.ndarray, rgb: np.ndarray,
                             pip_size: float = 0.25, position: str = 'top-right') -> np.ndarray:
         """
-        Picture-in-picture: thermal inset in RGB (or vice versa)
+        Picture-in-picture with priority control
+        Priority determines which is main and which is inset
 
         Args:
             thermal: Thermal frame (BGR)
@@ -364,9 +382,13 @@ class FusionProcessor:
             Picture-in-picture frame
         """
         try:
-            # Use RGB as main, thermal as inset
-            main = rgb.copy()
-            inset = thermal
+            # Priority determines main vs inset
+            if self.fusion_priority == 'thermal':
+                main = thermal.copy()
+                inset = rgb
+            else:
+                main = rgb.copy()
+                inset = thermal
 
             # Calculate inset dimensions
             main_h, main_w = main.shape[:2]
@@ -421,9 +443,8 @@ class FusionProcessor:
 
     def _feature_weighted(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
         """
-        Adaptive fusion based on edge strength
-        Uses thermal where edges are strong (heat boundaries)
-        Uses RGB where texture is rich
+        Adaptive fusion based on edge strength with priority bias
+        Priority adds bias toward thermal or RGB features
 
         Args:
             thermal: Thermal frame (BGR)
@@ -447,6 +468,12 @@ class FusionProcessor:
             # Normalize to [0, 1]
             thermal_strength = thermal_strength / (thermal_strength.max() + 1e-6)
             rgb_strength = rgb_strength / (rgb_strength.max() + 1e-6)
+
+            # Apply priority bias (boost preferred source by 30%)
+            if self.fusion_priority == 'thermal':
+                thermal_strength = thermal_strength * 1.3
+            else:
+                rgb_strength = rgb_strength * 1.3
 
             # Compute adaptive weights
             total_strength = thermal_strength + rgb_strength + 1e-6
