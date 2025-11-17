@@ -675,6 +675,9 @@ class DriverAppWindow(QMainWindow):
         self.developer_panel = DeveloperPanel()
         self.developer_panel.set_app_reference(app)
         self.developer_panel.hide()  # Hidden by default
+        # Set size policy to Ignored so it doesn't affect parent window sizing
+        from PyQt5.QtWidgets import QSizePolicy
+        self.developer_panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         horizontal_layout.addWidget(self.developer_panel)
 
         central_widget.setLayout(horizontal_layout)
@@ -993,21 +996,39 @@ class DriverAppWindow(QMainWindow):
         Toggle developer mode panel and controls (Ctrl+D)
         Manages info panel visibility (hidden in dev mode, shown in simple mode)
         Note: Developer panel not intended for use while driving
+
+        FIX: Lock BOTH width and height after first show to prevent Qt layout expansion
         """
         self.developer_mode = not self.developer_mode
 
+        # Get current dimensions
+        current_width = self.width()
+        current_height = self.height()
+
         if self.developer_mode:
-            # Show developer panel - Qt layout will shrink video area to fit
+            # FIX: On first show, expand window to make room for panel and lock BOTH dimensions
+            # After that, Qt layout adjusts space distribution within the locked size
+            if current_width < self.base_window_width + self.developer_panel_width:
+                target_width = self.base_window_width + self.developer_panel_width
+                self.resize(target_width, current_height)
+                # Lock BOTH width AND height to prevent Qt layout from expanding either dimension
+                self.setFixedSize(target_width, current_height)
+                logger.info(f"[OK] Developer mode ENABLED | Window: {current_width}x{current_height} → {target_width}x{current_height} (LOCKED)")
+            else:
+                logger.info(f"[OK] Developer mode ENABLED | Window: {current_width}x{current_height} (locked)")
+
+            # Show developer panel - Qt layout will shrink video area to fit within locked size
             self.developer_panel.show()
             self.control_panel.show_developer_controls(True)
             self.info_panel.hide()  # Hide basic info - dev panel has everything
-            logger.info("[OK] Developer mode ENABLED (panel slides in, video area shrinks)")
         else:
             # Hide developer panel - Qt layout will expand video area to fill space
+            # Window size stays locked
             self.developer_panel.hide()
             self.control_panel.show_developer_controls(False)
             self.info_panel.show()  # Show minimal ADAS info in simple mode
-            logger.info("✗ Developer mode DISABLED (panel slides out, video area expands)")
+
+            logger.info(f"[X] Developer mode DISABLED | Window: {current_width}x{current_height} (locked)")
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts"""
