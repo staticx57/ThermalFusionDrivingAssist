@@ -940,8 +940,8 @@ class DriverAppWindow(QMainWindow):
         """Cycle through fusion blend modes"""
         if not self.app:
             return
-        # Fusion modes from FusionProcessor
-        modes = ['alpha_blend', 'weighted', 'overlay', 'highlight']
+        # Fusion modes from FusionProcessor (match actual implementation)
+        modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay', 'max_intensity', 'feature_weighted']
         current = getattr(self.app, 'fusion_mode', 'alpha_blend')
         current_idx = modes.index(current) if current in modes else 0
         next_idx = (current_idx + 1) % len(modes)
