@@ -260,6 +260,7 @@ class ControlPanel(QWidget):
     model_clicked = pyqtSignal()
     fusion_mode_clicked = pyqtSignal()
     fusion_alpha_clicked = pyqtSignal()
+    fusion_priority_clicked = pyqtSignal()  # Toggle fusion priority
     sim_thermal_toggled = pyqtSignal(bool)  # Simulated thermal camera
     motion_detection_toggled = pyqtSignal(bool)  # Motion detection toggle
     object_detection_toggled = pyqtSignal(bool)  # Object detection toggle
@@ -283,6 +284,7 @@ class ControlPanel(QWidget):
         self.model_btn = QPushButton("🤖 MDL: V8N")
         self.fusion_mode_btn = QPushButton("🔀 FUS: ALPHA")
         self.fusion_alpha_btn = QPushButton("⚖️ α: 0.50")
+        self.fusion_priority_btn = QPushButton("🎯 PRI: THRM")
         self.sim_thermal_btn = QPushButton("🧪 SIM: OFF")
         self.motion_detect_btn = QPushButton("🏃 MOT: ON")
         self.object_detect_btn = QPushButton("🎯 OBJ: ON")
@@ -298,6 +300,7 @@ class ControlPanel(QWidget):
         self.model_btn.hide()
         self.fusion_mode_btn.hide()
         self.fusion_alpha_btn.hide()
+        self.fusion_priority_btn.hide()
         self.sim_thermal_btn.hide()
         self.motion_detect_btn.hide()
         self.object_detect_btn.hide()
@@ -332,6 +335,7 @@ class ControlPanel(QWidget):
         self.model_btn.clicked.connect(self.model_clicked.emit)
         self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
         self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
+        self.fusion_priority_btn.clicked.connect(self.fusion_priority_clicked.emit)
         self.sim_thermal_btn.toggled.connect(self._on_sim_thermal_toggled)
         self.motion_detect_btn.toggled.connect(self._on_motion_detect_toggled)
         self.object_detect_btn.toggled.connect(self._on_object_detect_toggled)
@@ -365,8 +369,8 @@ class ControlPanel(QWidget):
         dev_grid.addWidget(self.model_btn, 0, 2)
         dev_grid.addWidget(self.fusion_mode_btn, 1, 2)
         dev_grid.addWidget(self.fusion_alpha_btn, 2, 2)
-        dev_grid.addWidget(self.sim_thermal_btn, 3, 2)
-        dev_grid.addWidget(self.retry_btn, 4, 2)
+        dev_grid.addWidget(self.fusion_priority_btn, 3, 2)
+        dev_grid.addWidget(self.sim_thermal_btn, 4, 2)
 
         dev_controls_widget.setLayout(dev_grid)
         dev_controls_widget.hide()  # Hidden by default
@@ -490,6 +494,11 @@ class ControlPanel(QWidget):
         """Update fusion alpha button text"""
         self.fusion_alpha_btn.setText(f"⚖️ α: {alpha:.2f}")
 
+    def set_fusion_priority(self, priority: str):
+        """Update fusion priority button text"""
+        short_name = "THRM" if priority == "thermal" else "RGB"
+        self.fusion_priority_btn.setText(f"🎯 PRI: {short_name}")
+
     def set_sim_thermal_enabled(self, enabled: bool):
         """Set simulated thermal camera button state"""
         self.sim_thermal_btn.setChecked(enabled)
@@ -509,6 +518,7 @@ class ControlPanel(QWidget):
             self.model_btn.show()
             self.fusion_mode_btn.show()
             self.fusion_alpha_btn.show()
+            self.fusion_priority_btn.show()
             self.sim_thermal_btn.show()
             self.motion_detect_btn.show()
             self.object_detect_btn.show()
@@ -529,6 +539,7 @@ class ControlPanel(QWidget):
             self.model_btn.hide()
             self.fusion_mode_btn.hide()
             self.fusion_alpha_btn.hide()
+            self.fusion_priority_btn.hide()
             self.sim_thermal_btn.hide()
             self.motion_detect_btn.hide()
             self.object_detect_btn.hide()
@@ -733,8 +744,12 @@ class DriverAppWindow(QMainWindow):
         # Get fusion settings
         fusion_mode = getattr(self.app, 'fusion_mode', 'alpha_blend')
         fusion_alpha = getattr(self.app, 'fusion_alpha', 0.5)
+        fusion_priority = 'thermal'  # Default priority
+        if hasattr(self.app, 'fusion_processor') and self.app.fusion_processor:
+            fusion_priority = getattr(self.app.fusion_processor, 'fusion_priority', 'thermal')
         self.control_panel.set_fusion_mode(fusion_mode)
         self.control_panel.set_fusion_alpha(fusion_alpha)
+        self.control_panel.set_fusion_priority(fusion_priority)
 
         # Simulated thermal camera (debug mode)
         sim_thermal = getattr(self.app, 'use_simulated_thermal', False)
@@ -760,10 +775,11 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.model_clicked.connect(self._on_model_cycle)
         self.control_panel.fusion_mode_clicked.connect(self._on_fusion_mode_cycle)
         self.control_panel.fusion_alpha_clicked.connect(self._on_fusion_alpha_adjust)
+        self.control_panel.fusion_priority_clicked.connect(self._on_fusion_priority_toggle)
         self.control_panel.sim_thermal_toggled.connect(self._on_sim_thermal_toggle)
         self.control_panel.motion_detection_toggled.connect(self._on_motion_detection_toggle)
         self.control_panel.object_detection_toggled.connect(self._on_object_detection_toggle)
-        logger.info("Control panel signals connected (all 17 controls)")
+        logger.info("Control panel signals connected (all 18 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
@@ -971,6 +987,27 @@ class DriverAppWindow(QMainWindow):
 
         self.control_panel.set_fusion_alpha(next_alpha)
         logger.info(f"Fusion alpha: {next_alpha}")
+
+    def _on_fusion_priority_toggle(self):
+        """Toggle fusion priority between thermal and RGB"""
+        if not self.app:
+            return
+
+        # Get current priority from fusion processor
+        current_priority = 'thermal'
+        if hasattr(self.app, 'fusion_processor') and self.app.fusion_processor:
+            current_priority = getattr(self.app.fusion_processor, 'fusion_priority', 'thermal')
+
+        # Toggle priority
+        next_priority = 'rgb' if current_priority == 'thermal' else 'thermal'
+
+        # Update fusion processor
+        if self.app.fusion_processor and hasattr(self.app.fusion_processor, 'set_priority'):
+            self.app.fusion_processor.set_priority(next_priority)
+
+        # Update button display
+        self.control_panel.set_fusion_priority(next_priority)
+        logger.info(f"Fusion priority: {next_priority}")
 
     def _on_sim_thermal_toggle(self, enabled: bool):
         """Toggle simulated thermal camera for debugging"""

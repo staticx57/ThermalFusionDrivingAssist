@@ -21,7 +21,7 @@ class FusionProcessor:
     """
 
     def __init__(self, fusion_mode: str = 'alpha_blend', alpha: float = 0.5,
-                 calibration_file: Optional[str] = None):
+                 calibration_file: Optional[str] = None, fusion_priority: str = 'thermal'):
         """
         Initialize fusion processor
 
@@ -36,9 +36,13 @@ class FusionProcessor:
                 - 'feature_weighted': Adaptive blending based on edge strength
             alpha: Blend ratio for alpha_blend mode (0.0 = all RGB, 1.0 = all thermal)
             calibration_file: Path to camera calibration file (JSON with homography matrix)
+            fusion_priority: Which camera gets priority ('thermal' or 'rgb')
+                - 'thermal': Thermal is base, RGB overlaid (default)
+                - 'rgb': RGB is base, thermal overlaid
         """
         self.fusion_mode = fusion_mode
         self.alpha = alpha
+        self.fusion_priority = fusion_priority
         self.calibration_matrix = None
         self.calibration_file = calibration_file
 
@@ -132,6 +136,19 @@ class FusionProcessor:
             logger.info(f"Fusion alpha changed to: {alpha:.2f}")
         else:
             logger.warning(f"Invalid alpha value {alpha}, must be between 0.0 and 1.0")
+
+    def set_priority(self, priority: str):
+        """
+        Set fusion priority dynamically
+
+        Args:
+            priority: Which camera gets priority ('thermal' or 'rgb')
+        """
+        if priority in ['thermal', 'rgb']:
+            self.fusion_priority = priority
+            logger.info(f"Fusion priority changed to: {priority}")
+        else:
+            logger.warning(f"Invalid priority '{priority}', must be 'thermal' or 'rgb'")
 
     def align_rgb_to_thermal(self, rgb: np.ndarray, thermal_shape: Tuple[int, int]) -> np.ndarray:
         """
@@ -228,8 +245,8 @@ class FusionProcessor:
 
     def _edge_enhanced(self, thermal: np.ndarray, rgb: np.ndarray) -> np.ndarray:
         """
-        RGB base with thermal edge information overlaid
-        Good for preserving RGB detail while highlighting thermal boundaries
+        Edge-enhanced fusion with priority control
+        Extracts edges from one source and overlays on the other
 
         Args:
             thermal: Thermal frame (BGR)
@@ -239,17 +256,32 @@ class FusionProcessor:
             Edge-enhanced frame
         """
         try:
-            # Extract edges from thermal
-            thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(thermal_gray, 50, 150)
+            if self.fusion_priority == 'rgb':
+                # RGB base + thermal edges (original behavior)
+                # Extract edges from thermal
+                thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
+                edges = cv2.Canny(thermal_gray, 50, 150)
 
-            # Create colored edge overlay (red for hot edges)
-            edge_color = np.zeros_like(thermal)
-            edge_color[edges > 0] = [0, 0, 255]  # Red edges
+                # Create colored edge overlay (red for hot edges)
+                edge_color = np.zeros_like(thermal)
+                edge_color[edges > 0] = [0, 0, 255]  # Red edges
 
-            # Blend: RGB base + thermal edges
-            result = rgb.copy()
-            result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
+                # Blend: RGB base + thermal edges
+                result = rgb.copy()
+                result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
+            else:
+                # Thermal base + RGB edges (inverted priority)
+                # Extract edges from RGB
+                rgb_gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
+                edges = cv2.Canny(rgb_gray, 50, 150)
+
+                # Create colored edge overlay (cyan for RGB edges on thermal)
+                edge_color = np.zeros_like(rgb)
+                edge_color[edges > 0] = [255, 255, 0]  # Cyan edges
+
+                # Blend: Thermal base + RGB edges
+                result = thermal.copy()
+                result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
 
             return result
 
