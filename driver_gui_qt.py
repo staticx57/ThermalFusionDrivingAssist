@@ -486,9 +486,18 @@ class ControlPanel(QWidget):
         self.model_btn.setText(f"🤖 MDL: {short_name}")
 
     def set_fusion_mode(self, mode: str):
-        """Update fusion mode button text"""
-        # Truncate mode name (max 6 chars)
-        short_name = mode[:6].upper()
+        """Update fusion mode button text with proper abbreviations"""
+        # Map full mode names to clear abbreviations
+        mode_abbrev = {
+            'alpha_blend': 'ALPHA',
+            'edge_enhanced': 'EDGE',
+            'thermal_overlay': 'OVERLY',
+            'side_by_side': 'SIDE',
+            'picture_in_picture': 'PIP',
+            'max_intensity': 'MAX',
+            'feature_weighted': 'WEIGHT'
+        }
+        short_name = mode_abbrev.get(mode, mode[:6].upper())
         self.fusion_mode_btn.setText(f"🔀 FUS: {short_name}")
 
     def set_fusion_alpha(self, alpha: float):
@@ -957,8 +966,9 @@ class DriverAppWindow(QMainWindow):
         """Cycle through fusion blend modes"""
         if not self.app:
             return
-        # Fusion modes from FusionProcessor (match actual implementation)
-        modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay', 'max_intensity', 'feature_weighted']
+        # All 7 fusion modes from FusionProcessor (match actual implementation)
+        modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                 'side_by_side', 'picture_in_picture', 'max_intensity', 'feature_weighted']
         current = getattr(self.app, 'fusion_mode', 'alpha_blend')
         current_idx = modes.index(current) if current in modes else 0
         next_idx = (current_idx + 1) % len(modes)
