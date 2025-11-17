@@ -994,26 +994,18 @@ class DriverAppWindow(QMainWindow):
         """
         self.developer_mode = not self.developer_mode
 
-        # Get current window size
-        current_width = self.width()
-        current_height = self.height()
-
         if self.developer_mode:
+            # Show developer panel - Qt layout will shrink video area to fit
             self.developer_panel.show()
             self.control_panel.show_developer_controls(True)
             self.info_panel.hide()  # Hide basic info - dev panel has everything
-
-            # Expand window width to accommodate developer panel (300px)
-            self.resize(current_width + 300, current_height)
-            logger.info("[OK] Developer mode ENABLED (panel + controls visible, basic info hidden)")
+            logger.info("[OK] Developer mode ENABLED (panel slides in, video area shrinks)")
         else:
+            # Hide developer panel - Qt layout will expand video area to fill space
             self.developer_panel.hide()
             self.control_panel.show_developer_controls(False)
             self.info_panel.show()  # Show minimal ADAS info in simple mode
-
-            # Shrink window width back (remove 300px for developer panel)
-            self.resize(current_width - 300, current_height)
-            logger.info("✗ Developer mode DISABLED (basic info visible)")
+            logger.info("✗ Developer mode DISABLED (panel slides out, video area expands)")
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts"""
