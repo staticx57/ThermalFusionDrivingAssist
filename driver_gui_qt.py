@@ -651,6 +651,8 @@ class DriverAppWindow(QMainWindow):
         horizontal_layout = QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
         horizontal_layout.setSpacing(0)
+        # CRITICAL: Prevent layout from resizing window when widgets are shown/hidden
+        horizontal_layout.setSizeConstraint(QHBoxLayout.SetNoConstraint)
 
         # Left side: Video + Controls (vertical layout)
         left_widget = QWidget()
