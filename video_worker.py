@@ -203,8 +203,19 @@ class VideoProcessorWorker(QThread):
             elif self.app.view_mode == ViewMode.FUSION and fusion_frame is not None:
                 display_frame = fusion_frame
             elif self.app.view_mode == ViewMode.SIDE_BY_SIDE:
-                if rgb_frame is not None and thermal_colored.shape[0] == rgb_frame.shape[0]:
-                    display_frame = np.hstack([thermal_colored, rgb_frame])
+                if rgb_frame is not None:
+                    # Resize RGB to match thermal height if needed
+                    thermal_h, thermal_w = thermal_colored.shape[:2]
+                    rgb_h, rgb_w = rgb_frame.shape[:2]
+
+                    if rgb_h != thermal_h:
+                        # Maintain aspect ratio: resize to match height
+                        new_w = int(rgb_w * thermal_h / rgb_h)
+                        rgb_resized = cv2.resize(rgb_frame, (new_w, thermal_h))
+                    else:
+                        rgb_resized = rgb_frame
+
+                    display_frame = np.hstack([thermal_colored, rgb_resized])
                 else:
                     display_frame = thermal_colored
             elif self.app.view_mode == ViewMode.PICTURE_IN_PICTURE and rgb_frame is not None:
