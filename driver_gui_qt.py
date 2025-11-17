@@ -347,7 +347,7 @@ class ControlPanel(QWidget):
         main_layout.addStretch()  # Push day/night to right
         main_layout.addWidget(self.day_night_btn)
 
-        # Developer controls: 5x3 grid layout (14 buttons)
+        # Developer controls: 5x3 grid layout (15 buttons)
         dev_controls_widget = QWidget()
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
@@ -358,6 +358,7 @@ class ControlPanel(QWidget):
         dev_grid.addWidget(self.detection_btn, 1, 0)
         dev_grid.addWidget(self.device_btn, 2, 0)
         dev_grid.addWidget(self.motion_detect_btn, 3, 0)
+        dev_grid.addWidget(self.retry_btn, 4, 0)  # Retry sensors button
 
         # Column 2: YOLO & Performance
         dev_grid.addWidget(self.yolo_btn, 0, 1)
@@ -525,7 +526,7 @@ class ControlPanel(QWidget):
             # Force layout update to ensure visibility
             self.layout().invalidate()
             self.layout().activate()
-            logger.info("Developer controls shown (14 controls in 5x3 grid)")
+            logger.info("Developer controls shown (15 controls in 5x3 grid)")
         else:
             self.dev_controls_widget.hide()
             # Hide individual buttons
@@ -779,7 +780,7 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.sim_thermal_toggled.connect(self._on_sim_thermal_toggle)
         self.control_panel.motion_detection_toggled.connect(self._on_motion_detection_toggle)
         self.control_panel.object_detection_toggled.connect(self._on_object_detection_toggle)
-        logger.info("Control panel signals connected (all 18 controls)")
+        logger.info("Control panel signals connected (all 19 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
