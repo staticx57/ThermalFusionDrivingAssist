@@ -104,6 +104,35 @@ class FusionProcessor:
             logger.error(f"Failed to save calibration: {e}")
             return False
 
+    def set_mode(self, fusion_mode: str):
+        """
+        Set fusion mode dynamically
+
+        Args:
+            fusion_mode: New fusion mode to use
+        """
+        valid_modes = ['alpha_blend', 'edge_enhanced', 'thermal_overlay',
+                       'side_by_side', 'picture_in_picture', 'max_intensity', 'feature_weighted']
+
+        if fusion_mode in valid_modes:
+            self.fusion_mode = fusion_mode
+            logger.info(f"Fusion mode changed to: {fusion_mode}")
+        else:
+            logger.warning(f"Invalid fusion mode '{fusion_mode}', keeping current mode '{self.fusion_mode}'")
+
+    def set_alpha(self, alpha: float):
+        """
+        Set alpha blending value dynamically
+
+        Args:
+            alpha: Blend ratio (0.0 = all RGB, 1.0 = all thermal)
+        """
+        if 0.0 <= alpha <= 1.0:
+            self.alpha = alpha
+            logger.info(f"Fusion alpha changed to: {alpha:.2f}")
+        else:
+            logger.warning(f"Invalid alpha value {alpha}, must be between 0.0 and 1.0")
+
     def align_rgb_to_thermal(self, rgb: np.ndarray, thermal_shape: Tuple[int, int]) -> np.ndarray:
         """
         Align RGB frame to thermal frame coordinate system
