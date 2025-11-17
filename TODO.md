@@ -1036,6 +1036,58 @@ while true; do
 done
 ```
 
-**TODO List Version**: 1.1
-**Last Updated**: 2025-11-14
-**Status**: v3.2.0 Complete (LiDAR Phase 1), Testing Phase Next
+## 📝 New Feature Requests (2025-11-16)
+
+### Settings and Configuration
+- [ ] **Unified Settings Panel**
+  - Task: Create companion settings GUI for all configuration options
+  - Requirements:
+    - All settings settable within the companion setting UI
+    - No need to edit config files manually
+    - Persistent settings (save/load from JSON)
+  - Files to create: `settings_panel.py`, `settings_manager.py`
+  - Priority: HIGH
+  - Estimated effort: 6-8 hours
+
+- [ ] **Unified Launcher**
+  - Task: Create launcher with all command-line switches and settings panel access
+  - Requirements:
+    - Launch main application with selected options
+    - Launch settings panel separately
+    - Save/load launch profiles
+  - Files to create: `launcher.py`
+  - Priority: MEDIUM
+  - Estimated effort: 3-4 hours
+
+### Object Detection Enhancements
+- [ ] **Object Importance Highlighting**
+  - Task: Highlight detected objects based on danger and proximity importance
+  - Requirements:
+    - Visual indication of relative importance (size, color, thickness)
+    - Danger level (critical objects like person, bicycle vs non-critical like chair)
+    - Proximity level (close objects highlighted more than far objects)
+    - Combined scoring system (danger × proximity)
+  - Files to modify: `road_analyzer.py`, `driver_gui_qt.py` (rendering)
+  - Priority: HIGH
+  - Estimated effort: 4-6 hours
+
+- [ ] **YOLO Class Importance Configuration**
+  - Task: Allow user to configure importance of YOLO detection classes
+  - Requirements:
+    - Read YOLO model class list (80 classes from COCO)
+    - Check off importance levels for each class (Critical/Warning/Info/Ignore)
+    - Use importance in alert generation and visualization
+    - Save configuration to JSON
+  - Example:
+    - Critical: person, bicycle, motorcycle, dog, cat
+    - Warning: car, truck, bus
+    - Info: traffic light, stop sign
+    - Ignore: chair, laptop, etc.
+  - Files to create: `class_importance_config.py`
+  - Files to modify: `road_analyzer.py`, `settings_panel.py`
+  - Priority: HIGH
+  - Estimated effort: 5-7 hours
+
+**TODO List Version**: 1.2
+**Last Updated**: 2025-11-16
+**Status**: v3.2.0 Complete (LiDAR Phase 1), New Features Requested

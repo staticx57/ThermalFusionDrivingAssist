@@ -399,7 +399,20 @@ class ControlPanel(QWidget):
 
     def update_theme_mode(self, theme: str):
         """Update theme button text"""
-        self.theme_btn.setText(f"🎨 Theme: {theme.title()}")
+        # Map theme to display format
+        theme_icons = {
+            'dark': '🌙',
+            'light': '☀️',
+            'auto': '🌗'
+        }
+        theme_names = {
+            'dark': 'Night',
+            'light': 'Day',
+            'auto': 'Auto'
+        }
+        icon = theme_icons.get(theme, '🎨')
+        name = theme_names.get(theme, theme.title())
+        self.day_night_btn.setText(f"{icon} {name}")
 
     def set_yolo_enabled(self, enabled: bool):
         """Set YOLO button state"""
@@ -1121,10 +1134,10 @@ class DriverAppWindow(QMainWindow):
             self.control_panel.set_audio_enabled(self.app.audio_enabled)
 
         # Update ADAS alert overlay
+        # IMPORTANT: Always call update_alerts, even with empty lists, to trigger timeout clearing
         alerts = metrics.get('alerts', [])
         detections_list = metrics.get('detections_list', [])
-        if alerts or detections_list:
-            self.video_widget.update_alerts(alerts, detections_list)
+        self.video_widget.update_alerts(alerts, detections_list)
 
         # Update developer panel if enabled
         if self.developer_mode and self.developer_panel:
