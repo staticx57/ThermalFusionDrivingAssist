@@ -122,7 +122,8 @@ class VideoProcessorWorker(QThread):
                         self.app.rgb_camera = create_rgb_camera(
                             resolution=(640, 480),
                             fps=30,
-                            camera_type="auto"
+                            camera_type="auto",
+                            thermal_device_id=self.app.args.camera_id  # Skip thermal camera
                         )
                         if self.app.rgb_camera.open():
                             self.app.rgb_available = True

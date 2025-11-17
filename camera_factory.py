@@ -85,7 +85,8 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
                       fps: int = 30,
                       camera_type: Optional[str] = None,
                       camera_index: int = 0,
-                      use_gstreamer: bool = False):
+                      use_gstreamer: bool = False,
+                      thermal_device_id: Optional[int] = None):
     """
     Create RGB camera instance with auto-detection
 
@@ -98,8 +99,9 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         resolution: Desired resolution (width, height)
         fps: Target frame rate
         camera_type: Force specific camera type ("firefly", "uvc", "auto")
-        camera_index: Camera index (0 for first detected)
+        camera_index: Camera index (0 for first detected, or next available if thermal_device_id provided)
         use_gstreamer: Use GStreamer for CSI cameras (Jetson only)
+        thermal_device_id: Device ID of thermal camera to skip (prevents opening same device)
 
     Returns:
         Camera instance (RGBCameraFirefly, RGBCameraUVC, or RGBCamera)
@@ -111,6 +113,11 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         camera_type = "auto"
 
     camera_type = camera_type.lower()
+
+    # Skip thermal camera device if provided
+    if thermal_device_id is not None and camera_index == thermal_device_id:
+        logger.info(f"Skipping thermal camera device {thermal_device_id}, using next available device")
+        camera_index = thermal_device_id + 1
 
     logger.info("="*60)
     logger.info("RGB Camera Factory - Auto-detection")

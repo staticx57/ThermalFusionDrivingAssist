@@ -386,10 +386,12 @@ class ThermalRoadMonitorFusion:
                 try:
                     # Camera factory auto-detects best available camera
                     # Priority: FLIR Firefly > UVC webcam
+                    # Pass thermal device ID to avoid opening the same camera
                     self.rgb_camera = create_rgb_camera(
                         resolution=(640, 480),  # Standard RGB resolution
                         fps=30,
-                        camera_type="auto"  # Auto-detect
+                        camera_type="auto",  # Auto-detect
+                        thermal_device_id=self.args.camera_id  # Skip thermal camera
                     )
 
                     if self.rgb_camera.open():
