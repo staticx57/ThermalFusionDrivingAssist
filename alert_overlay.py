@@ -53,6 +53,11 @@ class AlertOverlayWidget(QWidget):
             'center': []
         }
 
+        # Video frame dimensions (for zone calculation)
+        # Detection bboxes are in video coordinates, not widget coordinates
+        self.frame_width = 640   # Default, will be updated
+        self.frame_height = 512  # Default, will be updated
+
         # Pulse animation
         self.pulse_phase = 0.0
         self.last_pulse_update = time.time()
@@ -80,6 +85,21 @@ class AlertOverlayWidget(QWidget):
         }
 
         logger.info("AlertOverlayWidget initialized (ADAS-compliant)")
+
+    def set_frame_dimensions(self, width: int, height: int):
+        """
+        Set video frame dimensions for accurate zone calculation
+
+        CRITICAL: Detection bboxes are in video coordinates, not widget coordinates
+        This method must be called with actual video frame dimensions
+
+        Args:
+            width: Video frame width (e.g., 640)
+            height: Video frame height (e.g., 512)
+        """
+        self.frame_width = width
+        self.frame_height = height
+        logger.debug(f"Alert overlay frame dimensions set: {width}x{height}")
 
     def update_alerts(self, alerts: List[Alert], detections: List[Detection]):
         """
@@ -115,13 +135,18 @@ class AlertOverlayWidget(QWidget):
         """
         Classify detections into left/right/center proximity zones
         Based on horizontal position in frame
+
+        CRITICAL: Uses actual video frame dimensions, not widget dimensions
+        Detection bboxes are in video coordinates (e.g., 640x512)
+        Widget might be scaled (e.g., 1280x960)
         """
         if not self.detections:
             self.proximity_zones = {'left': [], 'right': [], 'center': []}
             return
 
-        # Assume frame width from parent widget
-        frame_width = self.width() if self.width() > 0 else 640
+        # Use actual video frame width, not widget width
+        # Detection bboxes are in video coordinates
+        frame_width = self.frame_width
 
         # Zone boundaries (thirds)
         left_boundary = frame_width / 3
@@ -136,16 +161,21 @@ class AlertOverlayWidget(QWidget):
 
             if center_x < left_boundary:
                 zones['left'].append(det)
+                zone_name = 'LEFT'
             elif center_x > right_boundary:
                 zones['right'].append(det)
+                zone_name = 'RIGHT'
             else:
                 zones['center'].append(det)
+                zone_name = 'CENTER'
+
+            logger.debug(f"Detection '{det.class_name}' at x={center_x:.0f} → {zone_name} zone (boundaries: <{left_boundary:.0f}, >{right_boundary:.0f}, frame_width={frame_width})")
 
         self.proximity_zones = zones
 
-        # Debug logging to verify zone classification
+        # Summary logging
         if len(zones['left']) > 0 or len(zones['right']) > 0 or len(zones['center']) > 0:
-            logger.debug(f"Proximity zones: LEFT={len(zones['left'])}, CENTER={len(zones['center'])}, RIGHT={len(zones['right'])}")
+            logger.info(f"Proximity zones: LEFT={len(zones['left'])}, CENTER={len(zones['center'])}, RIGHT={len(zones['right'])}")
 
     def _update_persistent_alerts(self):
         """

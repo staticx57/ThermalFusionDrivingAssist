@@ -182,6 +182,11 @@ class VideoWidget(QLabel):
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb.shape
 
+            # Update alert overlay with actual frame dimensions
+            # Detection bboxes are in video coordinates, not widget coordinates
+            if hasattr(self, 'alert_overlay') and self.alert_overlay:
+                self.alert_overlay.set_frame_dimensions(w, h)
+
             # CRITICAL FIX: Create QImage with proper data ownership
             # Problem: QImage(data, w, h, ...) doesn't copy - just holds pointer to numpy buffer
             # Solution: Convert to bytes() which creates a true copy that QImage owns
