@@ -46,6 +46,16 @@ class FusionProcessor:
         self.calibration_matrix = None
         self.calibration_file = calibration_file
 
+        # Load edge colors and intensity from config
+        from config import get_config
+        config = get_config()
+        # Thermal priority: RGB edges on thermal base (cyan by default)
+        self.thermal_priority_edge_color = tuple(config.get('fusion.edge_enhanced.thermal_priority_edge_color', [255, 255, 0]))
+        # RGB priority: Thermal edges on RGB base (red by default)
+        self.rgb_priority_edge_color = tuple(config.get('fusion.edge_enhanced.rgb_priority_edge_color', [0, 0, 255]))
+        # Fusion intensity: controls overlay strength (0.0 = minimal, 1.0 = maximum)
+        self.fusion_intensity = float(config.get('fusion.intensity', 0.5))
+
         # Load calibration if available
         if calibration_file and os.path.exists(calibration_file):
             self.load_calibration(calibration_file)
@@ -150,6 +160,20 @@ class FusionProcessor:
         else:
             logger.warning(f"Invalid priority '{priority}', must be 'thermal' or 'rgb'")
 
+    def set_intensity(self, intensity: float):
+        """
+        Set fusion intensity dynamically
+        Controls overlay strength for edge_enhanced, thermal_overlay, and feature_weighted modes
+
+        Args:
+            intensity: Overlay strength (0.0 = minimal, 1.0 = maximum)
+        """
+        if 0.0 <= intensity <= 1.0:
+            self.fusion_intensity = intensity
+            logger.info(f"Fusion intensity set to: {intensity:.2f}")
+        else:
+            logger.warning(f"Invalid intensity value {intensity}, must be between 0.0 and 1.0")
+
     def align_rgb_to_thermal(self, rgb: np.ndarray, thermal_shape: Tuple[int, int]) -> np.ndarray:
         """
         Align RGB frame to thermal frame coordinate system
@@ -252,6 +276,7 @@ class FusionProcessor:
         """
         Edge-enhanced fusion with priority control
         Extracts edges from one source and overlays on the other
+        Uses configurable edge colors from config.json
 
         Args:
             thermal: Thermal frame (BGR)
@@ -262,31 +287,31 @@ class FusionProcessor:
         """
         try:
             if self.fusion_priority == 'rgb':
-                # RGB base + thermal edges (original behavior)
+                # RGB base + thermal edges
                 # Extract edges from thermal
                 thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
                 edges = cv2.Canny(thermal_gray, 50, 150)
 
-                # Create colored edge overlay (red for hot edges)
+                # Create colored edge overlay (configurable color)
                 edge_color = np.zeros_like(thermal)
-                edge_color[edges > 0] = [0, 0, 255]  # Red edges
+                edge_color[edges > 0] = self.rgb_priority_edge_color  # Configurable (default: red)
 
-                # Blend: RGB base + thermal edges
+                # Blend: RGB base + thermal edges (use configurable intensity)
                 result = rgb.copy()
-                result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
+                result = cv2.addWeighted(result, 1.0, edge_color, self.fusion_intensity, 0)
             else:
                 # Thermal base + RGB edges (inverted priority)
                 # Extract edges from RGB
                 rgb_gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
                 edges = cv2.Canny(rgb_gray, 50, 150)
 
-                # Create colored edge overlay (cyan for RGB edges on thermal)
+                # Create colored edge overlay (configurable color)
                 edge_color = np.zeros_like(rgb)
-                edge_color[edges > 0] = [255, 255, 0]  # Cyan edges
+                edge_color[edges > 0] = self.thermal_priority_edge_color  # Configurable (default: cyan)
 
-                # Blend: Thermal base + RGB edges
+                # Blend: Thermal base + RGB edges (use configurable intensity)
                 result = thermal.copy()
-                result = cv2.addWeighted(result, 1.0, edge_color, 0.5, 0)
+                result = cv2.addWeighted(result, 1.0, edge_color, self.fusion_intensity, 0)
 
             return result
 
@@ -308,27 +333,27 @@ class FusionProcessor:
         """
         try:
             if self.fusion_priority == 'rgb':
-                # RGB base + thermal hotspots overlay (original behavior)
+                # RGB base + thermal hotspots overlay (use intensity)
                 thermal_gray = cv2.cvtColor(thermal, cv2.COLOR_BGR2GRAY)
                 threshold = np.percentile(thermal_gray, 70)
                 hot_mask = thermal_gray > threshold
 
                 result = rgb.copy()
                 result[hot_mask] = cv2.addWeighted(
-                    thermal[hot_mask], 0.7,
-                    rgb[hot_mask], 0.3,
+                    thermal[hot_mask], self.fusion_intensity,
+                    rgb[hot_mask], 1.0 - self.fusion_intensity,
                     0
                 )
             else:
-                # Thermal base + RGB highlights overlay (inverted priority)
+                # Thermal base + RGB highlights overlay (use intensity)
                 rgb_gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
                 threshold = np.percentile(rgb_gray, 70)
                 bright_mask = rgb_gray > threshold
 
                 result = thermal.copy()
                 result[bright_mask] = cv2.addWeighted(
-                    rgb[bright_mask], 0.7,
-                    thermal[bright_mask], 0.3,
+                    rgb[bright_mask], self.fusion_intensity,
+                    thermal[bright_mask], 1.0 - self.fusion_intensity,
                     0
                 )
 
@@ -469,11 +494,13 @@ class FusionProcessor:
             thermal_strength = thermal_strength / (thermal_strength.max() + 1e-6)
             rgb_strength = rgb_strength / (rgb_strength.max() + 1e-6)
 
-            # Apply priority bias (boost preferred source by 30%)
+            # Apply priority bias (boost preferred source using intensity)
+            # intensity controls bias strength: 0.0 = no bias, 1.0 = double strength
+            bias_multiplier = 1.0 + self.fusion_intensity
             if self.fusion_priority == 'thermal':
-                thermal_strength = thermal_strength * 1.3
+                thermal_strength = thermal_strength * bias_multiplier
             else:
-                rgb_strength = rgb_strength * 1.3
+                rgb_strength = rgb_strength * bias_multiplier
 
             # Compute adaptive weights
             total_strength = thermal_strength + rgb_strength + 1e-6

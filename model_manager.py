@@ -14,6 +14,7 @@ from enum import Enum
 from dataclasses import dataclass
 
 from object_detector import ObjectDetector, Detection
+from config import get_config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -208,12 +209,20 @@ class ModelManager:
         Returns:
             True if successfully initialized
         """
+        # Get user-configured custom models from config
+        config = get_config()
+        user_rgb_model = config.get('detection.yolo.rgb_model')
+        user_thermal_model = config.get('detection.yolo.thermal_model')
+
         if camera_mode == "thermal":
-            # Single detector for thermal
-            model_path = self.get_best_model_for_mode("thermal", performance_preference)
+            # Single detector for thermal - prioritize user config
+            model_path = user_thermal_model or self.get_best_model_for_mode("thermal", performance_preference)
             if not model_path:
                 logger.error("No suitable model found for thermal mode")
                 return False
+
+            if user_thermal_model:
+                logger.info(f"Using user-configured thermal model: {user_thermal_model}")
 
             self.thermal_detector = ObjectDetector(
                 model_path=model_path,
@@ -224,11 +233,14 @@ class ModelManager:
             return self.thermal_detector.initialize()
 
         elif camera_mode == "rgb":
-            # Single detector for RGB
-            model_path = self.get_best_model_for_mode("rgb", performance_preference)
+            # Single detector for RGB - prioritize user config
+            model_path = user_rgb_model or self.get_best_model_for_mode("rgb", performance_preference)
             if not model_path:
                 logger.error("No suitable model found for RGB mode")
                 return False
+
+            if user_rgb_model:
+                logger.info(f"Using user-configured RGB model: {user_rgb_model}")
 
             self.rgb_detector = ObjectDetector(
                 model_path=model_path,
@@ -239,9 +251,14 @@ class ModelManager:
             return self.rgb_detector.initialize()
 
         elif camera_mode == "fusion":
-            # Dual-detector mode: use best model for each camera type
-            thermal_model = self.get_best_model_for_mode("thermal", performance_preference)
-            rgb_model = self.get_best_model_for_mode("rgb", performance_preference)
+            # Dual-detector mode: prioritize user config, then auto-detect best models
+            thermal_model = user_thermal_model or self.get_best_model_for_mode("thermal", performance_preference)
+            rgb_model = user_rgb_model or self.get_best_model_for_mode("rgb", performance_preference)
+
+            if user_thermal_model:
+                logger.info(f"Using user-configured thermal model: {user_thermal_model}")
+            if user_rgb_model:
+                logger.info(f"Using user-configured RGB model: {user_rgb_model}")
 
             # If we have FLIR model, use it for thermal; YOLO for RGB
             if thermal_model and rgb_model and thermal_model != rgb_model:

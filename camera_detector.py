@@ -183,52 +183,81 @@ class CameraDetector:
         return cameras
 
     @staticmethod
-    def _probe_windows_cameras(max_devices: int = 10) -> List[CameraInfo]:
-        """Probe cameras on Windows using DirectShow/MSMF"""
+    def _probe_windows_cameras(max_devices: int = 5) -> List[CameraInfo]:
+        """
+        Probe cameras on Windows using DirectShow/MSMF
+
+        Note: Reduced max_devices to 5 to avoid driver-level crashes
+        when probing non-existent camera indices on Windows.
+        """
         cameras = []
 
         for device_id in range(max_devices):
             cap = None
             try:
+                logger.debug(f"Probing Windows camera index {device_id}...")
+
                 # Try DirectShow first (better compatibility with UVC devices)
-                cap = cv2.VideoCapture(device_id, cv2.CAP_DSHOW)
+                # Wrap in nested try to catch driver-level exceptions
+                try:
+                    cap = cv2.VideoCapture(device_id, cv2.CAP_DSHOW)
+                except Exception as e:
+                    logger.debug(f"DirectShow failed for camera {device_id}: {e}")
+                    cap = None
 
-                if not cap.isOpened():
+                if cap is None or not cap.isOpened():
                     # Fall back to MSMF
-                    cap = cv2.VideoCapture(device_id, cv2.CAP_MSMF)
-
-                if cap.isOpened():
-                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-                    # Try to get camera name (backend-specific property)
-                    name = f"Camera {device_id}"
                     try:
-                        # Some backends support camera name property
-                        backend_name = cap.getBackendName()
-                        name = f"Camera {device_id} ({backend_name})"
-                    except:
-                        pass
+                        if cap is not None:
+                            cap.release()
+                        cap = cv2.VideoCapture(device_id, cv2.CAP_MSMF)
+                    except Exception as e:
+                        logger.debug(f"MSMF failed for camera {device_id}: {e}")
+                        cap = None
 
-                    # Detect if this looks like a FLIR Boson based on resolution
-                    if (width, height) in [(640, 512), (320, 256)]:
-                        name = f"FLIR Boson {width}x{height} (Camera {device_id})"
+                if cap is not None and cap.isOpened():
+                    try:
+                        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-                    cap.release()
+                        # Try to get camera name (backend-specific property)
+                        name = f"Camera {device_id}"
+                        try:
+                            # Some backends support camera name property
+                            backend_name = cap.getBackendName()
+                            name = f"Camera {device_id} ({backend_name})"
+                        except:
+                            pass
 
-                    cameras.append(CameraInfo(
-                        device_id=device_id,
-                        name=name,
-                        driver="DirectShow/MSMF",
-                        resolution=(width, height)
-                    ))
+                        # Detect if this looks like a FLIR Boson based on resolution
+                        if (width, height) in [(640, 512), (320, 256)]:
+                            name = f"FLIR Boson {width}x{height} (Camera {device_id})"
+
+                        cap.release()
+                        cap = None
+
+                        cameras.append(CameraInfo(
+                            device_id=device_id,
+                            name=name,
+                            driver="DirectShow/MSMF",
+                            resolution=(width, height)
+                        ))
+
+                        logger.info(f"Detected: {name} at index {device_id}")
+
+                    except Exception as e:
+                        logger.debug(f"Failed to read properties from camera {device_id}: {e}")
 
             except Exception as e:
                 logger.debug(f"Failed to probe camera {device_id}: {e}")
             finally:
                 if cap is not None:
-                    cap.release()
+                    try:
+                        cap.release()
+                    except:
+                        pass
 
+        logger.info(f"Windows camera probe complete: {len(cameras)} camera(s) found")
         return cameras
 
     @staticmethod

@@ -1088,6 +1088,64 @@ done
   - Priority: HIGH
   - Estimated effort: 5-7 hours
 
-**TODO List Version**: 1.2
-**Last Updated**: 2025-11-16
-**Status**: v3.2.0 Complete (LiDAR Phase 1), New Features Requested
+## 📝 Recent Completions (2025-11-17)
+
+### v3.7.0 Features - Advanced Visualization
+- [x] **Configurable Fusion Intensity** ✓ COMPLETE
+  - Status: Fully implemented and tested
+  - What worked:
+    - Added `fusion.intensity` parameter to config.json (0.0-1.0 range)
+    - GUI button (💪 INT) cycles through [0.2, 0.4, 0.6, 0.8, 1.0]
+    - FusionProcessor loads intensity from config
+    - Real-time adjustment via `set_intensity()` method
+    - Setting persists across sessions
+  - Files: `config.json`, `fusion_processor.py`, `driver_gui_qt.py`
+  - Commit: Pending
+  - Priority: HIGH
+
+- [x] **Alert Override Control (3-State)** ✓ COMPLETE
+  - Status: Fully implemented and tested
+  - What worked:
+    - Button cycles: AUTO → ON → OFF → AUTO
+    - AUTO: Normal alerts (based on detections)
+    - ON: Alerts always shown (forced)
+    - OFF: Alerts always hidden (sidebars never appear)
+    - Properly wired to alert overlay system
+    - Button location: Row 6, Column 1 in developer panel
+  - Files: `driver_gui_qt.py`, `main.py`
+  - Commit: Pending
+  - Priority: HIGH
+
+- [x] **Thermal Colorization Mode with Intensity-Based Overlay** ✓ COMPLETE
+  - Status: Fully implemented and tested
+  - What worked:
+    - Analyzes pixel intensity (brightness) in each detection box
+    - Brighter pixels (hotter) get more color (up to 40% blend)
+    - Darker pixels (cooler) get less color
+    - Creates natural gradient effect (only hot objects colorized)
+    - Warning level color coding: RED (critical), YELLOW (warning), CYAN (info)
+    - Auto-switches to whitehot palette for better contrast
+    - State save/restore (view mode, palette, detections)
+    - Button location: Row 6, Column 3 in developer panel
+  - Files: `video_worker.py`, `driver_gui_qt.py`, `main.py`
+  - Commit: Pending
+  - Algorithm: `blended = original * (1 - intensity * 0.4) + color * (intensity * 0.4)`
+  - Priority: HIGH
+
+- [x] **Developer Panel Expansion (6x3 Grid)** ✓ COMPLETE
+  - Status: Fully functional
+  - What worked:
+    - Expanded from 5x3 (15 buttons) to 6x3 (18 buttons)
+    - New Row 6: ALRT button (col 1), empty (col 2), TCLR button (col 3)
+    - Control count: 20 → 22 total controls
+    - All signals properly connected
+    - Clean layout maintained
+  - Files: `driver_gui_qt.py`
+  - Commit: Pending
+  - Priority: MEDIUM
+
+---
+
+**TODO List Version**: 1.3
+**Last Updated**: 2025-11-17
+**Status**: v3.7.0 Complete (Advanced Visualization), Existing Feature Requests Pending

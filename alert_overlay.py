@@ -20,6 +20,7 @@ except ImportError:
 
 from road_analyzer import Alert, AlertLevel
 from object_detector import Detection
+from config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,28 @@ class AlertOverlayWidget(QWidget):
             'text_bg': QColor(0, 0, 0, 200),         # Black text background
         }
 
+        # Load object importance settings
+        config = get_config()
+        self.object_importance = {}
+        for obj_type in ['person', 'bicycle', 'motorcycle', 'dog', 'cat', 'car', 'truck', 'bus',
+                         'traffic light', 'stop sign', 'bird', 'motion', 'horse', 'cow', 'sheep',
+                         'elephant', 'bear', 'zebra', 'giraffe']:
+            self.object_importance[obj_type] = config.get(f'object_importance.{obj_type}', 'medium')
+
         logger.info("AlertOverlayWidget initialized (ADAS-compliant)")
+
+    def _is_critical_object(self, class_name: str) -> bool:
+        """
+        Check if an object is considered critical based on its importance level
+
+        Args:
+            class_name: Object class name (e.g., 'person', 'car')
+
+        Returns:
+            True if object importance is 'critical', False otherwise
+        """
+        importance = self.object_importance.get(class_name, 'medium')
+        return importance == 'critical'
 
     def set_frame_dimensions(self, width: int, height: int):
         """
@@ -263,9 +285,8 @@ class AlertOverlayWidget(QWidget):
         if show_left:
             # Combine left and center detections for criticality check
             combined_left = self.proximity_zones['left'] + self.proximity_zones['center']
-            # Determine alert level based on object types
-            has_critical = any(d.class_name in ['person', 'bicycle', 'motorcycle', 'dog', 'cat']
-                             for d in combined_left)
+            # Determine alert level based on object importance configuration
+            has_critical = any(self._is_critical_object(d.class_name) for d in combined_left)
 
             if has_critical:
                 color = self.colors['critical']
@@ -298,8 +319,8 @@ class AlertOverlayWidget(QWidget):
         if show_right:
             # Combine right and center detections for criticality check
             combined_right = self.proximity_zones['right'] + self.proximity_zones['center']
-            has_critical = any(d.class_name in ['person', 'bicycle', 'motorcycle', 'dog', 'cat']
-                             for d in combined_right)
+            # Determine alert level based on object importance configuration
+            has_critical = any(self._is_critical_object(d.class_name) for d in combined_right)
 
             if has_critical:
                 color = self.colors['critical']

@@ -35,6 +35,7 @@ class RGBCamera:
         self.use_gstreamer = use_gstreamer
         self.cap = None
         self.is_open = False
+        self.camera_type = "USB/CSI (Legacy)"  # For compatibility with main.py
 
     def _create_gstreamer_pipeline(self) -> str:
         """

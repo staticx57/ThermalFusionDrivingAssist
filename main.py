@@ -135,6 +135,8 @@ class ThermalRoadMonitorFusion:
         self.yolo_enabled = (getattr(args, 'detection_mode', 'edge') == 'model')
         self.frame_count = 0
         self.device = getattr(args, 'device', 'cuda')
+        self.alert_override_mode = "auto"  # Alert override mode: auto/on/off
+        self.thermal_colorize_mode = False  # Thermal colorization mode
 
         # Performance tuning
         self.buffer_flush_enabled = False

@@ -8,7 +8,7 @@ Automatically determines optimal theme (light/dark) based on:
 """
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 from typing import Optional, Tuple
 import math
 import numpy as np
@@ -162,7 +162,7 @@ class AutoDayNightDetector:
             logger.warning(f"Astronomical calculation failed: {e}")
             return None
 
-    def _calculate_sunrise_sunset(self, date: datetime) -> Tuple[Optional[datetime.time], Optional[datetime.time]]:
+    def _calculate_sunrise_sunset(self, date: datetime) -> Tuple[Optional[dt_time], Optional[dt_time]]:
         """
         Calculate sunrise and sunset times for given date and location
 
@@ -196,11 +196,11 @@ class AutoDayNightDetector:
             if cos_hour_angle > 1:
                 # Polar night (sun never rises)
                 logger.debug("Polar night detected (sun never rises)")
-                return datetime.time(23, 59), datetime.time(0, 0)
+                return dt_time(23, 59), dt_time(0, 0)
             elif cos_hour_angle < -1:
                 # Polar day (sun never sets)
                 logger.debug("Polar day detected (sun never sets)")
-                return datetime.time(0, 0), datetime.time(23, 59)
+                return dt_time(0, 0), dt_time(23, 59)
 
             # Hour angle in degrees
             hour_angle_deg = math.degrees(math.acos(cos_hour_angle))
@@ -227,7 +227,7 @@ class AutoDayNightDetector:
             logger.warning(f"Sunrise/sunset calculation error: {e}")
             return None, None
 
-    def _hours_to_time(self, hours: float) -> datetime.time:
+    def _hours_to_time(self, hours: float) -> dt_time:
         """
         Convert decimal hours (0-24) to time object
 
@@ -249,7 +249,7 @@ class AutoDayNightDetector:
             hour = 23
             minute = 59
 
-        return datetime.time(hour, minute)
+        return dt_time(hour, minute)
 
     def _detect_from_time_of_day(self) -> str:
         """

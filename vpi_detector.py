@@ -156,8 +156,11 @@ class VPIDetector:
             try:
                 import torch
                 yolo_device = 'cuda' if device == 'cuda' else 'cpu'
-                # YOLO models handle device switching via the device parameter in inference
-                # No need to reload the model, just update the device for next inference
+
+                # Explicitly move model to new device to prevent device mismatch
+                self.model.to(yolo_device)
+                logger.info(f"Model moved to device: {yolo_device}")
+
                 logger.info(f"Device switched from {old_device} to {device}")
                 logger.info(f"VPI backend: {self.vpi_backend}, YOLO device: {yolo_device}")
             except Exception as e:
@@ -238,6 +241,12 @@ class VPIDetector:
             from ultralytics import YOLO
             logger.info(f"Loading YOLO model: {model_path}")
             self.model = YOLO(model_path)
+
+            # Explicitly move model to the specified device
+            device_str = 'cuda' if self.device == 'cuda' else 'cpu'
+            self.model.to(device_str)
+            logger.info(f"YOLO model moved to device: {device_str}")
+
             self.model_path = model_path
             logger.info(f"YOLO model loaded successfully: {model_path}")
             # Clear cached detections when model changes
@@ -323,6 +332,12 @@ class VPIDetector:
                         logger.info(f"CUDA device: {torch.cuda.get_device_name(0)}")
 
                     self.model = YOLO(self.model_path)
+
+                    # Explicitly move model to the specified device
+                    device_str = 'cuda' if self.device == 'cuda' else 'cpu'
+                    self.model.to(device_str)
+                    logger.info(f"YOLO model moved to device: {device_str}")
+
                     logger.info("YOLO model loaded successfully")
                 except ImportError:
                     logger.error("ultralytics package not installed. Run: pip install ultralytics")

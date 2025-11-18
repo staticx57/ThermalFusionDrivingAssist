@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 from PyQt5.QtCore import QThread, pyqtSignal
 from view_mode import ViewMode
+from config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,14 @@ class VideoProcessorWorker(QThread):
         super().__init__()
         self.app = app
         self.running = False
+
+        # Load object importance settings for thermal colorization
+        config = get_config()
+        self.object_importance = {}
+        for obj_type in ['person', 'bicycle', 'motorcycle', 'dog', 'cat', 'car', 'truck', 'bus',
+                         'traffic light', 'stop sign', 'bird', 'motion', 'horse', 'cow', 'sheep',
+                         'elephant', 'bear', 'zebra', 'giraffe']:
+            self.object_importance[obj_type] = config.get(f'object_importance.{obj_type}', 'medium')
 
     def run(self):
         """Main vision processing loop (runs in background thread)"""
@@ -229,6 +238,7 @@ class VideoProcessorWorker(QThread):
             # Draw detections if enabled
             if self.app.show_detections and len(detections) > 0:
                 h, w = display_frame.shape[:2]
+
                 for det in detections:
                     try:
                         x1, y1, x2, y2 = map(int, det.bbox)
@@ -240,12 +250,57 @@ class VideoProcessorWorker(QThread):
 
                         # Only draw if box is valid (has area)
                         if x2 > x1 and y2 > y1:
-                            cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            # Determine color based on thermal colorization mode
+                            if getattr(self.app, 'thermal_colorize_mode', False):
+                                # Color-code by object importance level (configurable)
+                                importance = self.object_importance.get(det.class_name, 'medium')
+
+                                if importance == 'critical':
+                                    box_color = (0, 0, 255)  # Red (BGR) - Critical
+                                elif importance == 'high':
+                                    box_color = (0, 255, 255)  # Yellow (BGR) - High
+                                else:  # medium, low, info, ignore
+                                    box_color = (255, 255, 0)  # Cyan (BGR) - Info
+
+                                # Intensity-based colored overlay
+                                # Extract bounding box region
+                                roi = display_frame[y1:y2, x1:x2].copy()
+
+                                # Convert to grayscale to get intensity
+                                if len(roi.shape) == 3:
+                                    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                                else:
+                                    gray_roi = roi
+
+                                # Normalize intensity to 0-1 range
+                                intensity = gray_roi.astype(float) / 255.0
+
+                                # Create colored overlay for the ROI
+                                colored_roi = np.zeros_like(roi)
+                                colored_roi[:, :] = box_color
+
+                                # Apply intensity-based alpha blending
+                                # Higher intensity (brighter/hotter) = more color
+                                # Lower intensity (darker/cooler) = less color
+                                for c in range(3):  # For each color channel
+                                    roi_float = roi[:, :, c].astype(float)
+                                    colored_float = colored_roi[:, :, c].astype(float)
+                                    # Blend with intensity as alpha (0.4 max to avoid oversaturation)
+                                    blended = roi_float * (1 - intensity * 0.4) + colored_float * (intensity * 0.4)
+                                    roi[:, :, c] = np.clip(blended, 0, 255).astype(np.uint8)
+
+                                # Put the blended ROI back into the display frame
+                                display_frame[y1:y2, x1:x2] = roi
+                            else:
+                                # Default green
+                                box_color = (0, 255, 0)
+
+                            cv2.rectangle(display_frame, (x1, y1), (x2, y2), box_color, 2)
                             label = f"{det.class_name}: {det.confidence:.2f}"
                             # Ensure label position is within frame
                             label_y = max(10, y1 - 10)
                             cv2.putText(display_frame, label, (x1, label_y),
-                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, box_color, 2)
                     except Exception as e:
                         logger.error(f"Error drawing detection box: {e}")
 

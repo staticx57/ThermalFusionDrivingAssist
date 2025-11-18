@@ -13,14 +13,14 @@
   "auto_retry_sensors": true,
   "thermal_retry_interval": 3,
   "rgb_retry_interval": 100,
-  "yolo_model": "yolov8s.pt",
+  "yolo_model": "yolov8m.pt",
   "confidence_threshold": 0.25,
   "detection_mode": "model",
   "model_presets": {
-    "yolov8n": "yolov8n.pt",
-    "yolov8s": "yolov8s.pt",
+    "yolov8l": "yolov8l.pt",
     "yolov8m": "yolov8m.pt",
-    "yolov8l": "yolov8l.pt"
+    "yolov8n": "yolov8n.pt",
+    "yolov8s": "yolov8s.pt"
   },
   "thermal_model": null,
   "rgb_model": null,
@@ -43,5 +43,276 @@
   "thermal_resolution": [
     640,
     512
-  ]
+  ],
+  "adas": {
+    "alerts": {
+      "cooldown": 1.0,
+      "enabled": true
+    },
+    "distance_estimation": {
+      "camera_focal_length": 640.0,
+      "camera_height": 1.2,
+      "enabled": true
+    }
+  },
+  "adas.alerts.cooldown": 1.0,
+  "adas.alerts.distance_zones.close": 20.0,
+  "adas.alerts.distance_zones.immediate": 5.0,
+  "adas.alerts.distance_zones.medium": 40.0,
+  "adas.alerts.distance_zones.very_close": 10.0,
+  "adas.alerts.enabled": true,
+  "adas.alerts.ttc_urgent_threshold": 3.0,
+  "adas.distance_estimation.camera_focal_length": 640.0,
+  "adas.distance_estimation.camera_fov_horizontal": 60.0,
+  "adas.distance_estimation.camera_fov_vertical": 45.0,
+  "adas.distance_estimation.camera_height": 1.2,
+  "adas.distance_estimation.enabled": true,
+  "adas.distance_estimation.history_length": 5,
+  "adas.distance_estimation.thermal_correction_factor": 0.95,
+  "adas.vehicle_speed": 0.0,
+  "audio": {
+    "enabled": true,
+    "frequency_hz": 1800,
+    "stereo": true,
+    "volume": 0.7
+  },
+  "audio.cooldown": 2.0,
+  "audio.enabled": true,
+  "audio.frequency_hz": 1800,
+  "audio.sample_rate": 22050,
+  "audio.stereo": true,
+  "audio.volume": 0.7,
+  "camera": {
+    "rgb": {
+      "auto_retry": true,
+      "camera_type": "auto",
+      "enabled": true,
+      "fps": 30,
+      "height": 480,
+      "retry_interval": 100,
+      "width": 640
+    },
+    "thermal": {
+      "buffer_flush_enabled": false,
+      "device_id": null,
+      "fps": 60,
+      "height": 512,
+      "retry_interval": 3.0,
+      "width": 640
+    }
+  },
+  "camera.calibration_file": null,
+  "camera.rgb.auto_retry": true,
+  "camera.rgb.camera_type": "auto",
+  "camera.rgb.enabled": true,
+  "camera.rgb.fps": 30,
+  "camera.rgb.height": 480,
+  "camera.rgb.retry_interval": 100,
+  "camera.rgb.width": 640,
+  "camera.thermal.backend": "auto",
+  "camera.thermal.buffer_flush_enabled": false,
+  "camera.thermal.device_id": null,
+  "camera.thermal.fps": 60,
+  "camera.thermal.height": 512,
+  "camera.thermal.retry_interval": 3.0,
+  "camera.thermal.width": 640,
+  "detection": {
+    "frame_skip": 1,
+    "mode": "model",
+    "motion_detection": {
+      "enabled": true,
+      "min_area": 400,
+      "threshold": 20
+    },
+    "show_boxes": true,
+    "yolo": {
+      "confidence_threshold": 0.25,
+      "device": "cuda",
+      "enabled": true,
+      "model": "yolov8n.pt",
+      "rgb_model": "yolov8m.pt",
+      "thermal_model": "yolov8m.pt"
+    }
+  },
+  "detection.edge_detection.canny_threshold_high": 150,
+  "detection.edge_detection.canny_threshold_low": 50,
+  "detection.edge_detection.gaussian_blur_kernel": 7,
+  "detection.edge_detection.gaussian_blur_sigma": 1.5,
+  "detection.edge_detection.max_area_percent": 30.0,
+  "detection.edge_detection.min_area_percent": 0.1,
+  "detection.frame_skip": 1,
+  "detection.mode": "model",
+  "detection.motion_detection.enabled": true,
+  "detection.motion_detection.max_area_ratio": 0.6,
+  "detection.motion_detection.min_area": 400,
+  "detection.motion_detection.persistence_frames": 2,
+  "detection.motion_detection.threshold": 20,
+  "detection.show_boxes": true,
+  "detection.yolo.confidence_threshold": 0.25,
+  "detection.yolo.custom_model_path": null,
+  "detection.yolo.device": "cuda",
+  "detection.yolo.enabled": true,
+  "detection.yolo.input_size": 416,
+  "detection.yolo.model": "yolov8n.pt",
+  "detection.yolo.rgb_model": null,
+  "detection.yolo.thermal_confidence_adjustment": 0.6,
+  "detection.yolo.thermal_model": null,
+  "display": {
+    "thermal_palette": "ironbow",
+    "view_mode": "thermal"
+  },
+  "display.thermal_palette": "ironbow",
+  "display.view_mode": "thermal",
+  "fusion": {
+    "alpha": 0.5,
+    "intensity": 0.5,
+    "mode": "alpha_blend"
+  },
+  "fusion.alpha": 0.5,
+  "fusion.edge_detection.color": [
+    0,
+    0,
+    255
+  ],
+  "fusion.edge_detection.enabled": true,
+  "fusion.edge_detection.weight": 0.5,
+  "fusion.edge_enhanced.rgb_priority_edge_color": [
+    0,
+    0,
+    255
+  ],
+  "fusion.edge_enhanced.thermal_priority_edge_color": [
+    255,
+    255,
+    0
+  ],
+  "fusion.intensity": 0.5,
+  "fusion.mode": "alpha_blend",
+  "fusion.picture_in_picture.border_width": 2,
+  "fusion.picture_in_picture.margin": 10,
+  "fusion.picture_in_picture.position": "top-right",
+  "fusion.picture_in_picture.size": 0.25,
+  "fusion.thermal_overlay.hot_threshold_percentile": 70,
+  "fusion.thermal_overlay.thermal_weight": 0.7,
+  "gui": {
+    "developer_mode": false,
+    "show_info_panel": true,
+    "theme": "dark",
+    "window": {
+      "fullscreen": false,
+      "height": 960,
+      "width": 1280
+    }
+  },
+  "gui.developer_mode": false,
+  "gui.display_scale": 2.0,
+  "gui.show_info_panel": true,
+  "gui.theme": "dark",
+  "gui.use_opencv_gui": false,
+  "gui.window.developer_panel_width": 300,
+  "gui.window.fullscreen": false,
+  "gui.window.height": 960,
+  "gui.window.width": 1280,
+  "logging": {
+    "backup_count": 5,
+    "file": "thermal_fusion_debug.log",
+    "level": "INFO",
+    "max_file_size_mb": 10
+  },
+  "logging.backup_count": 5,
+  "logging.enable_console": true,
+  "logging.enable_file": true,
+  "logging.file": "thermal_fusion_debug.log",
+  "logging.level": "INFO",
+  "logging.max_file_size_mb": 10,
+  "object_importance": {
+    "bear": "critical",
+    "bicycle": "critical",
+    "bird": "low",
+    "bus": "info",
+    "car": "info",
+    "cat": "critical",
+    "cow": "critical",
+    "dog": "critical",
+    "elephant": "critical",
+    "giraffe": "critical",
+    "horse": "critical",
+    "motion": "high",
+    "motorcycle": "critical",
+    "person": "critical",
+    "sheep": "critical",
+    "stop sign": "medium",
+    "traffic light": "info",
+    "truck": "info",
+    "zebra": "critical"
+  },
+  "object_importance.bear": "critical",
+  "object_importance.bicycle": "critical",
+  "object_importance.bird": "low",
+  "object_importance.bus": "high",
+  "object_importance.car": "high",
+  "object_importance.cat": "critical",
+  "object_importance.cow": "critical",
+  "object_importance.dog": "critical",
+  "object_importance.elephant": "critical",
+  "object_importance.giraffe": "critical",
+  "object_importance.horse": "critical",
+  "object_importance.motion": "high",
+  "object_importance.motorcycle": "critical",
+  "object_importance.person": "critical",
+  "object_importance.sheep": "critical",
+  "object_importance.stop sign": "medium",
+  "object_importance.traffic light": "medium",
+  "object_importance.truck": "high",
+  "object_importance.zebra": "critical",
+  "performance": {
+    "target_fps": {
+      "jetson": 30,
+      "x86": 60
+    }
+  },
+  "performance.detection_queue_size": 2,
+  "performance.fps_smoothing_window": 60,
+  "performance.monitor_update_interval": 1.0,
+  "performance.stats_print_interval": 100,
+  "performance.target_fps.jetson": 20,
+  "performance.target_fps.x86": 30,
+  "platform.force_platform": null,
+  "platform.vpi_backend_priority": [
+    "CUDA",
+    "PVA",
+    "VIC",
+    "CPU"
+  ],
+  "theme_auto": {
+    "ambient": {
+      "enabled": true,
+      "threshold": 80
+    },
+    "astronomical": {
+      "enabled": true,
+      "latitude": 37.7749,
+      "longitude": -122.4194
+    },
+    "enabled": true,
+    "time_based": {
+      "day_start_hour": 7,
+      "night_start_hour": 19
+    }
+  },
+  "theme_auto.ambient.enabled": true,
+  "theme_auto.ambient.hysteresis": 15,
+  "theme_auto.ambient.threshold": 80,
+  "theme_auto.astronomical.enabled": true,
+  "theme_auto.astronomical.latitude": 37.7749,
+  "theme_auto.astronomical.longitude": -122.4194,
+  "theme_auto.check_interval": 10.0,
+  "theme_auto.enabled": true,
+  "theme_auto.method_priority": [
+    "ambient",
+    "astronomical",
+    "time"
+  ],
+  "theme_auto.time_based.day_start_hour": 7,
+  "theme_auto.time_based.night_start_hour": 19
 }

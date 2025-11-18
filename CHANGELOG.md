@@ -1,5 +1,149 @@
 # ThermalFusionDrivingAssist - Changelog
 
+## [v3.7.0] - 2025-11-17 - Advanced Detection Visualization & Alert Control
+
+### Added - Thermal Colorization Mode with Intensity-Based Overlay
+
+**User Request**: "Add ability to colorize detection boxes by warning level with intensity-based overlay"
+
+**New Feature: Thermal Colorization Mode (🎨 TCLR button)**:
+
+1. **Intensity-Based Colored Overlay** (video_worker.py:257-285):
+   - Analyzes pixel intensity (brightness) in each detection bounding box
+   - Brighter pixels (hotter objects) get more color overlay (up to 40% blend)
+   - Darker pixels (cooler areas) get less color
+   - Creates natural gradient effect where only hot objects appear colorized
+   - Algorithm:
+     ```python
+     intensity = pixel_brightness / 255.0  # Normalize to 0-1
+     blended_color = original * (1 - intensity * 0.4) + warning_color * (intensity * 0.4)
+     ```
+
+2. **Warning Level Color Coding**:
+   - **RED**: Vulnerable road users (person, bicycle, motorcycle, dog, cat)
+   - **YELLOW**: Vehicles (car, truck, bus)
+   - **CYAN**: Other objects
+
+3. **Automatic Mode Switching**:
+   - Switches to whitehot thermal palette (better contrast for colorization)
+   - Enables detections automatically
+   - Saves previous state (view mode, palette, detection state)
+   - Restores all settings when toggled off
+
+4. **State Management** (driver_gui_qt.py:1129-1183):
+   - Saves: view_mode, palette, show_detections
+   - Restores on toggle off (returns to previous configuration)
+   - Toggle button location: Row 6, Column 3 in developer panel
+
+**Files Modified**:
+- `video_worker.py` (lines 229-297): Intensity-based overlay algorithm
+- `driver_gui_qt.py` (lines 1129-1183): Thermal colorization mode handler
+- `main.py` (line 139): State initialization
+
+**Result**:
+- ✅ Hot objects highlighted with intensity-proportional color overlay
+- ✅ Cold/dark areas remain uncolorized (natural appearance)
+- ✅ Clear visual distinction between critical/warning/info objects
+- ✅ State save/restore works flawlessly
+
+---
+
+### Added - Alert Override Control (3-State Button)
+
+**User Request**: "Alert button should cycle through AUTO/ON/OFF (not just AUTO/ON)"
+
+**New Feature: 3-State Alert Override (🔔 ALRT button)**:
+
+1. **Three Operating Modes** (driver_gui_qt.py:1370-1384):
+   - **AUTO**: Normal behavior (alerts shown when detections present)
+   - **ON**: Alerts always shown (forced on, even without detections)
+   - **OFF**: Alerts always hidden (sidebars never appear)
+
+2. **Wiring Implementation**:
+   - Button cycles through states on each click
+   - Updates `app.alert_override_mode` state variable
+   - Respects mode in metrics update handler
+   - Passes empty lists to alert overlay when mode is "off"
+
+3. **User Control**:
+   - Button location: Row 6, Column 1 in developer panel
+   - Click to cycle: AUTO → ON → OFF → AUTO
+   - Button label updates to show current mode
+
+**Files Modified**:
+- `driver_gui_qt.py` (lines 1370-1384): Override mode checking logic
+- `driver_gui_qt.py` (lines 484-495): 3-state cycling handler
+- `driver_gui_qt.py` (line 268): Changed signal to clicked() from toggled()
+- `main.py` (line 138): Initialize alert_override_mode state
+
+**Result**:
+- ✅ Alert override button fully wired and functional
+- ✅ Three states provide complete user control
+- ✅ Sidebar alerts respect override setting
+
+---
+
+### Added - Configurable Fusion Intensity
+
+**User Request**: "Add ability to configure intensity of fusion modes (minimal to greatly enhanced)"
+
+**Implementation**:
+
+1. **Configuration Parameter** (config.json):
+   - Added `fusion.intensity: 0.5` (range 0.0-1.0)
+   - 0.0 = minimal effect, 1.0 = maximum effect
+   - Affects edge_enhanced, thermal_overlay, and feature_weighted modes
+
+2. **GUI Control** (driver_gui_qt.py):
+   - New button: 💪 INT: 0.50 at row 4, column 1
+   - Cycles through: [0.2, 0.4, 0.6, 0.8, 1.0]
+   - Updates FusionProcessor dynamically
+   - Button label shows current intensity value
+
+3. **Fusion Algorithm Updates** (fusion_processor.py):
+   - Loaded intensity from config
+   - Added `set_intensity()` method for dynamic updates
+   - Modified fusion methods to use `self.fusion_intensity` instead of hardcoded values
+
+**Files Modified**:
+- `config.json`: Added fusion.intensity parameter
+- `fusion_processor.py` (lines 49-57, 163-175): Intensity loading and setter
+- `driver_gui_qt.py`: Added intensity control button and handler
+- Control count updated: 20 → 22 controls
+
+**Result**:
+- ✅ Users can adjust fusion effect strength in real-time
+- ✅ Five intensity levels provide good range of control
+- ✅ Setting persists across sessions
+
+---
+
+### Changed - Developer Panel Expansion
+
+**Enhancement**: Expanded developer panel to accommodate new features
+
+**Changes**:
+1. **Grid Expansion**: 5x3 (15 buttons) → 6x3 (18 buttons)
+2. **New Row 6 Buttons**:
+   - 🔔 ALRT (Alert Override) - Column 1
+   - Empty - Column 2
+   - 🎨 TCLR (Thermal Colorization) - Column 3
+
+3. **Control Count**: 20 → 22 total controls
+   - All signals properly connected
+   - Show/hide logic updated for new buttons
+
+**Files Modified**:
+- `driver_gui_qt.py` (lines 295-296, 376, 391): Button creation and layout
+- `driver_gui_qt.py` (line 842): Updated control count log message
+
+**Result**:
+- ✅ Clean 6x3 grid layout maintained
+- ✅ All new buttons properly positioned
+- ✅ No visual glitches or overlap
+
+---
+
 ## [v3.6.8] - 2025-11-15 - Alert Overlay UX Improvements
 
 ### Fixed - Alert Overlay Distractions and Zone Logic

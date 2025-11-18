@@ -261,9 +261,12 @@ class ControlPanel(QWidget):
     fusion_mode_clicked = pyqtSignal()
     fusion_alpha_clicked = pyqtSignal()
     fusion_priority_clicked = pyqtSignal()  # Toggle fusion priority
+    fusion_intensity_clicked = pyqtSignal()  # Fusion intensity control
     sim_thermal_toggled = pyqtSignal(bool)  # Simulated thermal camera
     motion_detection_toggled = pyqtSignal(bool)  # Motion detection toggle
     object_detection_toggled = pyqtSignal(bool)  # Object detection toggle
+    alert_override_clicked = pyqtSignal()  # Alert override toggle (3-state: AUTO/ON/OFF)
+    thermal_colorize_toggled = pyqtSignal(bool)  # Thermal colorization mode toggle
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -285,9 +288,12 @@ class ControlPanel(QWidget):
         self.fusion_mode_btn = QPushButton("🔀 FUS: ALPHA")
         self.fusion_alpha_btn = QPushButton("⚖️ α: 0.50")
         self.fusion_priority_btn = QPushButton("🎯 PRI: THRM")
+        self.fusion_intensity_btn = QPushButton("💪 INT: 0.50")
         self.sim_thermal_btn = QPushButton("🧪 SIM: OFF")
         self.motion_detect_btn = QPushButton("🏃 MOT: ON")
         self.object_detect_btn = QPushButton("🎯 OBJ: ON")
+        self.alert_override_btn = QPushButton("🔔 ALRT: AUTO")
+        self.thermal_colorize_btn = QPushButton("🎨 TCLR: OFF")
 
         # Hide all developer controls by default
         self.view_btn.hide()
@@ -301,9 +307,12 @@ class ControlPanel(QWidget):
         self.fusion_mode_btn.hide()
         self.fusion_alpha_btn.hide()
         self.fusion_priority_btn.hide()
+        self.fusion_intensity_btn.hide()
         self.sim_thermal_btn.hide()
         self.motion_detect_btn.hide()
         self.object_detect_btn.hide()
+        self.alert_override_btn.hide()
+        self.thermal_colorize_btn.hide()
 
         # Make toggle buttons checkable
         self.yolo_btn.setCheckable(True)
@@ -313,6 +322,7 @@ class ControlPanel(QWidget):
         self.sim_thermal_btn.setCheckable(True)
         self.motion_detect_btn.setCheckable(True)
         self.object_detect_btn.setCheckable(True)
+        self.thermal_colorize_btn.setCheckable(True)
 
         # Set initial checked states
         self.audio_btn.setChecked(True)  # Audio on by default
@@ -336,9 +346,12 @@ class ControlPanel(QWidget):
         self.fusion_mode_btn.clicked.connect(self.fusion_mode_clicked.emit)
         self.fusion_alpha_btn.clicked.connect(self.fusion_alpha_clicked.emit)
         self.fusion_priority_btn.clicked.connect(self.fusion_priority_clicked.emit)
+        self.fusion_intensity_btn.clicked.connect(self.fusion_intensity_clicked.emit)
         self.sim_thermal_btn.toggled.connect(self._on_sim_thermal_toggled)
         self.motion_detect_btn.toggled.connect(self._on_motion_detect_toggled)
         self.object_detect_btn.toggled.connect(self._on_object_detect_toggled)
+        self.alert_override_btn.clicked.connect(self._on_alert_override_clicked)
+        self.thermal_colorize_btn.toggled.connect(self._on_thermal_colorize_toggled)
 
         # Main layout: Simple mode controls (SAE J2400 compliant - minimal, driving-relevant)
         main_layout = QHBoxLayout()
@@ -347,7 +360,7 @@ class ControlPanel(QWidget):
         main_layout.addStretch()  # Push day/night to right
         main_layout.addWidget(self.day_night_btn)
 
-        # Developer controls: 5x3 grid layout (15 buttons)
+        # Developer controls: 6x3 grid layout (18 buttons)
         dev_controls_widget = QWidget()
         dev_grid = QGridLayout()
         dev_grid.setSpacing(5)
@@ -359,12 +372,14 @@ class ControlPanel(QWidget):
         dev_grid.addWidget(self.device_btn, 2, 0)
         dev_grid.addWidget(self.motion_detect_btn, 3, 0)
         dev_grid.addWidget(self.retry_btn, 4, 0)  # Retry sensors button
+        dev_grid.addWidget(self.alert_override_btn, 5, 0)  # Alert override toggle
 
         # Column 2: YOLO & Performance
         dev_grid.addWidget(self.yolo_btn, 0, 1)
         dev_grid.addWidget(self.buffer_flush_btn, 1, 1)
         dev_grid.addWidget(self.frame_skip_btn, 2, 1)
         dev_grid.addWidget(self.object_detect_btn, 3, 1)
+        dev_grid.addWidget(self.fusion_intensity_btn, 4, 1)  # Fusion intensity control
 
         # Column 3: Model, Fusion & Debug
         dev_grid.addWidget(self.model_btn, 0, 2)
@@ -372,6 +387,7 @@ class ControlPanel(QWidget):
         dev_grid.addWidget(self.fusion_alpha_btn, 2, 2)
         dev_grid.addWidget(self.fusion_priority_btn, 3, 2)
         dev_grid.addWidget(self.sim_thermal_btn, 4, 2)
+        dev_grid.addWidget(self.thermal_colorize_btn, 5, 2)  # Thermal colorization mode
 
         dev_controls_widget.setLayout(dev_grid)
         dev_controls_widget.hide()  # Hidden by default
@@ -465,6 +481,24 @@ class ControlPanel(QWidget):
         self.object_detect_btn.setText(f"🎯 OBJ: {'ON' if checked else 'OFF'}")
         self.object_detection_toggled.emit(checked)
 
+    def _on_alert_override_clicked(self):
+        """Cycle through alert override modes: AUTO → ON → OFF → AUTO"""
+        current_text = self.alert_override_btn.text()
+        if "AUTO" in current_text:
+            next_mode = "ON"
+        elif "ON" in current_text:
+            next_mode = "OFF"
+        else:
+            next_mode = "AUTO"
+
+        self.alert_override_btn.setText(f"🔔 ALRT: {next_mode}")
+        self.alert_override_clicked.emit()
+
+    def _on_thermal_colorize_toggled(self, checked: bool):
+        """Update thermal colorization button text when toggled"""
+        self.thermal_colorize_btn.setText(f"🎨 TCLR: {'ON' if checked else 'OFF'}")
+        self.thermal_colorize_toggled.emit(checked)
+
     def set_palette(self, palette_name: str):
         """Update palette button text"""
         # Truncate palette name to fit button (8 chars max)
@@ -509,6 +543,10 @@ class ControlPanel(QWidget):
         short_name = "THRM" if priority == "thermal" else "RGB"
         self.fusion_priority_btn.setText(f"🎯 PRI: {short_name}")
 
+    def set_fusion_intensity(self, intensity: float):
+        """Update fusion intensity button text"""
+        self.fusion_intensity_btn.setText(f"💪 INT: {intensity:.2f}")
+
     def set_sim_thermal_enabled(self, enabled: bool):
         """Set simulated thermal camera button state"""
         self.sim_thermal_btn.setChecked(enabled)
@@ -529,13 +567,16 @@ class ControlPanel(QWidget):
             self.fusion_mode_btn.show()
             self.fusion_alpha_btn.show()
             self.fusion_priority_btn.show()
+            self.fusion_intensity_btn.show()
             self.sim_thermal_btn.show()
             self.motion_detect_btn.show()
             self.object_detect_btn.show()
+            self.alert_override_btn.show()
+            self.thermal_colorize_btn.show()
             # Force layout update to ensure visibility
             self.layout().invalidate()
             self.layout().activate()
-            logger.info("Developer controls shown (15 controls in 5x3 grid)")
+            logger.info("Developer controls shown (18 controls in 6x3 grid)")
         else:
             self.dev_controls_widget.hide()
             # Hide individual buttons
@@ -550,9 +591,12 @@ class ControlPanel(QWidget):
             self.fusion_mode_btn.hide()
             self.fusion_alpha_btn.hide()
             self.fusion_priority_btn.hide()
+            self.fusion_intensity_btn.hide()
             self.sim_thermal_btn.hide()
             self.motion_detect_btn.hide()
             self.object_detect_btn.hide()
+            self.alert_override_btn.hide()
+            self.thermal_colorize_btn.hide()
             self.layout().invalidate()
             self.layout().activate()
             logger.info("Developer controls hidden")
@@ -755,11 +799,14 @@ class DriverAppWindow(QMainWindow):
         fusion_mode = getattr(self.app, 'fusion_mode', 'alpha_blend')
         fusion_alpha = getattr(self.app, 'fusion_alpha', 0.5)
         fusion_priority = 'thermal'  # Default priority
+        fusion_intensity = 0.5  # Default intensity
         if hasattr(self.app, 'fusion_processor') and self.app.fusion_processor:
             fusion_priority = getattr(self.app.fusion_processor, 'fusion_priority', 'thermal')
+            fusion_intensity = getattr(self.app.fusion_processor, 'fusion_intensity', 0.5)
         self.control_panel.set_fusion_mode(fusion_mode)
         self.control_panel.set_fusion_alpha(fusion_alpha)
         self.control_panel.set_fusion_priority(fusion_priority)
+        self.control_panel.set_fusion_intensity(fusion_intensity)
 
         # Simulated thermal camera (debug mode)
         sim_thermal = getattr(self.app, 'use_simulated_thermal', False)
@@ -786,10 +833,13 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.fusion_mode_clicked.connect(self._on_fusion_mode_cycle)
         self.control_panel.fusion_alpha_clicked.connect(self._on_fusion_alpha_adjust)
         self.control_panel.fusion_priority_clicked.connect(self._on_fusion_priority_toggle)
+        self.control_panel.fusion_intensity_clicked.connect(self._on_fusion_intensity_adjust)
         self.control_panel.sim_thermal_toggled.connect(self._on_sim_thermal_toggle)
         self.control_panel.motion_detection_toggled.connect(self._on_motion_detection_toggle)
         self.control_panel.object_detection_toggled.connect(self._on_object_detection_toggle)
-        logger.info("Control panel signals connected (all 19 controls)")
+        self.control_panel.alert_override_clicked.connect(self._on_alert_override_toggle)
+        self.control_panel.thermal_colorize_toggled.connect(self._on_thermal_colorize_toggle)
+        logger.info("Control panel signals connected (all 22 controls)")
 
     def _on_view_mode_cycle(self):
         """Cycle through view modes"""
@@ -1020,6 +1070,24 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.set_fusion_priority(next_priority)
         logger.info(f"Fusion priority: {next_priority}")
 
+    def _on_fusion_intensity_adjust(self):
+        """Adjust fusion intensity value (0.2, 0.4, 0.6, 0.8, 1.0, back to 0.2)"""
+        if not self.app:
+            return
+
+        intensity_values = [0.2, 0.4, 0.6, 0.8, 1.0]
+        current = getattr(self.app.fusion_processor, 'fusion_intensity', 0.5) if hasattr(self.app, 'fusion_processor') and self.app.fusion_processor else 0.5
+        # Find closest value
+        current_idx = min(range(len(intensity_values)), key=lambda i: abs(intensity_values[i] - current))
+        next_idx = (current_idx + 1) % len(intensity_values)
+        next_intensity = intensity_values[next_idx]
+
+        if self.app.fusion_processor and hasattr(self.app.fusion_processor, 'set_intensity'):
+            self.app.fusion_processor.set_intensity(next_intensity)
+
+        self.control_panel.set_fusion_intensity(next_intensity)
+        logger.info(f"Fusion intensity: {next_intensity}")
+
     def _on_sim_thermal_toggle(self, enabled: bool):
         """Toggle simulated thermal camera for debugging"""
         if not self.app:
@@ -1040,6 +1108,83 @@ class DriverAppWindow(QMainWindow):
             return
         self.app.detector.set_object_detection_enabled(enabled)
         logger.info(f"Object detection: {'enabled' if enabled else 'disabled'}")
+
+    def _on_alert_override_toggle(self):
+        """Cycle alert override through AUTO/ON/OFF modes"""
+        if not self.app:
+            return
+        # Get current state from button text
+        current_text = self.control_panel.alert_override_btn.text()
+        if "AUTO" in current_text:
+            mode = "auto"
+        elif "ON" in current_text:
+            mode = "on"
+        else:
+            mode = "off"
+
+        # Store override state in app
+        self.app.alert_override_mode = mode
+        logger.info(f"Alert override: {mode.upper()} - {'follows detections' if mode == 'auto' else ('always show' if mode == 'on' else 'always hide')}")
+
+    def _on_thermal_colorize_toggle(self, enabled: bool):
+        """
+        Toggle thermal colorization mode
+        When enabled: switches to thermal view with white-hot palette and colors detections by warning level
+        When disabled: restores previous settings
+        """
+        if not self.app:
+            return
+
+        if enabled:
+            # Save current state
+            self.thermal_colorize_saved_state = {
+                'view_mode': self.app.view_mode,
+                'palette': getattr(self.app.detector, 'thermal_palette', 'ironbow') if self.app.detector else 'ironbow',
+                'show_detections': self.app.show_detections,
+            }
+
+            # Activate thermal colorization mode
+            self.app.view_mode = ViewMode.THERMAL_ONLY
+            self.set_view_mode(ViewMode.THERMAL_ONLY)
+
+            # Set whitehot palette for better contrast
+            if self.app.detector and hasattr(self.app.detector, 'set_thermal_palette'):
+                self.app.detector.set_thermal_palette('whitehot')
+                self.control_panel.set_palette('WHITEHOT')
+
+            # Enable detections
+            self.app.show_detections = True
+            self.control_panel.set_detection_enabled(True)
+
+            # Enable thermal colorization flag
+            self.app.thermal_colorize_mode = True
+
+            logger.info("Thermal colorization mode ENABLED (thermal view, whitehot palette, colored detections)")
+        else:
+            # Restore previous state
+            if hasattr(self, 'thermal_colorize_saved_state'):
+                saved = self.thermal_colorize_saved_state
+
+                # Restore view mode
+                self.app.view_mode = saved['view_mode']
+                self.set_view_mode(saved['view_mode'])
+
+                # Restore palette
+                if self.app.detector and hasattr(self.app.detector, 'set_thermal_palette'):
+                    self.app.detector.set_thermal_palette(saved['palette'])
+                    self.control_panel.set_palette(saved['palette'])
+
+                # Restore detection visibility
+                self.app.show_detections = saved['show_detections']
+                self.control_panel.set_detection_enabled(saved['show_detections'])
+
+                # Clear saved state
+                delattr(self, 'thermal_colorize_saved_state')
+
+            # Disable thermal colorization flag
+            self.app.thermal_colorize_mode = False
+
+            logger.info("Thermal colorization mode DISABLED (restored previous settings)")
 
     def toggle_developer_mode(self):
         """
@@ -1221,7 +1366,22 @@ class DriverAppWindow(QMainWindow):
         # IMPORTANT: Always call update_alerts, even with empty lists, to trigger timeout clearing
         alerts = metrics.get('alerts', [])
         detections_list = metrics.get('detections_list', [])
-        self.video_widget.update_alerts(alerts, detections_list)
+
+        # Respect alert override mode
+        if self.app and hasattr(self.app, 'alert_override_mode'):
+            mode = self.app.alert_override_mode
+            if mode == "off":
+                # Force alerts off regardless of detections
+                self.video_widget.update_alerts([], [])
+            elif mode == "on":
+                # Force alerts on with current detections
+                self.video_widget.update_alerts(alerts, detections_list)
+            else:  # "auto"
+                # Normal behavior - show alerts based on detections
+                self.video_widget.update_alerts(alerts, detections_list)
+        else:
+            # Default behavior if override not set
+            self.video_widget.update_alerts(alerts, detections_list)
 
         # Update developer panel if enabled
         if self.developer_mode and self.developer_panel:
