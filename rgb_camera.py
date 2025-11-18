@@ -125,9 +125,14 @@ class RGBCamera:
             logger.info(f"RGB camera opened successfully")
             logger.info(f"Resolution: {actual_width}x{actual_height} @ {actual_fps} FPS")
 
-            # Warm up camera (discard first few frames)
+            # Warm up camera (discard first few frames and allow camera to initialize)
+            import time
+            time.sleep(0.1)  # Brief delay to let camera stabilize after opening
             for _ in range(5):
                 self.cap.read()
+
+            # Extra warm-up for webcams (they often need more initialization time)
+            time.sleep(0.2)
 
             self.is_open = True
             return True

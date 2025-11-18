@@ -22,6 +22,8 @@ faulthandler.enable()
 from flir_camera import FLIRBosonCamera
 from camera_factory import create_rgb_camera, detect_all_rgb_cameras
 from camera_detector import CameraDetector
+from placeholder_frames import (create_thermal_placeholder, create_rgb_placeholder,
+                                 create_feed_unavailable_frame, CameraStatus)
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor
 from road_analyzer import RoadAnalyzer
@@ -235,7 +237,7 @@ class ThermalRoadMonitorFusion:
 
     def _try_connect_thermal(self) -> bool:
         """
-        Try to detect and connect thermal camera
+        Try to detect and connect thermal camera with proper camera type validation
 
         Returns:
             True if connected successfully, False otherwise
@@ -245,15 +247,30 @@ class ThermalRoadMonitorFusion:
             if self.args.camera_id is None:
                 logger.info("Auto-detecting thermal cameras...")
                 cameras = CameraDetector.detect_all_cameras()
+
+                # Filter out cameras that are already assigned to RGB
+                if hasattr(self, 'rgb_camera') and self.rgb_camera and hasattr(self.rgb_camera, 'device_id'):
+                    rgb_device_id = self.rgb_camera.device_id
+                    cameras = [cam for cam in cameras if cam.device_id != rgb_device_id]
+                    logger.debug(f"Excluding RGB camera device {rgb_device_id} from thermal scan")
+
                 CameraDetector.print_camera_list(cameras)
 
-                flir_camera = CameraDetector.find_flir_boson()
-                if flir_camera:
-                    self.args.camera_id = flir_camera.device_id
-                    self.args.width = flir_camera.resolution[0] if flir_camera.resolution[0] > 0 else self.args.width
-                    self.args.height = flir_camera.resolution[1] if flir_camera.resolution[1] > 0 else self.args.height
+                # Use new thermal camera detection with type validation
+                # Only search in the filtered list
+                thermal_camera = None
+                for cam in cameras:
+                    if cam.is_thermal():
+                        thermal_camera = cam
+                        logger.info(f"Detected thermal camera: {thermal_camera}")
+                        break
+
+                if thermal_camera:
+                    self.args.camera_id = thermal_camera.device_id
+                    self.args.width = thermal_camera.resolution[0] if thermal_camera.resolution[0] > 0 else self.args.width
+                    self.args.height = thermal_camera.resolution[1] if thermal_camera.resolution[1] > 0 else self.args.height
                 else:
-                    logger.debug("No thermal camera detected in scan")
+                    logger.debug("No thermal camera detected - application will use placeholder")
                     return False
 
             # Try to open thermal camera
@@ -265,6 +282,13 @@ class ThermalRoadMonitorFusion:
 
             if self.thermal_camera.open():
                 actual_res = self.thermal_camera.get_actual_resolution()
+
+                # Validate resolution is thermal-like
+                thermal_resolutions = [(640, 512), (320, 256), (512, 640), (256, 320)]
+                if actual_res not in thermal_resolutions:
+                    logger.warning(f"Warning: Opened camera has resolution {actual_res[0]}x{actual_res[1]} which is not typical for thermal cameras")
+                    logger.warning("This may be a regular webcam. Thermal cameras typically use 640x512 or 320x256")
+
                 logger.info(f"[OK] Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
                 self.thermal_connected = True
                 return True
@@ -830,12 +854,16 @@ class ThermalRoadMonitorFusion:
                         if self.frame_count % 30 == 0:
                             logger.debug(f"[SIM] Frame {self.frame_count}: Generated simulated thermal frame {thermal_frame.shape}")
                     else:
-                        # Blank thermal frame (original behavior)
-                        thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)
+                        # Generate "Feed Unavailable" placeholder frame
+                        # Note: Placeholder is in RGB format, will be converted to thermal format later
+                        placeholder_rgb = create_thermal_placeholder(width=res[0], height=res[1])
+                        # Convert to grayscale 16-bit to match thermal camera output
+                        placeholder_gray = cv2.cvtColor(placeholder_rgb, cv2.COLOR_BGR2GRAY)
+                        thermal_frame = (placeholder_gray.astype(np.uint16) * 256)  # Scale to 16-bit range
 
                         # DEBUG: Log placeholder dimensions every 30 frames to track variations
                         if self.frame_count % 30 == 0:
-                            logger.info(f"[DEBUG] Frame {self.frame_count}: Placeholder thermal_frame.shape = {thermal_frame.shape}, res = {res}")
+                            logger.debug(f"[PLACEHOLDER] Frame {self.frame_count}: Thermal feed unavailable, using placeholder")
 
                 # 2. Capture RGB frame (if available) - with hot-plug support
                 rgb_frame = None

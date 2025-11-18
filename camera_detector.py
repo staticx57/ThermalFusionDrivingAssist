@@ -7,9 +7,17 @@ import subprocess
 import re
 import logging
 from typing import List, Dict, Optional
+from enum import Enum
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class CameraType(Enum):
+    """Camera type classification"""
+    THERMAL = "Thermal"
+    RGB = "RGB"
+    UNKNOWN = "Unknown"
 
 
 class CameraInfo:
@@ -21,9 +29,63 @@ class CameraInfo:
         self.driver = driver
         self.resolution = resolution
         self.is_flir = 'flir' in name.lower() or 'boson' in name.lower()
+        self.camera_type = self._detect_camera_type()
+
+    def _detect_camera_type(self) -> CameraType:
+        """
+        Detect camera type based on resolution and name
+
+        Returns:
+            CameraType enum
+        """
+        # FLIR Boson thermal camera resolutions
+        thermal_resolutions = [
+            (640, 512),  # Boson 640
+            (320, 256),  # Boson 320
+            (512, 640),  # Boson 640 (rotated)
+            (256, 320),  # Boson 320 (rotated)
+        ]
+
+        # Check resolution first (most reliable)
+        if self.resolution in thermal_resolutions:
+            return CameraType.THERMAL
+
+        # Check name for thermal keywords
+        thermal_keywords = ['flir', 'boson', 'thermal', 'radiometric', 'lwir']
+        name_lower = self.name.lower()
+        if any(keyword in name_lower for keyword in thermal_keywords):
+            return CameraType.THERMAL
+
+        # RGB camera indicators
+        rgb_keywords = ['rgb', 'webcam', 'usb', 'hd', 'firefly', 'color']
+        if any(keyword in name_lower for keyword in rgb_keywords):
+            return CameraType.RGB
+
+        # Common RGB resolutions (HD, FHD, 4K, etc.)
+        common_rgb_resolutions = [
+            (640, 480),   # VGA
+            (1280, 720),  # HD
+            (1920, 1080), # Full HD
+            (3840, 2160), # 4K
+            (2592, 1944), # 5MP
+        ]
+        if self.resolution in common_rgb_resolutions:
+            return CameraType.RGB
+
+        # Unknown type
+        return CameraType.UNKNOWN
+
+    def is_thermal(self) -> bool:
+        """Check if this camera is a thermal camera"""
+        return self.camera_type == CameraType.THERMAL
+
+    def is_rgb(self) -> bool:
+        """Check if this camera is an RGB camera"""
+        return self.camera_type == CameraType.RGB
 
     def __str__(self):
-        return f"[{self.device_id}] {self.name} ({self.resolution[0]}x{self.resolution[1]})"
+        type_str = f" [{self.camera_type.value}]"
+        return f"[{self.device_id}] {self.name} ({self.resolution[0]}x{self.resolution[1]}){type_str}"
 
 
 class CameraDetector:
@@ -183,14 +245,18 @@ class CameraDetector:
         return cameras
 
     @staticmethod
-    def _probe_windows_cameras(max_devices: int = 5) -> List[CameraInfo]:
+    def _probe_windows_cameras(max_devices: int = 1) -> List[CameraInfo]:
         """
         Probe cameras on Windows using DirectShow/MSMF
 
-        Note: Reduced max_devices to 5 to avoid driver-level crashes
-        when probing non-existent camera indices on Windows.
+        Note: Reduced max_devices to 1 to avoid driver-level crashes.
+        Windows OpenCV drivers can cause fatal exceptions (0xc06d007e)
+        when accessing non-existent camera indices that Python cannot catch.
+        Users must manually specify camera ID if they have multiple cameras.
         """
         cameras = []
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 1  # Stop after 1 failure on Windows
 
         for device_id in range(max_devices):
             cap = None
@@ -244,12 +310,17 @@ class CameraDetector:
                         ))
 
                         logger.info(f"Detected: {name} at index {device_id}")
+                        consecutive_failures = 0  # Reset failure counter
 
                     except Exception as e:
                         logger.debug(f"Failed to read properties from camera {device_id}: {e}")
+                        consecutive_failures += 1
+                else:
+                    consecutive_failures += 1
 
             except Exception as e:
                 logger.debug(f"Failed to probe camera {device_id}: {e}")
+                consecutive_failures += 1
             finally:
                 if cap is not None:
                     try:
@@ -257,39 +328,84 @@ class CameraDetector:
                     except:
                         pass
 
+            # Early termination if too many consecutive failures
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                logger.debug(f"Stopping camera probe after {consecutive_failures} consecutive failures")
+                break
+
         logger.info(f"Windows camera probe complete: {len(cameras)} camera(s) found")
         return cameras
 
     @staticmethod
+    def find_thermal_camera() -> Optional[CameraInfo]:
+        """
+        Find thermal camera automatically
+
+        Returns:
+            CameraInfo for thermal camera or None if not found
+        """
+        import time
+        cameras = CameraDetector.detect_all_cameras()
+
+        # Give cameras time to fully release after detection scan
+        time.sleep(0.3)
+
+        # First priority: cameras identified as thermal
+        for cam in cameras:
+            if cam.is_thermal():
+                logger.info(f"Found thermal camera: {cam}")
+                return cam
+
+        # Second priority: cameras with FLIR/Boson in name
+        for cam in cameras:
+            if cam.is_flir:
+                logger.info(f"Found FLIR camera (assumed thermal): {cam}")
+                return cam
+
+        # No thermal camera detected
+        logger.warning("No thermal camera detected")
+        return None
+
+    @staticmethod
+    def find_rgb_camera() -> Optional[CameraInfo]:
+        """
+        Find RGB camera automatically
+
+        Returns:
+            CameraInfo for RGB camera or None if not found
+        """
+        import time
+        cameras = CameraDetector.detect_all_cameras()
+
+        # Give cameras time to fully release after detection scan
+        time.sleep(0.3)
+
+        # First priority: cameras identified as RGB
+        for cam in cameras:
+            if cam.is_rgb():
+                logger.info(f"Found RGB camera: {cam}")
+                return cam
+
+        # Second priority: any non-thermal camera
+        for cam in cameras:
+            if not cam.is_thermal() and cam.camera_type != CameraType.UNKNOWN:
+                logger.info(f"Found camera (assumed RGB): {cam}")
+                return cam
+
+        # No RGB camera detected
+        logger.warning("No RGB camera detected")
+        return None
+
+    @staticmethod
     def find_flir_boson() -> Optional[CameraInfo]:
         """
-        Find FLIR Boson camera automatically
+        Find FLIR Boson camera automatically (backward compatibility)
 
         Returns:
             CameraInfo for FLIR Boson or None if not found
         """
-        cameras = CameraDetector.detect_all_cameras()
-
-        # First priority: cameras with FLIR/Boson in name
-        for cam in cameras:
-            if cam.is_flir:
-                logger.info(f"Found FLIR Boson camera: {cam}")
-                return cam
-
-        # Second priority: cameras with Boson-typical resolutions
-        boson_resolutions = [(640, 512), (320, 256)]
-        for cam in cameras:
-            if cam.resolution in boson_resolutions:
-                logger.info(f"Found camera with Boson-like resolution: {cam}")
-                return cam
-
-        # No FLIR detected
-        if cameras:
-            logger.warning(f"No FLIR Boson detected. Available cameras: {[str(c) for c in cameras]}")
-            return cameras[0]  # Return first camera as fallback
-        else:
-            logger.error("No cameras detected!")
-            return None
+        # Use new thermal camera detection
+        return CameraDetector.find_thermal_camera()
 
     @staticmethod
     def print_camera_list(cameras: List[CameraInfo]):

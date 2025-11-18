@@ -10,6 +10,7 @@ import cv2
 from PyQt5.QtCore import QThread, pyqtSignal
 from view_mode import ViewMode
 from config import get_config
+from placeholder_frames import create_thermal_placeholder, create_rgb_placeholder
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,11 @@ class VideoProcessorWorker(QThread):
             # Create placeholder frame if no thermal camera
             if thermal_frame is None:
                 res = (self.app.args.width, self.app.args.height) if hasattr(self.app, 'args') else (640, 512)
-                thermal_frame = np.zeros((res[1], res[0]), dtype=np.uint16)
+                # Generate "Feed Unavailable" placeholder frame
+                placeholder_rgb = create_thermal_placeholder(width=res[0], height=res[1])
+                # Convert to grayscale 16-bit to match thermal camera output
+                placeholder_gray = cv2.cvtColor(placeholder_rgb, cv2.COLOR_BGR2GRAY)
+                thermal_frame = (placeholder_gray.astype(np.uint16) * 256)  # Scale to 16-bit range
 
             # 2. Capture RGB frame (if available) - with hot-plug support
             rgb_frame = None
@@ -207,14 +212,27 @@ class VideoProcessorWorker(QThread):
             metrics['fps'] = self.app.smoothed_fps
 
             # 9. Select display frame based on view mode
-            if self.app.view_mode == ViewMode.RGB_ONLY and rgb_frame is not None:
-                display_frame = rgb_frame
-            elif self.app.view_mode == ViewMode.FUSION and fusion_frame is not None:
-                display_frame = fusion_frame
+            if self.app.view_mode == ViewMode.RGB_ONLY:
+                if rgb_frame is not None:
+                    display_frame = rgb_frame
+                else:
+                    # Show RGB placeholder when RGB camera unavailable
+                    display_frame = create_rgb_placeholder(width=640, height=480)
+            elif self.app.view_mode == ViewMode.FUSION:
+                if fusion_frame is not None:
+                    display_frame = fusion_frame
+                elif rgb_frame is None:
+                    # Show thermal with message that RGB is unavailable for fusion
+                    display_frame = thermal_colored.copy()
+                    cv2.putText(display_frame, "RGB Feed Unavailable - Fusion Disabled",
+                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
+                else:
+                    display_frame = thermal_colored
             elif self.app.view_mode == ViewMode.SIDE_BY_SIDE:
+                thermal_h, thermal_w = thermal_colored.shape[:2]
+
                 if rgb_frame is not None:
                     # Resize RGB to match thermal height if needed
-                    thermal_h, thermal_w = thermal_colored.shape[:2]
                     rgb_h, rgb_w = rgb_frame.shape[:2]
 
                     if rgb_h != thermal_h:
@@ -223,14 +241,22 @@ class VideoProcessorWorker(QThread):
                         rgb_resized = cv2.resize(rgb_frame, (new_w, thermal_h))
                     else:
                         rgb_resized = rgb_frame
-
-                    display_frame = np.hstack([thermal_colored, rgb_resized])
                 else:
-                    display_frame = thermal_colored
-            elif self.app.view_mode == ViewMode.PICTURE_IN_PICTURE and rgb_frame is not None:
+                    # Create RGB placeholder matching thermal height
+                    rgb_placeholder = create_rgb_placeholder(width=thermal_w, height=thermal_h)
+                    rgb_resized = rgb_placeholder
+
+                display_frame = np.hstack([thermal_colored, rgb_resized])
+            elif self.app.view_mode == ViewMode.PICTURE_IN_PICTURE:
                 display_frame = thermal_colored.copy()
                 pip_size = (thermal_colored.shape[1] // 4, thermal_colored.shape[0] // 4)
-                rgb_small = cv2.resize(rgb_frame, pip_size)
+
+                if rgb_frame is not None:
+                    rgb_small = cv2.resize(rgb_frame, pip_size)
+                else:
+                    # Show small RGB placeholder in PIP corner
+                    rgb_small = cv2.resize(create_rgb_placeholder(width=640, height=480), pip_size)
+
                 display_frame[10:10+rgb_small.shape[0], 10:10+rgb_small.shape[1]] = rgb_small
             else:
                 display_frame = thermal_colored

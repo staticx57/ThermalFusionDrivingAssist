@@ -11,7 +11,10 @@
       "Bash(python:*)",
       "Bash(test:*)",
       "Bash(py --list:*)",
-      "Bash(python3.10:*)"
+      "Bash(python3.10:*)",
+      "Bash(timeout 10 python:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
