@@ -9,7 +9,9 @@
       "Bash(timeout 15 python:*)",
       "Bash(python diagnose_spinnaker.py:*)",
       "Bash(python:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(py --list:*)",
+      "Bash(python3.10:*)"
     ],
     "deny": [],
     "ask": []

@@ -38,6 +38,23 @@ if errorlevel 1 (
 
 echo %GREEN%Python version:%NC%
 python --version
+
+REM Check Python version and warn if 3.12+
+for /f "tokens=2" %%i in ('python --version') do set PYTHON_VER=%%i
+echo %PYTHON_VER% | findstr /C:"3.12" >nul && (
+    echo %YELLOW%WARNING: Python 3.12 detected!%NC%
+    echo %YELLOW%PySpin ^(FLIR Firefly support^) may not be compatible.%NC%
+    echo %YELLOW%Recommended: Python 3.10 for best compatibility.%NC%
+    echo %YELLOW%See: docs\install\setup_python310_env.md%NC%
+    echo.
+)
+echo %PYTHON_VER% | findstr /C:"3.13" >nul && (
+    echo %YELLOW%WARNING: Python 3.13 detected!%NC%
+    echo %YELLOW%PySpin ^(FLIR Firefly support^) may not be compatible.%NC%
+    echo %YELLOW%Recommended: Python 3.10 for best compatibility.%NC%
+    echo %YELLOW%See: docs\install\setup_python310_env.md%NC%
+    echo.
+)
 echo.
 
 REM Check if pip is available
@@ -105,23 +122,23 @@ if "%INSTALL_FIREFLY%"=="true" (
     echo %YELLOW%FLIR Spinnaker SDK Installation%NC%
     echo %YELLOW%========================================%NC%
     echo.
-    echo %YELLOW%IMPORTANT: You need to manually download and install Spinnaker SDK:%NC%
+    echo %YELLOW%IMPORTANT: Manual Spinnaker SDK installation required%NC%
     echo.
-    echo %BLUE%Step 1: Download Spinnaker SDK%NC%
-    echo   1. Go to: https://www.flir.com/products/spinnaker-sdk/
-    echo   2. Create a free account / login
-    echo   3. Download: SpinnakerSDK_FULL_3.2.0.62_x64.exe ^(or latest version^)
-    echo   4. Run the installer
+    echo %BLUE%RECOMMENDED: Use Python 3.10 virtual environment%NC%
+    echo   For best compatibility with PySpin, use Python 3.10:
+    echo   1. Install Python 3.10 from https://www.python.org/
+    echo   2. Run: setup_venv_py310.bat
+    echo   3. Then continue with Spinnaker SDK installation
     echo.
-    echo %BLUE%Step 2: Install Spinnaker SDK%NC%
-    echo   1. Run SpinnakerSDK_FULL_3.2.0.62_x64.exe
-    echo   2. Choose "Full Installation" ^(includes Python support^)
-    echo   3. Accept license and complete installation
-    echo   4. Restart your computer if prompted
+    echo %BLUE%Quick Guide:%NC%
+    echo   1. Download SDK: https://www.flir.com/products/spinnaker-sdk/
+    echo   2. Run installer: SpinnakerSDK_FULL_x.x.x_x64.exe
+    echo   3. Choose "Full Installation" ^(includes PySpin^)
+    echo   4. Install PySpin wheel from SDK folder
     echo.
-    echo %BLUE%Step 3: Install PySpin ^(Python wrapper^)%NC%
-    echo   After installing Spinnaker SDK, PySpin should be available
-    echo   Test with: python -c "import PySpin; print(PySpin.__version__)"
+    echo %BLUE%Detailed Instructions:%NC%
+    echo   See: docs\install\install_pyspin.md
+    echo   Run diagnostic: python diagnose_spinnaker.py
     echo.
     echo %YELLOW%Press any key when Spinnaker SDK installation is complete...%NC%
     pause >nul
@@ -198,9 +215,11 @@ echo   3. Run system: python main.py
 echo   4. Press Ctrl+D to toggle developer mode
 echo.
 echo %BLUE%Documentation:%NC%
-echo   • Custom models: CUSTOM_MODELS.md
-echo   • ADAS alerts: LESSONS_LEARNED_ADAS_ALERTS.md
-echo   • General help: README.md
+echo   • Main guide: README.md
+echo   • Windows setup: docs\WINDOWS_SETUP.md
+echo   • PySpin setup: docs\install\install_pyspin.md
+echo   • Custom models: docs\CUSTOM_MODELS.md
+echo   • Troubleshooting: docs\DEBUGGING_GUIDELINES.md
 echo.
 echo %YELLOW%Press any key to exit...%NC%
 pause >nul
