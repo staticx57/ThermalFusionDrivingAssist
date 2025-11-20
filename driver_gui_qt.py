@@ -839,6 +839,11 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.object_detection_toggled.connect(self._on_object_detection_toggle)
         self.control_panel.alert_override_clicked.connect(self._on_alert_override_toggle)
         self.control_panel.thermal_colorize_toggled.connect(self._on_thermal_colorize_toggle)
+        
+        # Connect developer panel signals
+        if hasattr(self.developer_panel, 'palette_selected'):
+            self.developer_panel.palette_selected.connect(self._on_palette_selected_from_dev_panel)
+            
         logger.info("Control panel signals connected (all 22 controls)")
 
     def _on_view_mode_cycle(self):
@@ -936,9 +941,12 @@ class DriverAppWindow(QMainWindow):
         """Cycle through thermal color palettes"""
         if not self.app or not self.app.detector:
             return
-        # Available palettes in VPIDetector (must match exact names)
-        palettes = ['ironbow', 'white_hot', 'black_hot', 'rainbow', 'arctic', 'lava', 'medical', 'plasma']
-        current = getattr(self.app.detector, 'thermal_palette', 'ironbow')
+        # Available palettes (must match VPIDetector)
+        palettes = ['white_hot', 'black_hot', 'ironbow', 'rainbow', 'rainbow_hc', 
+                   'arctic', 'lava', 'medical', 'plasma', 'sepia', 
+                   'ocean', 'amber', 'gray', 'feather']
+                   
+        current = getattr(self.app.detector, 'thermal_palette', 'white_hot')
         current_idx = palettes.index(current) if current in palettes else 0
         next_idx = (current_idx + 1) % len(palettes)
         next_palette = palettes[next_idx]
@@ -947,7 +955,26 @@ class DriverAppWindow(QMainWindow):
         if hasattr(self.app.detector, 'set_palette'):
             self.app.detector.set_palette(next_palette)
         self.control_panel.set_palette(next_palette)
+        
+        # Sync developer panel
+        if hasattr(self.developer_panel, 'update_palette_selection'):
+            self.developer_panel.update_palette_selection(next_palette)
+            
         logger.info(f"Thermal palette: {next_palette}")
+
+    def _on_palette_selected_from_dev_panel(self, palette_name):
+        """Handle palette selection from developer panel"""
+        if not self.app or not self.app.detector:
+            return
+            
+        # Update detector
+        if hasattr(self.app.detector, 'set_palette'):
+            self.app.detector.set_palette(palette_name)
+            
+        # Update simple control panel button
+        self.control_panel.set_palette(palette_name)
+        
+        logger.info(f"Thermal palette set from dev panel: {palette_name}")
 
     def _on_detection_toggle(self, enabled: bool):
         """Toggle detection bounding box display"""
@@ -1404,7 +1431,7 @@ class DriverAppWindow(QMainWindow):
             # Compare against actual applied theme (not self.current_theme which is 'auto')
             current_applied = 'dark' if DARK_THEME in self.styleSheet() else 'light'
             if detected_theme != current_applied:
-                logger.info(f"Auto theme switch: {current_applied} → {detected_theme} (method: {method})")
+                logger.info(f"Auto theme switch: {current_applied} -> {detected_theme} (method: {method})")
                 if detected_theme == 'dark':
                     self.setStyleSheet(DARK_THEME)
                 else:

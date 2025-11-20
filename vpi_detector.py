@@ -89,59 +89,59 @@ class VPIDetector:
         """Create thermal color palette lookup tables (14 industry-standard palettes)"""
         palettes = {}
 
+        # Helper to create (256, 1, 3) LUT from colormap
+        def create_lut(colormap_id):
+            # Create 256x1 gradient
+            gradient = np.arange(256, dtype=np.uint8).reshape(256, 1)
+            return cv2.applyColorMap(gradient, colormap_id)
+
         # White Hot (default - FLIR standard, surveillance/security)
-        white_hot = np.arange(256, dtype=np.uint8)
-        palettes['white_hot'] = cv2.applyColorMap(white_hot.reshape(1, -1), cv2.COLORMAP_BONE)
+        # Manual creation for white hot to ensure perfect grayscale
+        white_hot_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            white_hot_lut[i, 0, :] = i
+        palettes['white_hot'] = white_hot_lut
 
         # Black Hot (inverted - law enforcement/hunting favorite)
-        black_hot = np.arange(255, -1, -1, dtype=np.uint8)
-        palettes['black_hot'] = cv2.applyColorMap(black_hot.reshape(1, -1), cv2.COLORMAP_BONE)
+        black_hot_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            black_hot_lut[i, 0, :] = 255 - i
+        palettes['black_hot'] = black_hot_lut
 
-        # Ironbow (classic thermal - industrial/electrical inspections)
-        palettes['ironbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HOT)
-
-        # Rainbow (scientific - high detail, precise differentiation)
-        palettes['rainbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_JET)
-
-        # Rainbow HC (High Contrast - subtle temperature differences)
-        palettes['rainbow_hc'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TURBO)
-
-        # Arctic (blue-white - water/cooling applications)
-        palettes['arctic'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_WINTER)
-
-        # Lava (red-yellow - heat visualization)
-        palettes['lava'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
-
-        # Medical (green-based - biomedical applications)
-        palettes['medical'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
-
-        # Plasma (purple-yellow - scientific visualization)
-        palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
-
-        # Sepia (warm brown - documentation/archival)
-        palettes['sepia'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
-
-        # Ocean (blue gradient - marine/water applications)
-        palettes['ocean'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_OCEAN)
+        # Standard OpenCV Colormaps
+        palettes['ironbow'] = create_lut(cv2.COLORMAP_HOT)
+        palettes['rainbow'] = create_lut(cv2.COLORMAP_JET)
+        palettes['rainbow_hc'] = create_lut(cv2.COLORMAP_TURBO)
+        palettes['arctic'] = create_lut(cv2.COLORMAP_WINTER)
+        palettes['lava'] = create_lut(cv2.COLORMAP_INFERNO)
+        palettes['medical'] = create_lut(cv2.COLORMAP_VIRIDIS)
+        palettes['plasma'] = create_lut(cv2.COLORMAP_PLASMA)
+        palettes['sepia'] = create_lut(cv2.COLORMAP_AUTUMN)
+        palettes['ocean'] = create_lut(cv2.COLORMAP_OCEAN)
+        palettes['feather'] = create_lut(cv2.COLORMAP_COOL)
 
         # Amber (gold/amber - firefighting visualization)
-        # Create custom amber gradient (dark brown -> orange -> bright yellow)
-        amber_lut = np.zeros((1, 256, 3), dtype=np.uint8)
+        # Create custom amber gradient (Black -> Orange -> Yellow -> White)
+        amber_lut = np.zeros((256, 1, 3), dtype=np.uint8)
         for i in range(256):
-            # Dark brown (0,0,0) -> orange (255,165,0) -> yellow (255,255,0)
-            amber_lut[0, i, 0] = min(255, int(i * 1.0))  # Blue channel (low)
-            amber_lut[0, i, 1] = min(255, int(i * 0.85))  # Green channel  
-            amber_lut[0, i, 2] = min(255, int(i * 1.0))  # Red channel (high)
+            # BGR format
+            amber_lut[i, 0, 0] = 0  # Blue (keep low for amber/gold)
+            amber_lut[i, 0, 1] = min(255, int(i * 0.8))   # Green
+            amber_lut[i, 0, 2] = min(255, int(i * 1.0))   # Red
+            
+            # Add white tip for hottest values (>200)
+            if i > 200:
+                boost = (i - 200) * 5
+                amber_lut[i, 0, 0] = min(255, boost) # Bring up blue to create white
+                amber_lut[i, 0, 1] = min(255, int(i * 0.8) + boost)
+                
         palettes['amber'] = amber_lut
 
         # Gray (pure grayscale - maximum monochrome detail)
-        gray_lut = np.zeros((1, 256, 3), dtype=np.uint8)
+        gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
         for i in range(256):
-            gray_lut[0, i, :] = i  # All channels equal = grayscale
+            gray_lut[i, 0, :] = i  # All channels equal = grayscale
         palettes['gray'] = gray_lut
-
-        # Feather (soft pastels - reduced eye strain for extended viewing)
-        palettes['feather'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_COOL)
 
         return palettes
 
@@ -325,11 +325,11 @@ class VPIDetector:
             # Apply palette directly on CPU (faster than VPI conversion overhead)
             # cv2.applyColorMap is highly optimized and fast enough
             if self.thermal_palette in self.color_palettes:
-                # Invert for black_hot
-                if self.thermal_palette == 'black_hot':
-                    gray = 255 - gray
-                return cv2.applyColorMap(gray, self._get_colormap_id(self.thermal_palette))
+                # Use pre-computed LUT directly
+                lut = self.color_palettes[self.thermal_palette]
+                return cv2.applyColorMap(gray, lut)
             else:
+                logger.warning(f"Palette {self.thermal_palette} not found, using fallback")
                 return cv2.applyColorMap(gray, cv2.COLORMAP_HOT)
 
         except Exception as e:

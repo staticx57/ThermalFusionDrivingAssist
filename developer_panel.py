@@ -11,7 +11,7 @@ import time
 try:
     from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                   QFrame, QScrollArea, QGridLayout, QPushButton)
-    from PyQt5.QtCore import Qt, QTimer
+    from PyQt5.QtCore import Qt, QTimer, pyqtSignal
     from PyQt5.QtGui import QFont, QPalette, QColor
     PYQT_AVAILABLE = True
 except ImportError:
@@ -105,6 +105,12 @@ class DeveloperPanel(QFrame):
     Developer mode panel with comprehensive diagnostics and metrics
     Shows real-time performance, camera status, detection stats, and system info
     """
+    
+    # Signals
+    camera_assignment_changed = pyqtSignal(int, str)  # device_id, role
+    rescan_cameras_requested = pyqtSignal()
+    clear_assignments_requested = pyqtSignal()
+    palette_selected = pyqtSignal(str)  # palette_name
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -236,6 +242,52 @@ class DeveloperPanel(QFrame):
         """)
         self.camera_list.setMaximumHeight(120)
         cam_section.layout().addWidget(self.camera_list)
+        
+        self.camera_list.setMaximumHeight(120)
+        cam_section.layout().addWidget(self.camera_list)
+        
+        # Palette Dropdown
+        from PyQt5.QtWidgets import QComboBox, QLabel
+        palette_row = QWidget()
+        palette_layout = QHBoxLayout()
+        palette_layout.setContentsMargins(0, 0, 0, 0)
+        palette_layout.setSpacing(4)
+        
+        palette_label = QLabel("Palette:")
+        palette_label.setStyleSheet("color: #aaaaaa;")
+        
+        self.palette_combo = QComboBox()
+        self.palette_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                selection-background-color: #00aaff;
+            }
+        """)
+        
+        # Add all 14 palettes
+        palettes = [
+            "White Hot", "Black Hot", "Ironbow", "Rainbow", "Rainbow HC",
+            "Arctic", "Lava", "Medical", "Plasma", "Sepia", 
+            "Ocean", "Amber", "Gray", "Feather"
+        ]
+        self.palette_combo.addItems(palettes)
+        self.palette_combo.currentTextChanged.connect(self._on_palette_changed)
+        
+        palette_layout.addWidget(palette_label)
+        palette_layout.addWidget(self.palette_combo)
+        palette_row.setLayout(palette_layout)
+        cam_section.layout().addWidget(palette_row)
         
         # Buttons row 1
         btn_row1 = QWidget()
@@ -539,3 +591,23 @@ class DeveloperPanel(QFrame):
         # Notify main app
         if self.app and hasattr(self.app, '_on_camera_assignment_changed'):
             self.app._on_camera_assignment_changed()
+
+    def _on_palette_changed(self, text):
+        """Handle palette dropdown change"""
+        # Convert display name to internal name (e.g. "White Hot" -> "white_hot")
+        internal_name = text.lower().replace(" ", "_")
+        self.palette_selected.emit(internal_name)
+        
+    def update_palette_selection(self, palette_name):
+        """Update dropdown selection from external change"""
+        # Convert internal name to display name (e.g. "white_hot" -> "White Hot")
+        display_name = palette_name.replace("_", " ").title()
+        # Special case for "Rainbow Hc" -> "Rainbow HC"
+        if display_name == "Rainbow Hc":
+            display_name = "Rainbow HC"
+            
+        index = self.palette_combo.findText(display_name)
+        if index >= 0:
+            self.palette_combo.blockSignals(True)
+            self.palette_combo.setCurrentIndex(index)
+            self.palette_combo.blockSignals(False)
