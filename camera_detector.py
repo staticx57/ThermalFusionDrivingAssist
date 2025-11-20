@@ -9,6 +9,9 @@ import logging
 from typing import List, Dict, Optional
 from enum import Enum
 
+# Import camera registry for tracking camera roles
+from camera_registry import get_camera_registry, CameraRole
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -92,9 +95,13 @@ class CameraDetector:
     """Detect and identify connected cameras"""
 
     @staticmethod
-    def detect_all_cameras() -> List[CameraInfo]:
+    def detect_all_cameras(skip_device_ids: Optional[List[int]] = None, register_cameras: bool = True) -> List[CameraInfo]:
         """
         Detect all available cameras (cross-platform: Linux/Windows/macOS)
+
+        Args:
+            skip_device_ids: List of device IDs to skip during detection (already in use)
+            register_cameras: Whether to register detected cameras with the registry (default: True)
 
         Returns:
             List of CameraInfo objects
@@ -103,27 +110,54 @@ class CameraDetector:
         cameras = []
         system = platform.system()
 
+        if skip_device_ids is None:
+            skip_device_ids = []
+
         if system == "Linux":
             # Try v4l2-ctl first (Linux)
-            v4l2_cameras = CameraDetector._detect_v4l2()
+            v4l2_cameras = CameraDetector._detect_v4l2(skip_device_ids=skip_device_ids)
             if v4l2_cameras:
                 cameras.extend(v4l2_cameras)
             else:
                 # Fallback: probe video devices directly
-                cameras = CameraDetector._probe_video_devices()
+                cameras = CameraDetector._probe_video_devices(skip_device_ids=skip_device_ids)
         elif system == "Windows":
             # Windows: probe cameras using DirectShow/MSMF
-            cameras = CameraDetector._probe_windows_cameras()
+            cameras = CameraDetector._probe_windows_cameras(skip_device_ids=skip_device_ids)
         else:
             # macOS or other: probe using default backend
-            cameras = CameraDetector._probe_video_devices()
+            cameras = CameraDetector._probe_video_devices(skip_device_ids=skip_device_ids)
+
+        # Register cameras with the registry if requested
+        if register_cameras:
+            registry = get_camera_registry()
+            for cam in cameras:
+                # Convert CameraType to CameraRole
+                if cam.is_thermal():
+                    detected_role = CameraRole.THERMAL
+                elif cam.is_rgb():
+                    detected_role = CameraRole.RGB
+                else:
+                    detected_role = CameraRole.UNASSIGNED
+                
+                # Register camera with registry
+                registry.register_camera(
+                    device_id=cam.device_id,
+                    name=cam.name,
+                    resolution=cam.resolution,
+                    driver=cam.driver,
+                    detected_role=detected_role
+                )
 
         return cameras
 
     @staticmethod
-    def _detect_v4l2() -> List[CameraInfo]:
+    def _detect_v4l2(skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
         """Detect cameras using v4l2-ctl"""
         cameras = []
+
+        if skip_device_ids is None:
+            skip_device_ids = []
 
         try:
             # Get list of video devices
@@ -135,7 +169,7 @@ class CameraDetector:
             )
 
             if result.returncode == 0:
-                cameras = CameraDetector._parse_v4l2_output(result.stdout)
+                cameras = CameraDetector._parse_v4l2_output(result.stdout, skip_device_ids=skip_device_ids)
 
         except (subprocess.TimeoutExpired, FileNotFoundError):
             logger.warning("v4l2-ctl not available or timed out")
@@ -143,10 +177,13 @@ class CameraDetector:
         return cameras
 
     @staticmethod
-    def _parse_v4l2_output(output: str) -> List[CameraInfo]:
+    def _parse_v4l2_output(output: str, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
         """Parse v4l2-ctl output"""
         cameras = []
         lines = output.strip().split('\n')
+
+        if skip_device_ids is None:
+            skip_device_ids = []
 
         current_name = ""
         for line in lines:
@@ -164,6 +201,11 @@ class CameraDetector:
                 match = re.search(r'/dev/video(\d+)', device_path)
                 if match:
                     device_id = int(match.group(1))
+
+                    # Skip devices that are already in use
+                    if device_id in skip_device_ids:
+                        logger.debug(f"Skipping camera index {device_id} (already in use)")
+                        continue
 
                     # Get resolution for this device
                     resolution = CameraDetector._get_device_resolution(device_id)
@@ -219,11 +261,19 @@ class CameraDetector:
         return (0, 0)
 
     @staticmethod
-    def _probe_video_devices(max_devices: int = 10) -> List[CameraInfo]:
+    def _probe_video_devices(max_devices: int = 10, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
         """Probe /dev/video* devices directly (Linux)"""
         cameras = []
 
+        if skip_device_ids is None:
+            skip_device_ids = []
+
         for device_id in range(max_devices):
+            # Skip devices that are already in use
+            if device_id in skip_device_ids:
+                logger.debug(f"Skipping camera index {device_id} (already in use)")
+                continue
+
             try:
                 cap = cv2.VideoCapture(device_id, cv2.CAP_V4L2)
 
@@ -245,26 +295,37 @@ class CameraDetector:
         return cameras
 
     @staticmethod
-    def _probe_windows_cameras(max_devices: int = 1) -> List[CameraInfo]:
+    def _probe_windows_cameras(max_devices: int = 5, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
         """
-        Probe cameras on Windows using DirectShow/MSMF
+        Probe cameras on Windows using DirectShow/MSMF with ROBUST frame-based detection
+        
+        CRITICAL: Reads actual frames to identify thermal cameras, not just resolution queries.
+        FLIR Boson cameras may report incorrect resolutions until frames are read.
 
-        Note: Reduced max_devices to 1 to avoid driver-level crashes.
-        Windows OpenCV drivers can cause fatal exceptions (0xc06d007e)
-        when accessing non-existent camera indices that Python cannot catch.
-        Users must manually specify camera ID if they have multiple cameras.
+        Args:
+            max_devices: Maximum number of device indices to probe (default: 5)
+            skip_device_ids: List of device IDs to skip (already in use)
+
+        Returns:
+            List of detected CameraInfo objects
         """
         cameras = []
         consecutive_failures = 0
-        MAX_CONSECUTIVE_FAILURES = 1  # Stop after 1 failure on Windows
+        MAX_CONSECUTIVE_FAILURES = 2
+
+        if skip_device_ids is None:
+            skip_device_ids = []
 
         for device_id in range(max_devices):
+            if device_id in skip_device_ids:
+                logger.debug(f"Skipping camera index {device_id} (already in use)")
+                continue
+
             cap = None
             try:
                 logger.debug(f"Probing Windows camera index {device_id}...")
 
-                # Try DirectShow first (better compatibility with UVC devices)
-                # Wrap in nested try to catch driver-level exceptions
+                # Try DirectShow first (better compatibility with thermal cameras)
                 try:
                     cap = cv2.VideoCapture(device_id, cv2.CAP_DSHOW)
                 except Exception as e:
@@ -282,39 +343,35 @@ class CameraDetector:
                         cap = None
 
                 if cap is not None and cap.isOpened():
+                    # ROBUST DETECTION: Read actual frames to identify camera type
+                    is_thermal, resolution = CameraDetector._identify_camera_by_frames(cap, device_id)
+                    
+                    # Get camera name
+                    name = f"Camera {device_id}"
                     try:
-                        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                        backend_name = cap.getBackendName()
+                        name = f"Camera {device_id} ({backend_name})"
+                    except:
+                        pass
 
-                        # Try to get camera name (backend-specific property)
-                        name = f"Camera {device_id}"
-                        try:
-                            # Some backends support camera name property
-                            backend_name = cap.getBackendName()
-                            name = f"Camera {device_id} ({backend_name})"
-                        except:
-                            pass
+                    # Update name if thermal
+                    if is_thermal:
+                        name = f"FLIR Boson {resolution[0]}x{resolution[1]} (Camera {device_id})"
+                        logger.info(f"✓ Thermal camera identified via frame analysis: {name}")
+                    
+                    cap.release()
+                    cap = None
 
-                        # Detect if this looks like a FLIR Boson based on resolution
-                        if (width, height) in [(640, 512), (320, 256)]:
-                            name = f"FLIR Boson {width}x{height} (Camera {device_id})"
+                    cameras.append(CameraInfo(
+                        device_id=device_id,
+                        name=name,
+                        driver="DSHOW/MSMF",
+                        resolution=resolution
+                    ))
 
-                        cap.release()
-                        cap = None
+                    logger.info(f"Detected: {name} at index {device_id}")
+                    consecutive_failures = 0
 
-                        cameras.append(CameraInfo(
-                            device_id=device_id,
-                            name=name,
-                            driver="DirectShow/MSMF",
-                            resolution=(width, height)
-                        ))
-
-                        logger.info(f"Detected: {name} at index {device_id}")
-                        consecutive_failures = 0  # Reset failure counter
-
-                    except Exception as e:
-                        logger.debug(f"Failed to read properties from camera {device_id}: {e}")
-                        consecutive_failures += 1
                 else:
                     consecutive_failures += 1
 
@@ -328,13 +385,99 @@ class CameraDetector:
                     except:
                         pass
 
-            # Early termination if too many consecutive failures
+            # Early termination after consecutive failures
             if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                logger.debug(f"Stopping camera probe after {consecutive_failures} consecutive failures")
+                logger.debug(f"Stopping probe after {consecutive_failures} failures")
                 break
 
         logger.info(f"Windows camera probe complete: {len(cameras)} camera(s) found")
         return cameras
+    
+    @staticmethod
+    def _identify_camera_by_frames(cap, device_id: int) -> tuple:
+        """
+        Identify if camera is thermal by reading and analyzing actual frames
+        
+        This is the ROBUST approach that works when resolution queries fail.
+        
+        Args:
+            cap: Opened cv2.VideoCapture object
+            device_id: Camera device ID (for logging)
+        
+        Returns:
+            Tuple of (is_thermal: bool, resolution: tuple)
+        """
+        try:
+            # Read a few frames to get stable data
+            for _ in range(5):
+                ret = cap.grab()  # Discard first few frames
+            
+            ret, frame = cap.read()
+            
+            if not ret or frame is None:
+                # Can't read frames - use query as fallback
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                return False, (width, height)
+            
+            # Analyze frame characteristics
+            height, width = frame.shape[:2]
+            resolution = (width, height)
+            
+            logger.debug(f"Device {device_id} frame: {width}x{height}, shape={frame.shape}, dtype={frame.dtype}")
+            
+            # THERMAL DETECTION HEURISTICS:
+            
+            # 1. Check if resolution matches known thermal resolutions
+            thermal_resolutions = [(640, 512), (320, 256), (512, 640), (256, 320)]
+            if resolution in thermal_resolutions:
+                logger.debug(f"Device {device_id}: Resolution {resolution} matches thermal")
+                return True, resolution
+            
+            # 2. Check if frame is grayscale (thermal cameras are single-channel)
+            if len(frame.shape) == 2:
+                logger.debug(f"Device {device_id}: Grayscale frame (thermal indicator)")
+                return True, resolution
+            
+            # 3. Check if all channels are identical (grayscale in RGB format)
+            if len(frame.shape) == 3 and frame.shape[2] == 3:
+                import numpy as np
+                # Check if R == G == B (grayscale data in color format)
+                if np.array_equal(frame[:,:,0], frame[:,:,1]) and np.array_equal(frame[:,:,1], frame[:,:,2]):
+                    # Check pixel value range - thermal usually has limited range
+                    min_val, max_val = frame.min(), frame.max()
+                    pixel_range = max_val - min_val
+                    
+                    # Thermal cameras typically have lower dynamic range in 8-bit conversion
+                    # Real RGB scenes have wide dynamic range
+                    if pixel_range < 200:  # Narrow range suggests thermal
+                        logger.debug(f"Device {device_id}: Grayscale + narrow range ({pixel_range}) = thermal")
+                        return True, resolution
+                    
+                    # Check uniformity - thermal scenes often more uniform
+                    std_dev = np.std(frame[:,:,0])
+                    if std_dev < 30:  # Very uniform = likely thermal
+                        logger.debug(f"Device {device_id}: High uniformity (std={std_dev:.1f}) = thermal")
+                        return True, resolution
+            
+            # 4. If width/height aspect ratio is unusual (common for thermal)
+            aspect_ratio = width / height if height > 0 else 0
+            # FLIR Boson 640: 640/512 = 1.25 (unusual for webcams)
+            # FLIR Boson 320: 320/256 = 1.25
+            if 1.2 < aspect_ratio < 1.3 or 1.95 < aspect_ratio < 2.05:  # 1.25 or 2.0 aspect ratios
+                logger.debug(f"Device {device_id}: Aspect ratio {aspect_ratio:.2f} suggests thermal")
+                return True, resolution
+            
+            # Not thermal
+            logger.debug(f"Device {device_id}: Identified as RGB camera")
+            return False, resolution
+            
+        except Exception as e:
+            logger.warning(f"Frame analysis failed for device {device_id}: {e}")
+            # Fallback to resolution query
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            return False, (width, height)
 
     @staticmethod
     def find_thermal_camera() -> Optional[CameraInfo]:

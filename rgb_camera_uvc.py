@@ -116,9 +116,24 @@ class RGBCameraUVC:
             logger.info(f"{self.camera_type} opened successfully")
             logger.info(f"Resolution: {actual_width}x{actual_height} @ {actual_fps} FPS")
 
-            # Warm up camera (discard first few frames)
-            for _ in range(5):
-                self.cap.read()
+            # Warm up camera (discard first few frames and allow camera to initialize)
+            import time
+            time.sleep(0.3)  # Longer delay to let camera stabilize after opening
+
+            # Warm up by reading and discarding frames
+            warmup_success = False
+            for attempt in range(10):
+                ret, _ = self.cap.read()
+                if ret:
+                    warmup_success = True
+                    break
+                time.sleep(0.1)
+
+            if not warmup_success:
+                logger.warning("Camera warmup struggled but continuing anyway")
+
+            # Extra warm-up for webcams (they often need more initialization time)
+            time.sleep(0.5)
 
             self.is_open = True
             return True

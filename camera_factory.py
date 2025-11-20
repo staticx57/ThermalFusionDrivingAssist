@@ -170,7 +170,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
                         pixel_format="BGR8"
                     )
                 else:
-                    logger.info("✗ No FLIR Firefly cameras detected")
+                    logger.info("[X] No FLIR Firefly cameras detected")
             except Exception as e:
                 logger.warning(f"Firefly detection failed: {e}")
 
@@ -190,7 +190,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
                         use_gstreamer=use_gstreamer
                     )
                 else:
-                    logger.info("✗ No UVC cameras detected")
+                    logger.info("[X] No UVC cameras detected")
             except Exception as e:
                 logger.warning(f"UVC detection failed: {e}")
 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         print("Attempting to open camera...")
 
         if camera.open():
-            print("✓ Camera opened successfully!")
+            print("[OK] Camera opened successfully!")
             print(f"  Resolution: {camera.get_actual_resolution()}")
 
             # Test frame capture
@@ -321,14 +321,14 @@ if __name__ == "__main__":
 
             # Release camera
             camera.release()
-            print("\n✓ Camera released")
+            print("\n[OK] Camera released")
 
         else:
-            print("✗ Failed to open camera")
+            print("[X] Failed to open camera")
             sys.exit(1)
 
     except RuntimeError as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\n[X] Error: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
         print("\n\nInterrupted by user")

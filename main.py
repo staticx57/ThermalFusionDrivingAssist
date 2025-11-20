@@ -22,6 +22,7 @@ faulthandler.enable()
 from flir_camera import FLIRBosonCamera
 from camera_factory import create_rgb_camera, detect_all_rgb_cameras
 from camera_detector import CameraDetector
+from camera_registry import get_camera_registry, CameraRole
 from placeholder_frames import (create_thermal_placeholder, create_rgb_placeholder,
                                  create_feed_unavailable_frame, CameraStatus)
 from vpi_detector import VPIDetector
@@ -194,6 +195,13 @@ class ThermalRoadMonitorFusion:
         self.thermal_connected = False
         self.last_thermal_scan_time = 0
         self.thermal_scan_interval = 3.0  # Scan every 3 seconds
+        
+        # RGB camera connection state (for hot-plugging)
+        self.last_rgb_scan_time = 0
+        self.rgb_scan_interval = 5.0  # Scan every 5 seconds
+        
+        # Camera registry for tracking camera roles
+        self.camera_registry = get_camera_registry()
 
     def _generate_simulated_thermal_frame(self, resolution=(640, 512)) -> np.ndarray:
         """
@@ -238,26 +246,37 @@ class ThermalRoadMonitorFusion:
     def _try_connect_thermal(self) -> bool:
         """
         Try to detect and connect thermal camera with proper camera type validation
+        Uses camera registry to support manual camera assignments
 
         Returns:
             True if connected successfully, False otherwise
         """
         try:
-            # Auto-detect if camera_id not provided
-            if self.args.camera_id is None:
+            # Check camera registry for manually assigned thermal camera first
+            thermal_cam_descriptor = self.camera_registry.get_thermal_camera()
+            
+            if thermal_cam_descriptor:
+                # Manual assignment exists - try to connect to that specific camera
+                logger.info(f"Using manually assigned thermal camera: device {thermal_cam_descriptor.device_id}")
+                self.args.camera_id = thermal_cam_descriptor.device_id
+                self.args.width = thermal_cam_descriptor.resolution[0]
+                self.args.height = thermal_cam_descriptor.resolution[1]
+            elif self.args.camera_id is None:
+                # No manual assignment - auto-detect
                 logger.info("Auto-detecting thermal cameras...")
-                cameras = CameraDetector.detect_all_cameras()
 
-                # Filter out cameras that are already assigned to RGB
+                # Build list of device IDs to skip (already in use by RGB)
+                skip_device_ids = []
                 if hasattr(self, 'rgb_camera') and self.rgb_camera and hasattr(self.rgb_camera, 'device_id'):
-                    rgb_device_id = self.rgb_camera.device_id
-                    cameras = [cam for cam in cameras if cam.device_id != rgb_device_id]
-                    logger.debug(f"Excluding RGB camera device {rgb_device_id} from thermal scan")
+                    skip_device_ids.append(self.rgb_camera.device_id)
+                    logger.debug(f"Skipping RGB camera device {self.rgb_camera.device_id} during thermal scan")
+
+                cameras = CameraDetector.detect_all_cameras(skip_device_ids=skip_device_ids)
 
                 CameraDetector.print_camera_list(cameras)
 
                 # Use new thermal camera detection with type validation
-                # Only search in the filtered list
+                # Check registry first for any thermal-assigned cameras
                 thermal_camera = None
                 for cam in cameras:
                     if cam.is_thermal():
@@ -300,6 +319,67 @@ class ThermalRoadMonitorFusion:
         except Exception as e:
             logger.debug(f"Thermal camera connection error: {e}")
             self.thermal_camera = None
+            return False
+
+    def _try_connect_rgb(self) -> bool:
+        """
+        Try to detect and connect RGB camera
+        Uses camera registry to support manual camera assignments
+
+        Returns:
+            True if connected successfully, False otherwise
+        """
+        try:
+            # Check camera registry for manually assigned RGB camera first
+            rgb_cam_descriptor = self.camera_registry.get_rgb_camera()
+            
+            if rgb_cam_descriptor:
+                # Manual assignment exists - try to connect to that specific camera
+                logger.info(f"Using manually assigned RGB camera: device {rgb_cam_descriptor.device_id}")
+                
+                # Skip thermal camera device if it exists
+                thermal_id = self.thermal_camera.device_id if self.thermal_camera else None
+                
+                # Use camera factory to create RGB camera
+                self.rgb_camera = create_rgb_camera(
+                    resolution=rgb_cam_descriptor.resolution,
+                    fps=30,
+                    camera_type="auto",
+                    device_id=rgb_cam_descriptor.device_id,
+                    thermal_device_id=thermal_id
+                )
+            else:
+                # No manual assignment - auto-detect
+                logger.info("Auto-detecting RGB cameras...")
+                
+                # Skip thermal camera device if it exists
+                thermal_id = self.thermal_camera.device_id if self.thermal_camera else None
+                
+                # Use camera factory for auto-detection
+                self.rgb_camera = create_rgb_camera(
+                    resolution=(640, 480),
+                    fps=30,
+                    camera_type="auto",
+                    thermal_device_id=thermal_id
+                )
+            
+            # Try to open RGB camera
+            if self.rgb_camera and self.rgb_camera.open():
+                rgb_res = self.rgb_camera.get_actual_resolution()
+                self.rgb_available = True
+                logger.info(f"[OK] RGB camera connected: {self.rgb_camera.camera_type}")
+                logger.info(f"  Resolution: {rgb_res[0]}x{rgb_res[1]}")
+                return True
+            else:
+                logger.debug("RGB camera failed to open")
+                self.rgb_camera = None
+                self.rgb_available = False
+                return False
+                
+        except Exception as e:
+            logger.debug(f"RGB camera connection error: {e}")
+            self.rgb_camera = None
+            self.rgb_available = False
             return False
 
     def _initialize_detector_after_thermal_connect(self):
@@ -413,11 +493,16 @@ class ThermalRoadMonitorFusion:
                     # Camera factory auto-detects best available camera
                     # Priority: FLIR Firefly > UVC webcam
                     # Pass thermal device ID to avoid opening the same camera
+                    thermal_id = None
+                    if self.thermal_connected and self.thermal_camera:
+                        thermal_id = self.thermal_camera.device_id
+                        logger.info(f"Skipping thermal camera device {thermal_id} during RGB detection")
+                    
                     self.rgb_camera = create_rgb_camera(
                         resolution=(640, 480),  # Standard RGB resolution
                         fps=30,
                         camera_type="auto",  # Auto-detect
-                        thermal_device_id=self.args.camera_id  # Skip thermal camera
+                        thermal_device_id=thermal_id  # Skip thermal camera
                     )
 
                     if self.rgb_camera.open():
@@ -749,10 +834,13 @@ class ThermalRoadMonitorFusion:
                     logger.info("  Retrying RGB camera...")
                     try:
                         from camera_factory import create_rgb_camera
+                        # Skip thermal camera device if connected
+                        thermal_id = self.args.camera_id if self.thermal_connected and hasattr(self.args, 'camera_id') else None
                         rgb_camera = create_rgb_camera(
                             resolution=(self.args.rgb_width, self.args.rgb_height),
                             fps=self.args.rgb_fps,
-                            camera_type=self.args.rgb_camera_type
+                            camera_type=self.args.rgb_camera_type,
+                            thermal_device_id=thermal_id
                         )
                         if rgb_camera.open():
                             if hasattr(self, 'rgb_camera') and self.rgb_camera:
