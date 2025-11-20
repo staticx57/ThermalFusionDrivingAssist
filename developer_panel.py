@@ -506,30 +506,38 @@ class DeveloperPanel(QFrame):
         """Refresh camera list from registry"""
         from camera_registry import get_camera_registry, CameraRole
         
-        self.camera_list.clear()
-        registry = get_camera_registry()
-        cameras = registry.get_all_cameras()
-        
-        for cam in cameras:
-            status = "●" if cam.is_connected else "○"
-            role_text = cam.role.value.upper()
+        try:
+            self.camera_list.clear()
+            registry = get_camera_registry()
+            cameras = registry.get_all_cameras()
             
-            # Color based on connection
-            color = "#ffffff" if cam.is_connected else "#666666"
+            if not cameras:
+                logger.debug("No cameras in registry yet")
+                return
             
-            # Build display text
-            text = f"{status} Dev {cam.device_id} - {cam.name} [{role_text}]"
-            if cam.manual_override:
-                text += " (manual)"
+            for cam in cameras:
+                status = "●" if cam.is_connected else "○"
+                role_text = cam.role.value.upper()
+                
+                # Color based on connection
+                color = "#ffffff" if cam.is_connected else "#666666"
+                
+                # Build display text
+                text = f"{status} Dev {cam.device_id} - {cam.name} [{role_text}]"
+                if cam.manual_override:
+                    text += " (manual)"
+                
+                from PyQt5.QtWidgets import QListWidgetItem
+                from PyQt5.QtGui import QColor
+                item = QListWidgetItem(text)
+                item.setForeground(QColor(color))
+                item.setData(Qt.UserRole, cam.device_id)
+                self.camera_list.addItem(item)
             
-            from PyQt5.QtWidgets import QListWidgetItem
-            from PyQt5.QtGui import QColor
-            item = QListWidgetItem(text)
-            item.setForeground(QColor(color))
-            item.setData(Qt.UserRole, cam.device_id)
-            self.camera_list.addItem(item)
-        
-        logger.debug(f"Camera list updated: {len(cameras)} cameras")
+            logger.debug(f"Camera list updated: {len(cameras)} cameras")
+        except Exception as e:
+            logger.error(f"Error updating camera list: {e}")
+            # Don't crash - just log and continue
     
     def _assign_thermal(self):
         """Assign selected camera as thermal"""

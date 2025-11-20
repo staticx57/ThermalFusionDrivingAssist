@@ -345,7 +345,7 @@ class ThermalRoadMonitorFusion:
                     resolution=rgb_cam_descriptor.resolution,
                     fps=30,
                     camera_type="auto",
-                    device_id=rgb_cam_descriptor.device_id,
+                    camera_index=rgb_cam_descriptor.device_id,
                     thermal_device_id=thermal_id
                 )
             else:

@@ -1213,6 +1213,15 @@ class DriverAppWindow(QMainWindow):
 
             logger.info("Thermal colorization mode DISABLED (restored previous settings)")
 
+    def toggle_fullscreen(self):
+        """Toggle fullscreen mode (F key)"""
+        if self.isFullScreen():
+            self.showNormal()
+            logger.info("Fullscreen mode: OFF")
+        else:
+            self.showFullScreen()
+            logger.info("Fullscreen mode: ON")
+
     def toggle_developer_mode(self):
         """
         Toggle developer mode panel and controls (Ctrl+D)
@@ -1250,18 +1259,10 @@ class DriverAppWindow(QMainWindow):
                 self.developer_panel.show()
                 # Initialize camera list when panel is first shown
                 if hasattr(self.developer_panel, 'update_camera_list'):
-                    self.developer_panel.update_camera_list()
-                self.control_panel.show_developer_controls(True)
-                self.info_panel.hide()
-
-                # Lock at this size to prevent further growth
-                self.setFixedSize(target_width, target_height)
-                self._window_size_locked = True
-
-                logger.info(f"[OK] Developer mode ENABLED | Window: {current_width}x{current_height} → {target_width}x{target_height} (LOCKED)")
-            else:
-                # Subsequent shows - window already locked, just show panel
-                self.developer_panel.show()
+                    try:
+                        self.developer_panel.update_camera_list()
+                    except Exception as e:
+                        logger.warning(f"Could not update camera list on panel show: {e}")
                 self.control_panel.show_developer_controls(True)
                 self.info_panel.hide()
 

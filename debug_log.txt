@@ -4087,3 +4087,345 @@ INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
 2025-11-20 09:32:33,513 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
 INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=1
 2025-11-20 09:32:33,578 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-20 09:32:33,657 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-20 09:32:33,726 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:33,786 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:vpi_detector:Applying palette: plasma
+2025-11-20 09:32:33,951 - vpi_detector - INFO - Applying palette: plasma
+2025-11-20 09:32:33,952 - vpi_detector - INFO - LUT shape: (256, 1, 3), dtype: uint8
+INFO:vpi_detector:LUT shape: (256, 1, 3), dtype: uint8
+INFO:vpi_detector:Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:33,952 - vpi_detector - INFO - Input gray shape: (512, 640), dtype: uint8
+INFO:vpi_detector:Output shape: (512, 640, 3)
+2025-11-20 09:32:33,952 - vpi_detector - INFO - Output shape: (512, 640, 3)
+INFO:vpi_detector:Center pixel: [131  58 192]
+2025-11-20 09:32:33,953 - vpi_detector - INFO - Center pixel: [131  58 192]
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:33,958 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:33,964 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:33,990 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,058 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,123 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,187 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,249 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,316 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,380 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:vpi_detector:YOLO inference: 76.3ms (13.1 FPS), 1 detections
+2025-11-20 09:32:34,454 - vpi_detector - INFO - YOLO inference: 76.3ms (13.1 FPS), 1 detections
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,459 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,525 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,586 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:vpi_detector:YOLO inference: 70.4ms (14.2 FPS), 1 detections
+2025-11-20 09:32:34,592 - vpi_detector - INFO - YOLO inference: 70.4ms (14.2 FPS), 1 detections
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,649 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,715 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,779 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,841 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,921 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:34,983 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:35,049 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:35,112 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+2025-11-20 09:32:35,277 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:35,280 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:35,320 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-20 09:32:35,383 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:35,448 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:35,513 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:35,576 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=4, RIGHT=1
+2025-11-20 09:32:35,640 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=4, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=4, RIGHT=4
+2025-11-20 09:32:35,720 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=4, RIGHT=4
+2025-11-20 09:32:35,785 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=4, RIGHT=4
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=4, RIGHT=4
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=6, RIGHT=0
+2025-11-20 09:32:35,851 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=6, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=5, RIGHT=1
+2025-11-20 09:32:35,913 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=5, RIGHT=1
+INFO:vpi_detector:Applying palette: plasma
+2025-11-20 09:32:35,973 - vpi_detector - INFO - Applying palette: plasma
+INFO:vpi_detector:LUT shape: (256, 1, 3), dtype: uint8
+2025-11-20 09:32:35,974 - vpi_detector - INFO - LUT shape: (256, 1, 3), dtype: uint8
+2025-11-20 09:32:35,974 - vpi_detector - INFO - Input gray shape: (512, 640), dtype: uint8
+INFO:vpi_detector:Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:35,974 - vpi_detector - INFO - Output shape: (512, 640, 3)
+INFO:vpi_detector:Output shape: (512, 640, 3)
+INFO:vpi_detector:Center pixel: [ 41 194 253]
+2025-11-20 09:32:35,974 - vpi_detector - INFO - Center pixel: [ 41 194 253]
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=4, RIGHT=1
+2025-11-20 09:32:35,977 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=4, RIGHT=1
+2025-11-20 09:32:36,040 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=3, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=3, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=1, RIGHT=2
+2025-11-20 09:32:36,120 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=1, RIGHT=2
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+2025-11-20 09:32:36,286 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+INFO:alert_overlay:Proximity zones: LEFT=2, CENTER=4, RIGHT=0
+2025-11-20 09:32:36,290 - alert_overlay - INFO - Proximity zones: LEFT=2, CENTER=4, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=2, CENTER=4, RIGHT=0
+2025-11-20 09:32:36,321 - alert_overlay - INFO - Proximity zones: LEFT=2, CENTER=4, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=2, CENTER=8, RIGHT=0
+2025-11-20 09:32:36,376 - alert_overlay - INFO - Proximity zones: LEFT=2, CENTER=8, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=2, CENTER=8, RIGHT=0
+2025-11-20 09:32:36,444 - alert_overlay - INFO - Proximity zones: LEFT=2, CENTER=8, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,523 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,585 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,654 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:36,712 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:36,776 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,841 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,923 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:36,990 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,053 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,113 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,176 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:37,240 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:37,321 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,383 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,448 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,615 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,619 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,651 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:37,722 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:37,784 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:37,848 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,912 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:vpi_detector:Applying palette: plasma
+2025-11-20 09:32:37,974 - vpi_detector - INFO - Applying palette: plasma
+INFO:vpi_detector:LUT shape: (256, 1, 3), dtype: uint8
+2025-11-20 09:32:37,974 - vpi_detector - INFO - LUT shape: (256, 1, 3), dtype: uint8
+INFO:vpi_detector:Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:37,974 - vpi_detector - INFO - Input gray shape: (512, 640), dtype: uint8
+INFO:vpi_detector:Output shape: (512, 640, 3)
+2025-11-20 09:32:37,974 - vpi_detector - INFO - Output shape: (512, 640, 3)
+INFO:vpi_detector:Center pixel: [ 42 190 254]
+2025-11-20 09:32:37,975 - vpi_detector - INFO - Center pixel: [ 42 190 254]
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:37,978 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,040 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,121 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,183 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,249 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,312 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,376 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,440 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,621 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,625 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:38,656 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,713 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,777 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,841 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,921 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:38,983 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,048 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,113 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,176 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:39,241 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:39,321 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,383 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,448 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,511 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,577 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,642 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,723 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,784 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:39,951 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:39,954 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:vpi_detector:Applying palette: plasma
+2025-11-20 09:32:39,983 - vpi_detector - INFO - Applying palette: plasma
+INFO:vpi_detector:LUT shape: (256, 1, 3), dtype: uint8
+2025-11-20 09:32:39,984 - vpi_detector - INFO - LUT shape: (256, 1, 3), dtype: uint8
+INFO:vpi_detector:Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:39,984 - vpi_detector - INFO - Input gray shape: (512, 640), dtype: uint8
+INFO:vpi_detector:Output shape: (512, 640, 3)
+2025-11-20 09:32:39,985 - vpi_detector - INFO - Output shape: (512, 640, 3)
+2025-11-20 09:32:39,985 - vpi_detector - INFO - Center pixel: [ 47 178 253]
+INFO:vpi_detector:Center pixel: [ 47 178 253]
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:39,988 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:40,040 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:video_worker:Frame 1700 | FPS: 60.0/30 | Loop: 65.4ms | Throttle: [X] OVERRUN | Detections: 1 | View: fusion
+2025-11-20 09:32:40,118 - video_worker - INFO - Frame 1700 | FPS: 60.0/30 | Loop: 65.4ms | Throttle: [X] OVERRUN | Detections: 1 | View: fusion
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:40,122 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,184 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,248 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,312 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,376 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,441 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,504 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,585 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,648 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,712 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,776 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,841 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:40,905 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:40,984 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=3, CENTER=4, RIGHT=0
+2025-11-20 09:32:41,048 - alert_overlay - INFO - Proximity zones: LEFT=3, CENTER=4, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=7, RIGHT=0
+2025-11-20 09:32:41,113 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=7, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=5, RIGHT=0
+2025-11-20 09:32:41,278 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=5, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=4, RIGHT=0
+2025-11-20 09:32:41,282 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=4, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=2, CENTER=7, RIGHT=0
+2025-11-20 09:32:41,315 - alert_overlay - INFO - Proximity zones: LEFT=2, CENTER=7, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=4, RIGHT=2
+2025-11-20 09:32:41,385 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=4, RIGHT=2
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,449 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,515 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,577 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,640 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,704 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:41,783 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-20 09:32:41,851 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:41,912 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-11-20 09:32:41,976 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-11-20 09:32:42,037 - vpi_detector - INFO - Applying palette: plasma
+INFO:vpi_detector:Applying palette: plasma
+INFO:vpi_detector:LUT shape: (256, 1, 3), dtype: uint8
+2025-11-20 09:32:42,038 - vpi_detector - INFO - LUT shape: (256, 1, 3), dtype: uint8
+INFO:vpi_detector:Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:42,038 - vpi_detector - INFO - Input gray shape: (512, 640), dtype: uint8
+2025-11-20 09:32:42,038 - vpi_detector - INFO - Output shape: (512, 640, 3)
+INFO:vpi_detector:Output shape: (512, 640, 3)
+2025-11-20 09:32:42,039 - vpi_detector - INFO - Center pixel: [ 37 228 247]
+INFO:vpi_detector:Center pixel: [ 37 228 247]
+2025-11-20 09:32:42,041 - alert_overlay - INFO - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+INFO:alert_overlay:Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:42,161 - alert_overlay - INFO - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-20 09:32:42,164 - driver_gui_qt - INFO - Qt GUI closing...
+INFO:driver_gui_qt:Qt GUI closing...
+2025-11-20 09:32:42,193 - __main__ - INFO - Qt event loop exited
+INFO:__main__:Qt event loop exited
+2025-11-20 09:32:42,193 - video_worker - INFO - Stopping VideoProcessorWorker...
+INFO:video_worker:Stopping VideoProcessorWorker...
+INFO:video_worker:VideoProcessorWorker stopped
+2025-11-20 09:32:42,289 - video_worker - INFO - VideoProcessorWorker stopped
+INFO:__main__:Shutting down...
+2025-11-20 09:32:42,289 - __main__ - INFO - Shutting down...
+INFO:__main__:Waiting for detection thread...
+2025-11-20 09:32:42,289 - __main__ - INFO - Waiting for detection thread...
+2025-11-20 09:32:42,290 - __main__ - INFO - Detection worker thread stopped
+INFO:__main__:Detection worker thread stopped
+INFO:flir_camera:FLIR Boson camera released
+2025-11-20 09:32:42,556 - flir_camera - INFO - FLIR Boson camera released
+INFO:rgb_camera:RGB camera released
+2025-11-20 09:32:42,980 - rgb_camera - INFO - RGB camera released
+INFO:vpi_detector:VPI detector released
+2025-11-20 09:32:42,981 - vpi_detector - INFO - VPI detector released
+INFO:driver_gui_qt:Qt GUI closing...
+2025-11-20 09:32:42,981 - driver_gui_qt - INFO - Qt GUI closing...
+INFO:performance_monitor:Performance monitor released
+2025-11-20 09:32:42,981 - performance_monitor - INFO - Performance monitor released
+INFO:__main__:Shutdown complete
+2025-11-20 09:32:42,981 - __main__ - INFO - Shutdown complete
+INFO:rgb_camera:RGB camera released
+2025-11-20 09:32:43,021 - rgb_camera - INFO - RGB camera released
+INFO:performance_monitor:Performance monitor released
+2025-11-20 09:32:43,022 - performance_monitor - INFO - Performance monitor released
