@@ -212,6 +212,75 @@ class DeveloperPanel(QFrame):
         thread_section.layout().addWidget(self.detection_thread_label)
         scroll_layout.addWidget(thread_section)
 
+        # === Camera Management Section ===
+        cam_section = self._create_section("CAMERA MANAGEMENT")
+        
+        # Camera list widget
+        from PyQt5.QtWidgets import QListWidget
+        self.camera_list = QListWidget()
+        self.camera_list.setStyleSheet("""
+            QListWidget {
+                background-color: #0d0d0d;
+                border: 1px solid #404040;
+                color: #ffffff;
+                font-size: 10px;
+                padding: 4px;
+            }
+            QListWidget::item {
+                padding: 3px;
+            }
+            QListWidget::item:selected {
+                background-color: #2a2a2a;
+                border: 1px solid #00aaff;
+            }
+        """)
+        self.camera_list.setMaximumHeight(120)
+        cam_section.layout().addWidget(self.camera_list)
+        
+        # Buttons row 1
+        btn_row1 = QWidget()
+        btn_layout1 = QHBoxLayout()
+        btn_layout1.setContentsMargins(0, 0, 0, 0)
+        btn_layout1.setSpacing(4)
+        
+        self.btn_assign_thermal = QPushButton("Thermal")
+        self.btn_assign_thermal.setObjectName("DevButton")
+        self.btn_assign_thermal.setToolTip("Assign selected camera as thermal")
+        self.btn_assign_thermal.clicked.connect(self._assign_thermal)
+        
+        self.btn_assign_rgb = QPushButton("RGB")
+        self.btn_assign_rgb.setObjectName("DevButton")
+        self.btn_assign_rgb.setToolTip("Assign selected camera as RGB")
+        self.btn_assign_rgb.clicked.connect(self._assign_rgb)
+        
+        btn_layout1.addWidget(self.btn_assign_thermal)
+        btn_layout1.addWidget(self.btn_assign_rgb)
+        btn_row1.setLayout(btn_layout1)
+        cam_section.layout().addWidget(btn_row1)
+        
+        # Buttons row 2
+        btn_row2 = QWidget()
+        btn_layout2 = QHBoxLayout()
+        btn_layout2.setContentsMargins(0, 0, 0, 0)
+        btn_layout2.setSpacing(4)
+        
+        self.btn_rescan = QPushButton("Rescan")
+        self.btn_rescan.setObjectName("DevButton")
+        self.btn_rescan.setToolTip("Force camera rescan")
+        self.btn_rescan.clicked.connect(self._rescan_cameras)
+        
+        self.btn_clear = QPushButton("Clear All")
+        self.btn_clear.setObjectName("DevButton")
+        self.btn_clear.setToolTip("Clear all manual assignments")
+        self.btn_clear.clicked.connect(self._clear_assignments)
+        
+        btn_layout2.addWidget(self.btn_rescan)
+        btn_layout2.addWidget(self.btn_clear)
+        btn_row2.setLayout(btn_layout2)
+        cam_section.layout().addWidget(btn_row2)
+        
+        scroll_layout.addWidget(cam_section)
+
         # Spacer
         scroll_layout.addStretch()
 
@@ -376,3 +445,97 @@ class DeveloperPanel(QFrame):
         else:
             widget._status_label.setObjectName("StatusError")
         widget._status_label.setStyleSheet(DEVELOPER_PANEL_STYLE)
+    
+    # ========================================================================
+    # Camera Management Methods
+    # ========================================================================
+    
+    def update_camera_list(self):
+        """Refresh camera list from registry"""
+        from camera_registry import get_camera_registry, CameraRole
+        
+        self.camera_list.clear()
+        registry = get_camera_registry()
+        cameras = registry.get_all_cameras()
+        
+        for cam in cameras:
+            status = "●" if cam.is_connected else "○"
+            role_text = cam.role.value.upper()
+            
+            # Color based on connection
+            color = "#ffffff" if cam.is_connected else "#666666"
+            
+            # Build display text
+            text = f"{status} Dev {cam.device_id} - {cam.name} [{role_text}]"
+            if cam.manual_override:
+                text += " (manual)"
+            
+            from PyQt5.QtWidgets import QListWidgetItem
+            from PyQt5.QtGui import QColor
+            item = QListWidgetItem(text)
+            item.setForeground(QColor(color))
+            item.setData(Qt.UserRole, cam.device_id)
+            self.camera_list.addItem(item)
+        
+        logger.debug(f"Camera list updated: {len(cameras)} cameras")
+    
+    def _assign_thermal(self):
+        """Assign selected camera as thermal"""
+        from camera_registry import get_camera_registry, CameraRole
+        
+        selected_items = self.camera_list.selectedItems()
+        if selected_items:
+            device_id = selected_items[0].data(Qt.UserRole)
+            registry = get_camera_registry()
+            registry.set_camera_role(device_id, CameraRole.THERMAL, manual=True)
+            logger.info(f"Manually assigned camera {device_id} as THERMAL")
+            self.update_camera_list()
+            
+            # Notify main app
+            if self.app and hasattr(self.app, '_on_camera_assignment_changed'):
+                self.app._on_camera_assignment_changed()
+    
+    def _assign_rgb(self):
+        """Assign selected camera as RGB"""
+        from camera_registry import get_camera_registry, CameraRole
+        
+        selected_items = self.camera_list.selectedItems()
+        if selected_items:
+            device_id = selected_items[0].data(Qt.UserRole)
+            registry = get_camera_registry()
+            registry.set_camera_role(device_id, CameraRole.RGB, manual=True)
+            logger.info(f"Manually assigned camera {device_id} as RGB")
+            self.update_camera_list()
+            
+            # Notify main app
+            if self.app and hasattr(self.app, '_on_camera_assignment_changed'):
+                self.app._on_camera_assignment_changed()
+    
+    def _rescan_cameras(self):
+        """Force camera rescan"""
+        from PyQt5.QtCore import QTimer
+        logger.info("Forcing camera rescan...")
+        
+        try:
+            from camera_monitor import get_camera_monitor
+            monitor = get_camera_monitor()
+            monitor.force_scan()
+            logger.info("Camera rescan triggered")
+        except Exception as e:
+            logger.error(f"Failed to trigger camera rescan: {e}")
+        
+        # Update list after short delay
+        QTimer.singleShot(500, self.update_camera_list)
+    
+    def _clear_assignments(self):
+        """Clear all manual camera assignments"""
+        from camera_registry import get_camera_registry
+        
+        registry = get_camera_registry()
+        registry.clear_manual_assignments()
+        logger.info("Cleared all manual camera assignments")
+        self.update_camera_list()
+        
+        # Notify main app
+        if self.app and hasattr(self.app, '_on_camera_assignment_changed'):
+            self.app._on_camera_assignment_changed()

@@ -1221,6 +1221,9 @@ class DriverAppWindow(QMainWindow):
 
                 # Show panel
                 self.developer_panel.show()
+                # Initialize camera list when panel is first shown
+                if hasattr(self.developer_panel, 'update_camera_list'):
+                    self.developer_panel.update_camera_list()
                 self.control_panel.show_developer_controls(True)
                 self.info_panel.hide()
 

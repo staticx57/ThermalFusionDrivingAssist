@@ -6,14 +6,20 @@ import cv2
 import subprocess
 import re
 import logging
-from typing import List, Dict, Optional
+import platform
+import numpy as np
+from typing import List, Dict, Optional, Tuple
 from enum import Enum
+from pathlib import Path
 
 # Import camera registry for tracking camera roles
 from camera_registry import get_camera_registry, CameraRole
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# FLIR Systems vendor ID
+FLIR_USB_VENDOR_ID = "09CB"
 
 
 class CameraType(Enum):
@@ -293,6 +299,51 @@ class CameraDetector:
                 pass
 
         return cameras
+    
+    @staticmethod
+    def _get_usb_device_info(device_id: int) -> Optional[Dict[str, str]]:
+        """
+        Get USB device information (vendor ID, product ID, description)
+        
+        Args:
+            device_id: Camera device ID
+        
+        Returns:
+            Dictionary with 'vendor_id', 'product_id', 'description' or None
+        """
+        try:
+            system = platform.system()
+            
+            if system == "Linux":
+                # Read from /sys/class/video4linux/videoX/device
+                device_path = Path(f"/sys/class/video4linux/video{device_id}/device")
+                if device_path.exists():
+                    # Read vendor and product IDs
+                    vendor_file = device_path / "../idVendor"
+                    product_file = device_path / "../idProduct"
+                    manufacturer_file = device_path / "../manufacturer"
+                    
+                    info = {}
+                    if vendor_file.exists():
+                        info['vendor_id'] = vendor_file.read_text().strip()
+                    if product_file.exists():
+                        info['product_id'] = product_file.read_text().strip()
+                    if manufacturer_file.exists():
+                        info['description'] = manufacturer_file.read_text().strip()
+                    
+                    if info:
+                        logger.debug(f"USB device info for {device_id}: {info}")
+                        return info
+            
+            elif system == "Windows":
+                # On Windows, we could use win32api or pyusb, but those require additional dependencies
+                # For now, skip USB info on Windows (frame analysis is sufficient)
+                pass
+                
+        except Exception as e:
+            logger.debug(f"Could not read USB device info for {device_id}: {e}")
+        
+        return None
 
     @staticmethod
     def _probe_windows_cameras(max_devices: int = 5, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
@@ -394,11 +445,12 @@ class CameraDetector:
         return cameras
     
     @staticmethod
-    def _identify_camera_by_frames(cap, device_id: int) -> tuple:
+    def _identify_camera_by_frames(cap, device_id: int) -> Tuple[bool, Tuple[int, int]]:
         """
         Identify if camera is thermal by reading and analyzing actual frames
         
         This is the ROBUST approach that works when resolution queries fail.
+        Uses multiple heuristics: resolution, frame content, histogram, USB device info.
         
         Args:
             cap: Opened cv2.VideoCapture object
@@ -408,6 +460,16 @@ class CameraDetector:
             Tuple of (is_thermal: bool, resolution: tuple)
         """
         try:
+            # Check USB device info first (most reliable on Linux)
+            usb_info = CameraDetector._get_usb_device_info(device_id)
+            if usb_info and usb_info.get('vendor_id', '').upper() == FLIR_USB_VENDOR_ID:
+                logger.info(f"Device {device_id}: FLIR vendor ID detected (USB) - definitely thermal")
+                # Still need to get resolution from frame
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    height, width = frame.shape[:2]
+                    return True, (width, height)
+            
             # Read a few frames to get stable data
             for _ in range(5):
                 ret = cap.grab()  # Discard first few frames
@@ -426,51 +488,89 @@ class CameraDetector:
             
             logger.debug(f"Device {device_id} frame: {width}x{height}, shape={frame.shape}, dtype={frame.dtype}")
             
-            # THERMAL DETECTION HEURISTICS:
+            # THERMAL DETECTION HEURISTICS (scored system for robustness):
+            thermal_score = 0
+            reasons = []
             
-            # 1. Check if resolution matches known thermal resolutions
+            # 1. Check if resolution matches known thermal resolutions (DECISIVE - if yes, it's thermal)
             thermal_resolutions = [(640, 512), (320, 256), (512, 640), (256, 320)]
             if resolution in thermal_resolutions:
-                logger.debug(f"Device {device_id}: Resolution {resolution} matches thermal")
-                return True, resolution
+                thermal_score += 100  # INCREASED: Resolution match is decisive
+                reasons.append(f"thermal resolution {resolution}")
+                logger.debug(f"Device {device_id}: Resolution {resolution} matches thermal (+100 DECISIVE)")
             
             # 2. Check if frame is grayscale (thermal cameras are single-channel)
             if len(frame.shape) == 2:
-                logger.debug(f"Device {device_id}: Grayscale frame (thermal indicator)")
-                return True, resolution
+                thermal_score += 60  # INCREASED: True grayscale is very strong indicator
+                reasons.append("single-channel grayscale")
+                logger.debug(f"Device {device_id}: Grayscale frame (+60)")
             
             # 3. Check if all channels are identical (grayscale in RGB format)
             if len(frame.shape) == 3 and frame.shape[2] == 3:
-                import numpy as np
                 # Check if R == G == B (grayscale data in color format)
                 if np.array_equal(frame[:,:,0], frame[:,:,1]) and np.array_equal(frame[:,:,1], frame[:,:,2]):
-                    # Check pixel value range - thermal usually has limited range
+                    # CRITICAL: This alone is NOT enough - uniform RGB scenes can match this
+                    # Only add small score, require other indicators
+                    thermal_score += 5  # REDUCED from 20: Not reliable alone
+                    reasons.append("RGB channels identical")
+                    logger.debug(f"Device {device_id}: All color channels identical (+5)")
+                    
+                    # 3a. Check pixel value range - thermal usually has limited range
                     min_val, max_val = frame.min(), frame.max()
                     pixel_range = max_val - min_val
                     
                     # Thermal cameras typically have lower dynamic range in 8-bit conversion
-                    # Real RGB scenes have wide dynamic range
-                    if pixel_range < 200:  # Narrow range suggests thermal
-                        logger.debug(f"Device {device_id}: Grayscale + narrow range ({pixel_range}) = thermal")
-                        return True, resolution
+                    # BUT: Dark RGB scenes also have narrow range!
+                    # Only score if range is VERY specific to thermal
+                    if pixel_range < 100:  # Very narrow range
+                        thermal_score += 10  # REDUCED from 15
+                        reasons.append(f"narrow pixel range ({pixel_range})")
+                        logger.debug(f"Device {device_id}: Narrow range {pixel_range} (+10)")
                     
-                    # Check uniformity - thermal scenes often more uniform
+                    # 3b. Check uniformity - thermal scenes often more uniform
+                    # BUT: Walls and empty scenes are also uniform!
                     std_dev = np.std(frame[:,:,0])
-                    if std_dev < 30:  # Very uniform = likely thermal
-                        logger.debug(f"Device {device_id}: High uniformity (std={std_dev:.1f}) = thermal")
-                        return True, resolution
+                    if std_dev < 20:  # STRICTER threshold (was 30)
+                        thermal_score += 10  # REDUCED from 15
+                        reasons.append(f"high uniformity (std={std_dev:.1f})")
+                        logger.debug(f"Device {device_id}: High uniformity std={std_dev:.1f} (+10)")
+                    
+                    # 3c. Histogram analysis - thermal has characteristic distribution
+                    hist = cv2.calcHist([frame[:,:,0]], [0], None, [256], [0, 256])
+                    hist_peak_count = np.sum(hist > (hist.max() * 0.3))  # Count bins with significant values
+                    
+                    # Thermal cameras tend to have fewer active histogram bins (narrow distribution)
+                    if hist_peak_count < 80:  # STRICTER threshold (was 100)
+                        thermal_score += 10  # KEPT same
+                        reasons.append(f"narrow histogram ({hist_peak_count} bins)")
+                        logger.debug(f"Device {device_id}: Narrow histogram {hist_peak_count} bins (+10)")
             
-            # 4. If width/height aspect ratio is unusual (common for thermal)
+            # 4. Aspect ratio check (common for thermal cameras)
             aspect_ratio = width / height if height > 0 else 0
             # FLIR Boson 640: 640/512 = 1.25 (unusual for webcams)
             # FLIR Boson 320: 320/256 = 1.25
-            if 1.2 < aspect_ratio < 1.3 or 1.95 < aspect_ratio < 2.05:  # 1.25 or 2.0 aspect ratios
-                logger.debug(f"Device {device_id}: Aspect ratio {aspect_ratio:.2f} suggests thermal")
-                return True, resolution
+            if 1.2 < aspect_ratio < 1.3:  # 1.25 aspect ratio
+                thermal_score += 20  # INCREASED from 15: This is very specific
+                reasons.append(f"thermal aspect ratio ({aspect_ratio:.2f})")
+                logger.debug(f"Device {device_id}: Aspect ratio {aspect_ratio:.2f} (+20)")
+            elif 1.95 < aspect_ratio < 2.05:  # 2.0 aspect ratio (some thermal cameras)
+                thermal_score += 15  # INCREASED from 10
+                reasons.append(f"unusual aspect ratio ({aspect_ratio:.2f})")
+                logger.debug(f"Device {device_id}: Aspect ratio {aspect_ratio:.2f} (+15)")
             
-            # Not thermal
-            logger.debug(f"Device {device_id}: Identified as RGB camera")
-            return False, resolution
+            # Decision threshold: INCREASED to 60 (was 50)
+            # This ensures we need EITHER:
+            #  - Thermal resolution (100 points alone)
+            #  - True grayscale (60 points alone)
+            #  - Multiple strong indicators (aspect ratio + histogram + range + uniformity)
+            is_thermal = thermal_score >= 60
+            
+            if is_thermal:
+                logger.info(f"✓ Device {device_id}: Identified as THERMAL (score={thermal_score}): {', '.join(reasons)}")
+            else:
+                logger.debug(f"Device {device_id}: Identified as RGB (score={thermal_score})")
+            
+            return is_thermal, resolution
             
         except Exception as e:
             logger.warning(f"Frame analysis failed for device {device_id}: {e}")

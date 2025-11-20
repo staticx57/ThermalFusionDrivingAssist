@@ -86,34 +86,62 @@ class VPIDetector:
         self.color_palettes = self._create_color_palettes()
 
     def _create_color_palettes(self) -> dict:
-        """Create thermal color palette lookup tables"""
+        """Create thermal color palette lookup tables (14 industry-standard palettes)"""
         palettes = {}
 
-        # White Hot (default - already provided by camera)
+        # White Hot (default - FLIR standard, surveillance/security)
         white_hot = np.arange(256, dtype=np.uint8)
         palettes['white_hot'] = cv2.applyColorMap(white_hot.reshape(1, -1), cv2.COLORMAP_BONE)
 
-        # Black Hot (inverted)
+        # Black Hot (inverted - law enforcement/hunting favorite)
         black_hot = np.arange(255, -1, -1, dtype=np.uint8)
         palettes['black_hot'] = cv2.applyColorMap(black_hot.reshape(1, -1), cv2.COLORMAP_BONE)
 
-        # Ironbow (classic thermal imaging palette)
+        # Ironbow (classic thermal - industrial/electrical inspections)
         palettes['ironbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HOT)
 
-        # Rainbow
+        # Rainbow (scientific - high detail, precise differentiation)
         palettes['rainbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_JET)
 
-        # Arctic (blue-white)
+        # Rainbow HC (High Contrast - subtle temperature differences)
+        palettes['rainbow_hc'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TURBO)
+
+        # Arctic (blue-white - water/cooling applications)
         palettes['arctic'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_WINTER)
 
-        # Lava (red-yellow)
+        # Lava (red-yellow - heat visualization)
         palettes['lava'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
 
-        # Medical (green-based)
+        # Medical (green-based - biomedical applications)
         palettes['medical'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
 
-        # Plasma (purple-yellow)
+        # Plasma (purple-yellow - scientific visualization)
         palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
+
+        # Sepia (warm brown - documentation/archival)
+        palettes['sepia'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
+
+        # Ocean (blue gradient - marine/water applications)
+        palettes['ocean'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_OCEAN)
+
+        # Amber (gold/amber - firefighting visualization)
+        # Create custom amber gradient (dark brown -> orange -> bright yellow)
+        amber_lut = np.zeros((1, 256, 3), dtype=np.uint8)
+        for i in range(256):
+            # Dark brown (0,0,0) -> orange (255,165,0) -> yellow (255,255,0)
+            amber_lut[0, i, 0] = min(255, int(i * 1.0))  # Blue channel (low)
+            amber_lut[0, i, 1] = min(255, int(i * 0.85))  # Green channel  
+            amber_lut[0, i, 2] = min(255, int(i * 1.0))  # Red channel (high)
+        palettes['amber'] = amber_lut
+
+        # Gray (pure grayscale - maximum monochrome detail)
+        gray_lut = np.zeros((1, 256, 3), dtype=np.uint8)
+        for i in range(256):
+            gray_lut[0, i, :] = i  # All channels equal = grayscale
+        palettes['gray'] = gray_lut
+
+        # Feather (soft pastels - reduced eye strain for extended viewing)
+        palettes['feather'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_COOL)
 
         return palettes
 
@@ -287,6 +315,12 @@ class VPIDetector:
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             else:
                 gray = frame
+
+            # CRITICAL FIX: Convert 16-bit thermal images to 8-bit for colormap
+            # Thermal cameras output CV_16UC1, but cv2.applyColorMap only accepts CV_8UC1
+            if gray.dtype == np.uint16:
+                # Normalize 16-bit to 8-bit range
+                gray = cv2.convertScaleAbs(gray, alpha=(255.0/65535.0))
 
             # Apply palette directly on CPU (faster than VPI conversion overhead)
             # cv2.applyColorMap is highly optimized and fast enough

@@ -123,9 +123,21 @@ class FLIRBosonCamera:
 
         ret, frame = self.cap.read()
 
-        if ret and len(frame.shape) == 3:
-            # Convert to grayscale if needed
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if ret and frame is not None:
+            # DIAGNOSTIC: Log frame format to determine camera mode
+            if not hasattr(self, '_mode_logged') or not self._mode_logged:
+                logger.info(f"Thermal camera mode detection:")
+                logger.info(f"  Frame dtype: {frame.dtype}")
+                logger.info(f"  Frame shape: {frame.shape}")
+                if frame.dtype == np.uint16:
+                    logger.info(f"  → RAW THERMAL MODE (16-bit radiometric data)")
+                elif frame.dtype == np.uint8:
+                    logger.info(f"  → UVC MODE (8-bit YUV/RGB converted)")
+                self._mode_logged = True
+            
+            if len(frame.shape) == 3:
+                # Convert to grayscale if needed
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         return ret, frame
 

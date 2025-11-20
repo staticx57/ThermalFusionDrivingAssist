@@ -241,6 +241,33 @@ class CameraRegistry:
                     logger.info(f"Cleared manual assignment for camera {cam.device_id}")
             self._save_to_config()
     
+    
+    def get_connected_cameras(self) -> List[CameraDescriptor]:
+        """Get all connected cameras"""
+        with self.lock:
+            return [cam for cam in self.cameras.values() if cam.is_connected]
+    
+    def get_disconnected_cameras(self) -> List[CameraDescriptor]:
+        """Get all known but currently disconnected cameras"""
+        with self.lock:
+            return [cam for cam in self.cameras.values() if not cam.is_connected]
+    
+    def find_camera_by_signature(self, signature: str) -> Optional[CameraDescriptor]:
+        """
+        Find camera by signature (resolution + name pattern)
+        
+        Args:
+            signature: Camera signature to search for
+        
+        Returns:
+            CameraDescriptor if found, None otherwise
+        """
+        with self.lock:
+            for cam in self.cameras.values():
+                if cam.get_signature() == signature:
+                    return cam
+            return None
+    
     def reset(self):
         """Reset registry (clear all cameras)"""
         with self.lock:
