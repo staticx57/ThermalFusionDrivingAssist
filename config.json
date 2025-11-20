@@ -13,7 +13,7 @@
   "auto_retry_sensors": true,
   "thermal_retry_interval": 3,
   "rgb_retry_interval": 100,
-  "yolo_model": "yolov8n.pt",
+  "yolo_model": "yolov8m.pt",
   "confidence_threshold": 0.25,
   "detection_mode": "model",
   "model_presets": {
