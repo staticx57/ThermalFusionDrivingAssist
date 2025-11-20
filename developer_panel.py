@@ -10,7 +10,8 @@ import time
 
 try:
     from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                                  QFrame, QScrollArea, QGridLayout, QPushButton)
+                                  QFrame, QScrollArea, QGridLayout, QPushButton,
+                                  QListWidget, QListWidgetItem)
     from PyQt5.QtCore import Qt, QTimer, pyqtSignal
     from PyQt5.QtGui import QFont, QPalette, QColor
     PYQT_AVAILABLE = True
@@ -218,11 +219,85 @@ class DeveloperPanel(QFrame):
         thread_section.layout().addWidget(self.detection_thread_label)
         scroll_layout.addWidget(thread_section)
 
+        # === Presets Section ===
+        presets_section = self._create_section("PRESETS")
+        
+        # Import preset manager
+        from preset_manager import get_preset_manager
+        self.preset_manager = get_preset_manager()
+        
+        # Preset rows (3 presets)
+        self.preset_widgets = []
+        for i in range(3):
+            preset_row = QWidget()
+            preset_layout = QHBoxLayout()
+            preset_layout.setContentsMargins(0, 0, 0, 0)
+            preset_layout.setSpacing(4)
+            
+            # Preset name label (editable later)
+            name_label = QLabel(self.preset_manager.get_preset_name(i))
+            name_label.setStyleSheet("color: #00aaff; font-size: 10px; font-weight: bold;")
+            preset_layout.addWidget(name_label)
+            preset_layout.addStretch()
+            
+            # SAVE button
+            save_btn = QPushButton("💾")
+            save_btn.setObjectName("DevButton")
+            save_btn.setFixedSize(30, 22)
+            save_btn.setToolTip(f"Save current settings to preset {i+1}")
+            save_btn.clicked.connect(lambda checked, slot=i: self._save_preset(slot))
+            preset_layout.addWidget(save_btn)
+            
+            # LOAD button
+            load_btn = QPushButton("📂")
+            load_btn.setObjectName("DevButton")
+            load_btn.setFixedSize(30, 22)
+            load_btn.setToolTip(f"Load preset {i+1}")
+            load_btn.clicked.connect(lambda checked, slot=i: self._load_preset(slot))
+            preset_layout.addWidget(load_btn)
+            
+            preset_row.setLayout(preset_layout)
+            presets_section.layout().addWidget(preset_row)
+            
+            # Store references
+            self.preset_widgets.append({
+                'row': preset_row,
+                'name_label': name_label,
+                'save_btn': save_btn,
+                'load_btn': load_btn
+            })
+        
+        scroll_layout.addWidget(presets_section)
+        
+        # === Settings Editor Section ===
+        settings_section = self._create_section("SETTINGS")
+        
+        # Settings Editor button
+        settings_btn_container = QWidget()
+        settings_btn_layout = QVBoxLayout()
+        settings_btn_layout.setContentsMargins(0, 0, 0, 0)
+        settings_btn_layout.setSpacing(4)
+        
+        self.settings_editor_btn = QPushButton("⚙️ Open Settings Editor")
+        self.settings_editor_btn.setObjectName("DevButton")
+        self.settings_editor_btn.setToolTip("Launch settings editor in separate window")
+        self.settings_editor_btn.clicked.connect(self._launch_settings_editor)
+        settings_btn_layout.addWidget(self.settings_editor_btn)
+        
+        self.settings_status_label = QLabel("Not running")
+        self.settings_status_label.setStyleSheet("color: #666666; font-size: 9px; font-style: italic;")
+        self.settings_status_label.setAlignment(Qt.AlignCenter)
+        settings_btn_layout.addWidget(self.settings_status_label)
+        
+        settings_btn_container.setLayout(settings_btn_layout)
+        settings_section.layout().addWidget(settings_btn_container)
+        
+        scroll_layout.addWidget(settings_section)
+
         # === Camera Management Section ===
         cam_section = self._create_section("CAMERA MANAGEMENT")
         
         # Camera list widget
-        from PyQt5.QtWidgets import QListWidget
         self.camera_list = QListWidget()
         self.camera_list.setStyleSheet("""
             QListWidget {
@@ -247,7 +322,7 @@ class DeveloperPanel(QFrame):
         cam_section.layout().addWidget(self.camera_list)
         
         # Palette Dropdown
-        from PyQt5.QtWidgets import QComboBox, QLabel
+        from PyQt5.QtWidgets import QComboBox
         palette_row = QWidget()
         palette_layout = QHBoxLayout()
         palette_layout.setContentsMargins(0, 0, 0, 0)
@@ -527,8 +602,6 @@ class DeveloperPanel(QFrame):
                 if cam.manual_override:
                     text += " (manual)"
                 
-                from PyQt5.QtWidgets import QListWidgetItem
-                from PyQt5.QtGui import QColor
                 item = QListWidgetItem(text)
                 item.setForeground(QColor(color))
                 item.setData(Qt.UserRole, cam.device_id)
@@ -573,7 +646,6 @@ class DeveloperPanel(QFrame):
     
     def _rescan_cameras(self):
         """Force camera rescan"""
-        from PyQt5.QtCore import QTimer
         logger.info("Forcing camera rescan...")
         
         try:
@@ -619,3 +691,125 @@ class DeveloperPanel(QFrame):
             self.palette_combo.blockSignals(True)
             self.palette_combo.setCurrentIndex(index)
             self.palette_combo.blockSignals(False)
+    
+    # ========================================================================
+    # Presets Methods
+    # ========================================================================
+    
+    def _save_preset(self, slot: int):
+        """Save current application state to preset slot"""
+        if not self.app:
+            logger.warning("Cannot save preset: no app reference")
+            return
+        
+        # Gather current application state
+        app_state = {
+            'view_mode': str(self.app.view_mode.value) if hasattr(self.app, 'view_mode') else 'thermal',
+            'fusion_mode': getattr(self.app, 'fusion_mode', 'alpha_blend'),
+            'fusion_alpha': getattr(self.app, 'fusion_alpha', 0.5),
+            'thermal_palette': getattr(self.app.detector, 'palette_name', 'ironbow') if self.app.detector else 'ironbow',
+            'yolo_enabled': getattr(self.app, 'yolo_enabled', True),
+            'yolo_model': getattr(self.app, 'model_name', 'yolov8n.pt'),
+            'show_boxes': getattr(self.app, 'show_detections', True),
+            'audio_enabled': getattr(self.app, 'audio_enabled', True),
+            'frame_skip': getattr(self.app, 'frame_skip_value', 1),
+            'device': getattr(self.app, 'device', 'cuda'),
+        }
+        
+        preset_name = self.preset_manager.get_preset_name(slot)
+        
+        if self.preset_manager.save_preset(slot, preset_name, app_state):
+            logger.info(f"Saved preset {slot+1}: {preset_name}")
+            # Update UI to show saved time
+            saved_time = self.preset_manager.get_saved_time(slot)
+            if saved_time:
+                self.preset_widgets[slot]['name_label'].setToolTip(f"Saved: {saved_time}")
+        else:
+            logger.error(f"Failed to save preset {slot+1}")
+    
+    def _load_preset(self, slot: int):
+        """Load preset and apply to application"""
+        if not self.app:
+            logger.warning("Cannot load preset: no app reference")
+            return
+        
+        preset = self.preset_manager.load_preset(slot)
+        if not preset:
+            logger.warning(f"No preset saved in slot {slot+1}")
+            return
+        
+        # Apply preset settings to application
+        try:
+            # View mode
+            from view_mode import ViewMode
+            if preset.view_mode:
+                view_mode_map = {
+                    'thermal': ViewMode.THERMAL_ONLY,
+                    'rgb': ViewMode.RGB_ONLY,
+                    'fusion': ViewMode.FUSION,
+                    'side_by_side': ViewMode.SIDE_BY_SIDE,
+                    'pip': ViewMode.PICTURE_IN_PICTURE
+                }
+                if preset.view_mode in view_mode_map:
+                    self.app.view_mode = view_mode_map[preset.view_mode]
+            
+            # Fusion settings
+            if hasattr(self.app, 'fusion_mode'):
+                self.app.fusion_mode = preset.fusion_mode
+            if hasattr(self.app, 'fusion_alpha'):
+                self.app.fusion_alpha = preset.fusion_alpha
+            
+            # YOLO settings
+            if hasattr(self.app, 'yolo_enabled'):
+                self.app.yolo_enabled = preset.yolo_enabled
+            if hasattr(self.app, 'show_detections'):
+                self.app.show_detections = preset.show_boxes
+            
+            # Audio
+            if hasattr(self.app, 'audio_enabled'):
+                self.app.audio_enabled = preset.audio_enabled
+            
+            # Frame skip
+            if hasattr(self.app, 'frame_skip_value'):
+                self.app.frame_skip_value = preset.frame_skip
+            
+            # Apply palette if detector exists
+            if self.app.detector and hasattr(self.app.detector, 'set_palette'):
+                self.app.detector.set_palette(preset.thermal_palette)
+            
+            logger.info(f"Loaded preset {slot+1}: {preset.name}")
+        except Exception as e:
+            logger.error(f"Error loading preset: {e}")
+    
+    # ========================================================================
+    # Settings Editor Launch
+    # ========================================================================
+    
+    def _launch_settings_editor(self):
+        """Launch settings editor as separate process"""
+        import subprocess
+        import sys
+        from pathlib import Path
+        
+        try:
+            # Find settings_editor.py
+            settings_editor_path = Path("settings_editor.py")
+            if not settings_editor_path.exists():
+                logger.error("settings_editor.py not found")
+                self.settings_status_label.setText("Error: File not found")
+                self.settings_status_label.setStyleSheet("color: #ff0000; font-size: 9px; font-style: italic;")
+                return
+            
+            # Launch as subprocess
+            process = subprocess.Popen(
+                [sys.executable, str(settings_editor_path)],
+                creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == 'win32' else 0
+            )
+            
+            logger.info(f"Launched settings editor (PID: {process.pid})")
+            self.settings_status_label.setText(f"Running (PID: {process.pid})")
+            self.settings_status_label.setStyleSheet("color: #00ff00; font-size: 9px; font-style: italic;")
+        except Exception as e:
+            logger.error(f"Failed to launch settings editor: {e}")
+            self.settings_status_label.setText(f"Error: {str(e)[:20]}")
+            self.settings_status_label.setStyleSheet("color: #ff0000; font-size: 9px; font-style: italic;")

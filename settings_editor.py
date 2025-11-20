@@ -13,10 +13,20 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QGroupBox, QLabel, QLineEdit, QSpinBox, QDoubleSpinBox,
     QComboBox, QCheckBox, QSlider, QPushButton, QFileDialog,
-    QMessageBox, QScrollArea, QFormLayout, QSplitter
+    QMessageBox, QScrollArea, QFormLayout, QSplitter, QTableWidget,
+    QTableWidgetItem, QHeaderView
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
+
+# Import theme manager and multi-row tab widget
+try:
+    from theme_manager import get_theme_manager
+    from multi_row_tabwidget import MultiRowTabWidget
+except ImportError as e:
+    print(f"Error importing new modules: {e}")
+    print("Please ensure theme_manager.py and multi_row_tabwidget.py are in the same directory.")
+    sys.exit(1)
 
 # Import settings manager
 try:
@@ -24,6 +34,15 @@ try:
 except ImportError:
     print("Error: settings_manager.py not found. Please ensure it's in the same directory.")
     sys.exit(1)
+
+# Import camera registry
+try:
+    from camera_registry import get_camera_registry, CameraRole
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("camera_registry.py not found - camera registry tab will be unavailable")
+    get_camera_registry = None
+    CameraRole = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,12 +61,24 @@ class SettingsEditorWindow(QMainWindow):
 
         # Load settings
         self.settings = get_settings()
+        
+        # Initialize theme manager
+        self.theme_manager = get_theme_manager()
+        
+        # Load camera registry if available
+        if get_camera_registry:
+            self.camera_registry = get_camera_registry()
+        else:
+            self.camera_registry = None
 
         # Track unsaved changes
         self.has_unsaved_changes = False
 
         # Build UI
         self._create_ui()
+        
+        # Apply theme
+        self._apply_current_theme()
 
         # Load current values
         self._load_all_values()
@@ -68,11 +99,13 @@ class SettingsEditorWindow(QMainWindow):
         title.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title)
 
-        # Status bar
-        self.statusBar().showMessage("Ready")
+        # Status bar with keyboard hints
+        from multi_row_tabwidget import NavigationHintWidget
+        hint_text = NavigationHintWidget.get_short_hint()
+        self.statusBar().showMessage(f"Ready | {hint_text}")
 
-        # Tab widget for categories
-        self.tab_widget = QTabWidget()
+        # Multi-row tab widget for categories
+        self.tab_widget = MultiRowTabWidget()
         main_layout.addWidget(self.tab_widget)
 
         # Create tabs for each category
@@ -87,6 +120,10 @@ class SettingsEditorWindow(QMainWindow):
         self._create_object_importance_tab()
         self._create_performance_tab()
         self._create_logging_tab()
+        
+        # Add camera registry tab if available
+        if self.camera_registry:
+            self._create_camera_registry_tab()
 
         # Bottom buttons
         button_layout = QHBoxLayout()
@@ -335,7 +372,20 @@ class SettingsEditorWindow(QMainWindow):
         self.gui_theme = QComboBox()
         self.gui_theme.addItems(["dark", "light", "auto"])
         self.gui_theme.currentTextChanged.connect(self._mark_unsaved)
-        theme_layout.addRow("Theme:", self.gui_theme)
+        theme_layout.addRow("Main App Theme:", self.gui_theme)
+        
+        # Settings Editor Theme (new)
+        theme_divider = QLabel("─" * 40)
+        theme_layout.addRow("", theme_divider)
+        
+        theme_info = QLabel("<i>Settings Editor Theme (independent from main app):</i>")
+        theme_layout.addRow("", theme_info)
+        
+        self.settings_editor_theme = QComboBox()
+        self.settings_editor_theme.addItems(self.theme_manager.get_theme_names())
+        self.settings_editor_theme.setCurrentText(self.theme_manager.get_current_theme_name())
+        self.settings_editor_theme.currentTextChanged.connect(self._on_theme_changed)
+        theme_layout.addRow("Editor Theme:", self.settings_editor_theme)
 
         self.developer_mode = QCheckBox("Enable developer mode by default")
         self.developer_mode.stateChanged.connect(self._mark_unsaved)
@@ -1205,6 +1255,84 @@ class SettingsEditorWindow(QMainWindow):
             error_msg = "\n".join(f"• {err}" for err in errors)
             QMessageBox.warning(self, "Validation Errors", f"Settings validation failed:\n\n{error_msg}")
             self.statusBar().showMessage(f"Validation failed: {len(errors)} error(s)", 5000)
+    
+    def _apply_current_theme(self):
+        """Apply the current theme to the settings editor"""
+        stylesheet = self.theme_manager.generate_stylesheet()
+        self.setStyleSheet(stylesheet)
+        logger.info(f"Applied theme: {self.theme_manager.get_current_theme_name()}")
+    
+    def _on_theme_changed(self, theme_name: str):
+        """Handle theme selection change"""
+        if self.theme_manager.set_theme(theme_name):
+            self._apply_current_theme()
+            self.statusBar().showMessage(f"Theme changed to: {theme_name}", 3000)
+    
+    def _create_camera_registry_tab(self):
+        """Create camera registry management tab"""
+        container, layout = self._create_scrollable_tab("📷 Camera Registry")
+        
+        # Info section
+        info_group = QGroupBox("Camera Registry Information")
+        info_layout = QVBoxLayout()
+        
+        info_label = QLabel(
+            "<b>Camera Registry</b> tracks detected cameras and their assigned roles (Thermal/RGB/Unassigned).\\n"
+            "The system automatically detects and remembers cameras, even across reconnections.\\n"
+            "Camera assignments are saved to camera_registry.json."
+        )
+        info_label.setWordWrap(True)
+        info_layout.addWidget(info_label)
+        
+        info_group.setLayout(info_layout)
+        layout.addRow(info_group)
+        
+        # Registered cameras table
+        cameras_group = QGroupBox("Registered Cameras")
+        cameras_layout = QVBoxLayout()
+        
+        self.camera_table = QTableWidget()
+        self.camera_table.setColumnCount(6)
+        self.camera_table.setHorizontalHeaderLabels([
+            "Device ID", "Name", "Resolution", "Driver", "Role", "Status"
+        ])
+        self.camera_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.camera_table.setAlternatingRowColors(True)
+        self.camera_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        
+        cameras_layout.addWidget(self.camera_table)
+        
+        # Refresh button
+        refresh_btn = QPushButton("🔄 Refresh Camera List")
+        refresh_btn.clicked.connect(self._refresh_camera_registry)
+        cameras_layout.addWidget(refresh_btn)
+        
+        cameras_group.setLayout(cameras_layout)
+        layout.addRow(cameras_group)
+        
+        # Load initial camera data
+        self._refresh_camera_registry()
+    
+    def _refresh_camera_registry(self):
+        """Refresh camera registry table"""
+        if not self.camera_registry:
+            return
+        
+        cameras = self.camera_registry.get_all_cameras()
+        self.camera_table.setRowCount(len(cameras))
+        
+        for row, cam in enumerate(cameras):
+            self.camera_table.setItem(row, 0, QTableWidgetItem(str(cam.device_id)))
+            self.camera_table.setItem(row, 1, QTableWidgetItem(cam.name))
+            self.camera_table.setItem(row, 2, QTableWidgetItem(f"{cam.resolution[0]}x{cam.resolution[1]}"))
+            self.camera_table.setItem(row, 3, QTableWidgetItem(cam.driver))
+            self.camera_table.setItem(row, 4, QTableWidgetItem(cam.role.value))
+            
+            status = "✅ Connected" if cam.is_connected else "❌ Disconnected"
+            self.camera_table.setItem(row, 5, QTableWidgetItem(status))
+        
+        self.statusBar().showMessage(f"Camera registry refreshed: {len(cameras)} camera(s) found", 3000)
+        logger.debug(f"Refreshed camera registry with {len(cameras)} cameras")
 
     def closeEvent(self, event):
         """Handle window close event"""
