@@ -25,7 +25,12 @@
       "Bash(where:*)",
       "Bash(pip show:*)",
       "Bash(\"C:\\Users\\stati\\.pyenv\\pyenv-win\\versions\\3.12.10\\python.exe\" -c \"from boson_serial import BosonSerialInterface; print(''✓ Module loads successfully'')\")",
-      "Bash(\"C:\\Users\\stati\\.pyenv\\pyenv-win\\versions\\3.12.10\\python.exe\" -c \"from boson_serial import BosonSerialInterface; print(''Module loads OK'')\")"
+      "Bash(\"C:\\Users\\stati\\.pyenv\\pyenv-win\\versions\\3.12.10\\python.exe\" -c \"from boson_serial import BosonSerialInterface; print(''Module loads OK'')\")",
+      "Bash(dir /s /b)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(robocopy:*)",
+      "Bash(xcopy:*)"
     ],
     "deny": [],
     "ask": []
