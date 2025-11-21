@@ -43,6 +43,7 @@ from thermal_processor import ThermalProcessor
 from thermal_analyzer import ThermalAnalyzer
 from roi_manager import ROIManager, ROISource
 from palette_manager import PaletteManager, PaletteType
+from media_recorder import VideoRecorder, VideoPlayer, SnapshotManager
 
 # Core modules (PRESERVED - Fusion is paramount!)
 from fusion_processor import FusionProcessor
@@ -162,6 +163,11 @@ class ThermalInspectionFusion:
         self.inspection_mode = getattr(args, 'mode', 'realtime')  # realtime or playback
         self.recording_enabled = False
         self.video_writer = None
+
+        # Media recorder (NEW - Phase 6)
+        self.video_recorder: Optional[VideoRecorder] = None
+        self.video_player: Optional[VideoPlayer] = None
+        self.snapshot_manager: Optional[SnapshotManager] = None
 
         # Fusion settings (PRESERVED!)
         self.fusion_mode = getattr(args, 'fusion_mode', 'thermal_overlay')
@@ -375,6 +381,40 @@ class ThermalInspectionFusion:
             self.palette_manager = PaletteManager(palette_config)
             logger.info("[OK] Palette manager initialized")
             logger.info(f"     {len(self.palette_manager.get_available_palettes())} palettes available")
+
+            # Media recorder and snapshot manager (NEW - Phase 6)
+            recording_config = {
+                'output_path': 'recordings/',
+                'filename_pattern': 'inspection_%Y%m%d_%H%M%S',
+                'video_codec': 'mp4v',
+                'fps': 30,
+                'save_thermal': False,
+                'save_rgb': False,
+                'save_fusion': True,
+                'save_roi_metadata': True
+            }
+            self.video_recorder = VideoRecorder(recording_config)
+            logger.info("[OK] Video recorder initialized")
+
+            snapshot_config = {
+                'output_path': 'snapshots/',
+                'filename_pattern': 'snapshot_%Y%m%d_%H%M%S',
+                'format': 'png',
+                'quality': 95,
+                'save_metadata': True
+            }
+            self.snapshot_manager = SnapshotManager(snapshot_config)
+            logger.info("[OK] Snapshot manager initialized")
+
+            # Initialize video player if in playback mode
+            if self.inspection_mode == 'playback':
+                playback_file = getattr(self.args, 'playback_file', None)
+                if playback_file:
+                    self.video_player = VideoPlayer(playback_file)
+                    logger.info(f"[OK] Video player initialized: {playback_file}")
+                else:
+                    logger.error("Playback mode requires --playback-file argument")
+                    return False
 
             logger.info("-" * 60)
 
@@ -592,6 +632,34 @@ class ThermalInspectionFusion:
                 # 4. Process frames through inspection pipeline
                 result = self.process_frame(thermal_frame, rgb_frame)
 
+                # 4.5. Handle recording (NEW - Phase 6)
+                display_frame = result.get('display_frame')
+                if self.recording_enabled and display_frame is not None:
+                    # Start recording if not already started
+                    if not self.video_recorder.is_recording():
+                        frame_shape = display_frame.shape
+                        if self.video_recorder.start_recording(frame_shape, fps=30):
+                            logger.info("Recording started")
+
+                    # Write frame
+                    rois = result.get('rois', [])
+                    thermal_stats = {
+                        'min_temp': result.get('min_temp'),
+                        'max_temp': result.get('max_temp'),
+                        'mean_temp': result.get('mean_temp'),
+                    }
+                    self.video_recorder.write_frame(
+                        fusion_frame=display_frame,
+                        thermal_frame=thermal_frame,
+                        rgb_frame=rgb_frame,
+                        rois=rois,
+                        thermal_stats=thermal_stats
+                    )
+                elif not self.recording_enabled and self.video_recorder.is_recording():
+                    # Stop recording
+                    self.video_recorder.stop_recording()
+                    logger.info("Recording stopped")
+
                 # 5. Display (temporary simple display until GUI is ready)
                 display_frame = result.get('display_frame')
                 if display_frame is not None and self.gui_type == 'opencv':
@@ -604,6 +672,20 @@ class ThermalInspectionFusion:
                         # Toggle recording
                         self.recording_enabled = not self.recording_enabled
                         logger.info(f"Recording: {'ON' if self.recording_enabled else 'OFF'}")
+                    elif key == ord('s'):
+                        # Capture snapshot (NEW - Phase 6)
+                        if display_frame is not None:
+                            rois = result.get('rois', [])
+                            snapshot_path = self.snapshot_manager.capture_snapshot(
+                                frame=display_frame,
+                                rois=rois,
+                                thermal_stats=thermal_stats,
+                                hot_spots=self.latest_hot_spots,
+                                cold_spots=self.latest_cold_spots,
+                                anomalies=self.latest_anomalies
+                            )
+                            if snapshot_path:
+                                logger.info(f"Snapshot saved: {snapshot_path}")
 
                 # 6. Update performance metrics
                 loop_time = time.time() - loop_start
@@ -632,6 +714,19 @@ class ThermalInspectionFusion:
         """Clean up resources."""
         logger.info("Cleaning up...")
         self.running = False
+
+        # Stop recording if active (NEW - Phase 6)
+        if self.video_recorder and self.video_recorder.is_recording():
+            self.video_recorder.stop_recording()
+            logger.info("Recording stopped (cleanup)")
+
+        # Release video recorder
+        if self.video_recorder:
+            self.video_recorder.cleanup()
+
+        # Release video player
+        if self.video_player:
+            self.video_player.cleanup()
 
         if self.thermal_camera:
             self.thermal_camera.release()
@@ -680,6 +775,8 @@ def parse_arguments():
     # Inspection settings
     parser.add_argument('--mode', choices=['realtime', 'playback'], default='realtime',
                        help='Inspection mode (default: realtime)')
+    parser.add_argument('--playback-file', type=str,
+                       help='Video file to play back (required for playback mode)')
     parser.add_argument('--auto-roi', action='store_true',
                        help='Enable automatic ROI detection')
 
