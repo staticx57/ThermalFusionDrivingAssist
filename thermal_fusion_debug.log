@@ -11940,3 +11940,81 @@ UnboundLocalError: local variable 'QLabel' referenced before assignment
 2025-11-20 20:25:16,426 - driver_gui_qt - INFO - [driver_gui_qt.py:1552] - Qt GUI closing...
 2025-11-20 20:25:16,427 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
 2025-11-20 20:25:16,427 - __main__ - INFO - [main.py:1346] - Shutdown complete
+2025-11-21 08:24:40,543 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-11-21 08:24:40,636 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-11-21 08:24:40,651 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-11-21 08:24:40,651 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 0 (DSHOW) -> rgb
+2025-11-21 08:24:40,652 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-11-21 08:24:40,652 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-11-21 08:24:40,652 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-11-21 08:24:40,652 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-11-21 08:24:40,652 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 1
+2025-11-21 08:24:40,652 - __main__ - INFO - [main.py:296] - Opening thermal camera device 1...
+2025-11-21 08:24:40,652 - flir_camera - INFO - [flir_camera.py:43] - Windows detected - trying DirectShow backend
+2025-11-21 08:24:40,724 - flir_camera - WARNING - [flir_camera.py:56] - Platform-specific backend failed, trying default backend
+2025-11-21 08:24:40,839 - flir_camera - ERROR - [flir_camera.py:74] - Failed to open camera on device 1
+2025-11-21 08:24:40,839 - __main__ - WARNING - [main.py:471] - ============================================================
+2025-11-21 08:24:40,839 - __main__ - WARNING - [main.py:472] - NO THERMAL CAMERA DETECTED
+2025-11-21 08:24:40,840 - __main__ - WARNING - [main.py:473] - System will wait for thermal camera connection...
+2025-11-21 08:24:40,840 - __main__ - WARNING - [main.py:474] - Connect thermal camera and it will auto-detect
+2025-11-21 08:24:40,840 - __main__ - WARNING - [main.py:475] - ============================================================
+2025-11-21 08:24:40,840 - __main__ - INFO - [main.py:485] - Using default resolution: 640x512
+2025-11-21 08:24:40,840 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-11-21 08:24:40,840 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 08:24:40,840 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 08:24:40,840 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 08:24:40,840 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 08:24:40,840 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 08:24:40,840 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 08:24:40,841 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 0 with DirectShow
+2025-11-21 08:24:43,904 - rgb_camera - INFO - [rgb_camera.py:125] - RGB camera opened successfully
+2025-11-21 08:24:43,904 - rgb_camera - INFO - [rgb_camera.py:126] - Resolution: 640x480 @ 30 FPS
+2025-11-21 08:24:44,770 - __main__ - INFO - [main.py:511] - [OK] RGB camera opened: USB/CSI (Legacy)
+2025-11-21 08:24:44,771 - __main__ - INFO - [main.py:512] -   Resolution: 640x480
+2025-11-21 08:24:44,771 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-11-21 08:24:44,771 - fusion_processor - WARNING - [fusion_processor.py:63] - No calibration file provided - using identity transform
+2025-11-21 08:24:44,772 - __main__ - INFO - [main.py:531] - Fusion processor initialized (mode: alpha_blend)
+2025-11-21 08:24:44,772 - __main__ - INFO - [main.py:572] - Detector initialization deferred until thermal camera connects
+2025-11-21 08:24:44,772 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-11-21 08:24:44,786 - __main__ - ERROR - [main.py:652] - Initialization failed: No module named 'road_analyzer'
+Traceback (most recent call last):
+  File "C:\Users\stati\Desktop\Projects\ThermalFusionDrivingAssist\main.py", line 606, in initialize
+    from driver_gui_qt import DriverAppWindow
+  File "C:\Users\stati\Desktop\Projects\ThermalFusionDrivingAssist\driver_gui_qt.py", line 25, in <module>
+    from road_analyzer import Alert, AlertLevel
+ModuleNotFoundError: No module named 'road_analyzer'
+2025-11-21 08:24:44,788 - __main__ - ERROR - [main.py:1468] - Failed to initialize application
+2025-11-21 08:24:45,151 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 08:25:25,798 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-11-21 08:25:25,835 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-11-21 08:25:25,856 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-11-21 08:25:25,857 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 0 (DSHOW) -> rgb
+2025-11-21 08:25:25,857 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-11-21 08:25:25,857 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-11-21 08:25:25,857 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-11-21 08:25:25,858 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-11-21 08:25:25,859 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 1
+2025-11-21 08:25:25,859 - __main__ - INFO - [main.py:296] - Opening thermal camera device 1...
+2025-11-21 08:25:25,859 - flir_camera - INFO - [flir_camera.py:43] - Windows detected - trying DirectShow backend
+2025-11-21 08:25:25,897 - flir_camera - WARNING - [flir_camera.py:56] - Platform-specific backend failed, trying default backend
+2025-11-21 08:25:25,991 - flir_camera - ERROR - [flir_camera.py:74] - Failed to open camera on device 1
+2025-11-21 08:25:25,991 - __main__ - WARNING - [main.py:471] - ============================================================
+2025-11-21 08:25:25,991 - __main__ - WARNING - [main.py:472] - NO THERMAL CAMERA DETECTED
+2025-11-21 08:25:25,991 - __main__ - WARNING - [main.py:473] - System will wait for thermal camera connection...
+2025-11-21 08:25:25,992 - __main__ - WARNING - [main.py:474] - Connect thermal camera and it will auto-detect
+2025-11-21 08:25:25,992 - __main__ - WARNING - [main.py:475] - ============================================================
+2025-11-21 08:25:25,992 - __main__ - INFO - [main.py:485] - Using default resolution: 640x512
+2025-11-21 08:25:25,992 - __main__ - INFO - [main.py:521] - RGB camera disabled by user
+2025-11-21 08:25:25,992 - __main__ - INFO - [main.py:536] - Fusion processor not initialized (no RGB camera)
+2025-11-21 08:25:25,992 - __main__ - INFO - [main.py:572] - Detector initialization deferred until thermal camera connects
+2025-11-21 08:25:25,993 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-11-21 08:25:26,039 - __main__ - ERROR - [main.py:652] - Initialization failed: No module named 'road_analyzer'
+Traceback (most recent call last):
+  File "C:\Users\stati\Desktop\Projects\ThermalFusionDrivingAssist\main.py", line 606, in initialize
+    from driver_gui_qt import DriverAppWindow
+  File "C:\Users\stati\Desktop\Projects\ThermalFusionDrivingAssist\driver_gui_qt.py", line 42, in <module>
+    from alert_overlay import AlertOverlayWidget
+  File "C:\Users\stati\Desktop\Projects\ThermalFusionDrivingAssist\alert_overlay.py", line 21, in <module>
+    from road_analyzer import Alert, AlertLevel
+ModuleNotFoundError: No module named 'road_analyzer'
+2025-11-21 08:25:26,041 - __main__ - ERROR - [main.py:1468] - Failed to initialize application

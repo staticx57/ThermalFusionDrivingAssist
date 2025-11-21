@@ -27,7 +27,7 @@ from placeholder_frames import (create_thermal_placeholder, create_rgb_placehold
                                  create_feed_unavailable_frame, CameraStatus)
 from vpi_detector import VPIDetector
 from fusion_processor import FusionProcessor
-from road_analyzer import RoadAnalyzer
+# from road_analyzer import RoadAnalyzer  # Commented out - file removed during transformation
 from view_mode import ViewMode
 from performance_monitor import PerformanceMonitor
 
@@ -579,19 +579,21 @@ class ThermalRoadMonitorFusion:
             enable_audio = getattr(self.args, 'enable_audio', True)
             thermal_mode = not self.rgb_available  # Use thermal mode if RGB not available
 
-            self.analyzer = RoadAnalyzer(
-                frame_width=actual_res[0],
-                frame_height=actual_res[1],
-                enable_distance=enable_distance,
-                enable_audio=enable_audio,
-                thermal_mode=thermal_mode
-            )
+            # RoadAnalyzer commented out - file removed during transformation
+            self.analyzer = None  # Placeholder for compatibility
+            # self.analyzer = RoadAnalyzer(
+            #     frame_width=actual_res[0],
+            #     frame_height=actual_res[1],
+            #     enable_distance=enable_distance,
+            #     enable_audio=enable_audio,
+            #     thermal_mode=thermal_mode
+            # )
 
             # Update vehicle speed if provided (for TTC calculation)
-            vehicle_speed = getattr(self.args, 'vehicle_speed', 0.0)
-            if vehicle_speed > 0:
-                self.analyzer.update_vehicle_speed(vehicle_speed)
-                logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
+            # vehicle_speed = getattr(self.args, 'vehicle_speed', 0.0)
+            # if vehicle_speed > 0:
+            #     self.analyzer.update_vehicle_speed(vehicle_speed)
+            #     logger.info(f"Vehicle speed set to {vehicle_speed} km/h for TTC calculation")
 
             # 7. Initialize GUI (Qt is now default)
             use_opencv = getattr(self.args, 'use_opencv_gui', False)
@@ -664,7 +666,8 @@ class ThermalRoadMonitorFusion:
                         self.detector.frame_skip = self.frame_skip_value
 
                         detections = self.detector.detect(frame, filter_road_objects=True)
-                        alerts = self.analyzer.analyze(detections)
+                        alerts = []  # Placeholder - analyzer disabled
+                        # alerts = self.analyzer.analyze(detections) if self.analyzer else []
 
                         with self.detection_lock:
                             self.latest_detections = detections

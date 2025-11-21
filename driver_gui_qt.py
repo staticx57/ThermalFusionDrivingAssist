@@ -22,7 +22,21 @@ except ImportError:
 
 import cv2
 from object_detector import Detection
-from road_analyzer import Alert, AlertLevel
+# from road_analyzer import Alert, AlertLevel  # Commented out - road_analyzer removed
+
+# Stub classes for compatibility
+class AlertLevel:
+    """Stub AlertLevel class for compatibility"""
+    INFO = "INFO"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+class Alert:
+    """Stub Alert class for compatibility"""
+    def __init__(self, level=AlertLevel.INFO, message="", detection=None):
+        self.level = level
+        self.message = message
+        self.detection = detection
 from view_mode import ViewMode
 from developer_panel import DeveloperPanel
 from alert_overlay import AlertOverlayWidget
