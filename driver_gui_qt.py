@@ -761,6 +761,14 @@ class DriverAppWindow(QMainWindow):
         # Set window size
         self.resize(1280, 960)
 
+        # CRITICAL: Initialize stored window sizes NOW (at creation, not first toggle)
+        # This ensures we capture the INTENDED base size, not a grown size
+        PANEL_WIDTH = 300
+        self._base_window_size = QSize(1280, 960)  # Initial size
+        self._expanded_window_size = QSize(1280 + PANEL_WIDTH, 960)  # With dev panel
+        logger.info(f"Initialized window sizes - Base: {self._base_window_size.width()}x{self._base_window_size.height()}, "
+                   f"Expanded: {self._expanded_window_size.width()}x{self._expanded_window_size.height()}")
+
         logger.info("Qt GUI initialized successfully")
 
     def set_app(self, app):
@@ -1228,52 +1236,82 @@ class DriverAppWindow(QMainWindow):
         Manages info panel visibility (hidden in dev mode, shown in simple mode)
         Note: Developer panel not intended for use while driving
 
-        FIX: Lock window size to prevent Qt layout from expanding it on panel show
+        Uses stored window sizes to prevent growth on repeated toggles.
+        Updates stored sizes when user manually resizes the window.
         """
         from PyQt5.QtCore import QSize
 
         self.developer_mode = not self.developer_mode
 
-        # Developer panel width (from developer_panel.py)
-        PANEL_WIDTH = 300
-
-        # Store window size before any changes
-        current_width = self.width()
-        current_height = self.height()
+        # Unlock size constraints before resizing
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(16777215, 16777215)  # QWIDGETSIZE_MAX
 
         if self.developer_mode:
-            # SHOW PANEL: Expand window if needed, then lock size
-            if not hasattr(self, '_window_size_locked'):
-                # First time showing panel - expand window to make room
-                target_width = current_width + PANEL_WIDTH
-                target_height = current_height
+            # ENABLE: Show panel first, then resize
+            # Show panel and controls
+            self.developer_panel.show()
+            # Initialize camera list when panel is shown
+            if hasattr(self.developer_panel, 'update_camera_list'):
+                try:
+                    self.developer_panel.update_camera_list()
+                except Exception as e:
+                    logger.warning(f"Could not update camera list on panel show: {e}")
+            self.control_panel.show_developer_controls(True)
+            self.info_panel.hide()
 
-                # Unlock size constraints
-                self.setMinimumSize(0, 0)
-                self.setMaximumSize(16777215, 16777215)  # QWIDGETSIZE_MAX
+            # Process pending events to ensure panel is fully shown
+            from PyQt5.QtWidgets import QApplication
+            QApplication.processEvents()
 
-                # Resize to make room
-                self.resize(target_width, target_height)
+            # Now resize to expanded size
+            self._programmatic_resize = True
+            self.resize(self._expanded_window_size)
+            self._programmatic_resize = False
 
-                # Show panel
-                self.developer_panel.show()
-                # Initialize camera list when panel is first shown
-                if hasattr(self.developer_panel, 'update_camera_list'):
-                    try:
-                        self.developer_panel.update_camera_list()
-                    except Exception as e:
-                        logger.warning(f"Could not update camera list on panel show: {e}")
-                self.control_panel.show_developer_controls(True)
-                self.info_panel.hide()
-
-                logger.info(f"[OK] Developer mode ENABLED | Window: {current_width}x{current_height} (locked)")
+            logger.info(f"[OK] Developer mode ENABLED | Window: {self._expanded_window_size.width()}x{self._expanded_window_size.height()}")
         else:
-            # HIDE PANEL: Just hide it, window stays locked
+            # DISABLE: Hide panel FIRST, then resize to allow proper shrinking
+            # Hide panel and controls
             self.developer_panel.hide()
             self.control_panel.show_developer_controls(False)
             self.info_panel.show()
 
-            logger.info(f"✗ Developer mode DISABLED | Window: {current_width}x{current_height} (locked)")
+            # CRITICAL: Process events to ensure Qt recalculates layout WITHOUT dev panel
+            from PyQt5.QtWidgets import QApplication
+            QApplication.processEvents()
+
+            # Force layout to recalculate minimum size
+            self.layout().invalidate()
+            self.layout().activate()
+
+            # Get the current minimum size hint from the layout
+            min_size = self.minimumSizeHint()
+            logger.debug(f"Layout minimum size hint: {min_size.width()}x{min_size.height()}")
+
+            # Calculate target size: stored base width, minimum viable height
+            target_width = self._base_window_size.width()
+            # Use the smaller of: stored base height OR minimum size hint height
+            target_height = min(self._base_window_size.height(), min_size.height())
+
+            # If minimum size is reasonable, use it; otherwise use stored base
+            if min_size.height() > 0 and min_size.height() < self._base_window_size.height():
+                target_height = min_size.height()
+                logger.debug(f"Using minimum height {target_height} (smaller than base {self._base_window_size.height()})")
+            else:
+                target_height = self._base_window_size.height()
+                logger.debug(f"Using stored base height {target_height}")
+
+            # Now resize to calculated size
+            self._programmatic_resize = True
+            self.resize(target_width, target_height)
+            self.updateGeometry()  # Force geometry recalculation
+            self._programmatic_resize = False
+
+            # One more processEvents to apply the resize
+            QApplication.processEvents()
+
+            logger.info(f"[X] Developer mode DISABLED | Window: {target_width}x{target_height}")
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts"""
@@ -1463,13 +1501,51 @@ class DriverAppWindow(QMainWindow):
         self.control_panel.update_view_mode(mode)
 
     def resizeEvent(self, event):
-        """Handle window resize - reposition info panel"""
+        """
+        Handle window resize - reposition info panel and track manual resizes
+
+        When user manually resizes the window, update stored sizes to maintain
+        the 300px delta between base and expanded sizes.
+        """
         super().resizeEvent(event)
+
+        # Reposition info panel
         if self.info_panel:
             # Top-right corner with fixed offset (SAE J2400: peripheral, stable position)
             # Panel is 280px wide, position 10px from right edge
             panel_x = self.video_widget.width() - 290  # 280px width + 10px margin
             self.info_panel.move(panel_x, 10)
+
+        # Track manual resizes and update stored sizes
+        # Only update if:
+        # 1. Stored sizes are initialized
+        # 2. This resize wasn't triggered by toggle_developer_mode()
+        if hasattr(self, '_base_window_size') and not getattr(self, '_programmatic_resize', False):
+            PANEL_WIDTH = 300
+            new_size = self.size()
+
+            if self.developer_mode:
+                # User resized while dev panel is shown
+                # Update expanded size, recalculate base (expanded - panel width)
+                self._expanded_window_size = new_size
+                self._base_window_size = QSize(
+                    new_size.width() - PANEL_WIDTH,
+                    new_size.height()
+                )
+                logger.debug(f"[RESIZE] Manual resize in dev mode - Updated sizes: "
+                           f"Base: {self._base_window_size.width()}x{self._base_window_size.height()}, "
+                           f"Expanded: {self._expanded_window_size.width()}x{self._expanded_window_size.height()}")
+            else:
+                # User resized while dev panel is hidden
+                # Update base size, recalculate expanded (base + panel width)
+                self._base_window_size = new_size
+                self._expanded_window_size = QSize(
+                    new_size.width() + PANEL_WIDTH,
+                    new_size.height()
+                )
+                logger.debug(f"[RESIZE] Manual resize in simple mode - Updated sizes: "
+                           f"Base: {self._base_window_size.width()}x{self._base_window_size.height()}, "
+                           f"Expanded: {self._expanded_window_size.width()}x{self._expanded_window_size.height()}")
 
     def closeEvent(self, event):
         """Handle window close"""

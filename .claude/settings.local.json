@@ -15,7 +15,10 @@
       "Bash(timeout 10 python:*)",
       "Bash(taskkill:*)",
       "Bash(nul)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(\"C:\\Users\\stati\\Desktop\\Projects\\ThermalFusionDrivingAssist\\developer_panel_temp.py\")",
+      "Bash(cat:*)",
+      "Bash(move:*)"
     ],
     "deny": [],
     "ask": []

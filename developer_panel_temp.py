@@ -574,7 +574,6 @@ class DeveloperPanel(QFrame):
         layout.addWidget(scroll)
         tab.setLayout(layout)
         return tab
-
     def _create_section(self, title: str) -> QFrame:
         """Create a section frame with header"""
         frame = QFrame()
