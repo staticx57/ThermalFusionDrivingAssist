@@ -1,6 +1,7 @@
 """
 FLIR Boson Thermal Camera Interface
 Optimized for Jetson Orin with GPU acceleration
+Enhanced with Boson SDK for serial control (Phase 7)
 """
 import cv2
 import numpy as np
@@ -10,22 +11,48 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Optional: Boson SDK integration for advanced control
+try:
+    from boson_sdk_wrapper import BosonSDK, GainMode, FFCMode, ColorLUT, BosonInfo
+    SDK_AVAILABLE = True
+except ImportError:
+    SDK_AVAILABLE = False
+    logger.info("Boson SDK not available - serial control disabled (video-only mode)")
+
 
 class FLIRBosonCamera:
-    """Interface for FLIR Boson thermal camera"""
+    """
+    Interface for FLIR Boson thermal camera.
 
-    def __init__(self, device_id: int = 0, resolution: Tuple[int, int] = (640, 512)):
+    Supports:
+    - Video streaming via OpenCV (all platforms)
+    - Optional serial control via Boson SDK (Windows/Linux)
+    """
+
+    def __init__(self, device_id: int = 0, resolution: Tuple[int, int] = (640, 512),
+                 enable_sdk: bool = False, com_port: Optional[str] = None):
         """
         Initialize FLIR Boson camera
 
         Args:
-            device_id: Video device ID (usually /dev/video0)
-            resolution: Camera resolution (640x512 for Boson 640)
+            device_id: Video device ID (usually /dev/video0 or 0)
+            resolution: Camera resolution (640x512 for Boson 640, 320x256 for Boson 320)
+            enable_sdk: Enable Boson SDK for serial control (FFC, AGC, etc.)
+            com_port: COM port for SDK (e.g., 'COM6'). Auto-detect if None.
         """
         self.device_id = device_id
         self.resolution = resolution
         self.cap = None
         self.is_opened = False
+
+        # SDK integration (Phase 7)
+        self.enable_sdk = enable_sdk and SDK_AVAILABLE
+        self.com_port = com_port
+        self.sdk: Optional[BosonSDK] = None
+        self.sdk_connected = False
+
+        if enable_sdk and not SDK_AVAILABLE:
+            logger.warning("SDK requested but not available - continuing in video-only mode")
 
     def open(self) -> bool:
         """Open camera connection (cross-platform: Linux/Windows)"""
@@ -69,6 +96,21 @@ class FLIRBosonCamera:
                 logger.info(f"FLIR Boson camera opened successfully on device {self.device_id}")
                 logger.info(f"Resolution: {self.get_actual_resolution()}")
                 logger.info(f"FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")
+
+                # Open SDK connection for serial control (Phase 7)
+                if self.enable_sdk:
+                    try:
+                        self.sdk = BosonSDK(com_port=self.com_port or 'COM6')
+                        if self.sdk.open():
+                            self.sdk_connected = True
+                            logger.info("✓ Boson SDK connected - serial control enabled")
+                            logger.info(f"  Camera SN: {self.sdk.get_info().serial_number}")
+                            logger.info(f"  FPA Temp: {self.sdk.get_info().fpa_temperature_k - 273.15:.1f}°C")
+                        else:
+                            logger.warning("SDK connection failed - continuing in video-only mode")
+                    except Exception as e:
+                        logger.warning(f"SDK initialization failed: {e} - continuing in video-only mode")
+
                 return True
             else:
                 logger.error(f"Failed to open camera on device {self.device_id}")
@@ -152,10 +194,116 @@ class FLIRBosonCamera:
 
     def release(self):
         """Release camera resources"""
+        # Close SDK connection first
+        if self.sdk and self.sdk_connected:
+            try:
+                self.sdk.close()
+                logger.info("Boson SDK disconnected")
+            except Exception as e:
+                logger.warning(f"Error closing SDK: {e}")
+
+        # Release video capture
         if self.cap is not None:
             self.cap.release()
             self.is_opened = False
             logger.info("FLIR Boson camera released")
+
+    # ========================================================================
+    # SDK Control Methods (Phase 7)
+    # ========================================================================
+
+    def trigger_ffc(self) -> bool:
+        """
+        Trigger Flat Field Correction (FFC).
+
+        Returns:
+            True if successful (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            logger.warning("FFC requires SDK - not available")
+            return False
+
+        return self.sdk.run_ffc()
+
+    def set_gain_mode(self, mode: 'GainMode') -> bool:
+        """
+        Set camera gain mode.
+
+        Args:
+            mode: GainMode (HIGH, LOW, AUTO, MANUAL)
+
+        Returns:
+            True if successful (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            logger.warning("Gain control requires SDK - not available")
+            return False
+
+        return self.sdk.set_gain_mode(mode)
+
+    def set_color_lut(self, lut: 'ColorLUT') -> bool:
+        """
+        Set camera color lookup table.
+
+        Args:
+            lut: ColorLUT (WHITE_HOT, BLACK_HOT, IRONBOW, etc.)
+
+        Returns:
+            True if successful (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            logger.warning("Color LUT control requires SDK - not available")
+            return False
+
+        return self.sdk.set_color_lut(lut)
+
+    def set_ffc_mode(self, mode: 'FFCMode') -> bool:
+        """
+        Set FFC mode.
+
+        Args:
+            mode: FFCMode (MANUAL, AUTO, EXTERNAL)
+
+        Returns:
+            True if successful (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            logger.warning("FFC mode control requires SDK - not available")
+            return False
+
+        return self.sdk.set_ffc_mode(mode)
+
+    def get_fpa_temperature(self) -> Optional[Tuple[float, float]]:
+        """
+        Get FPA (Focal Plane Array) temperature.
+
+        Returns:
+            (temp_kelvin, temp_celsius) or None (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            return None
+
+        return self.sdk.get_fpa_temperature()
+
+    def get_camera_info(self) -> Optional['BosonInfo']:
+        """
+        Get detailed camera information.
+
+        Returns:
+            BosonInfo object or None (requires SDK)
+        """
+        if not self.sdk_connected or not self.sdk:
+            return None
+
+        return self.sdk.get_info()
+
+    def is_sdk_connected(self) -> bool:
+        """Check if SDK is connected for serial control."""
+        return self.sdk_connected
+
+    # ========================================================================
+    # Context Manager
+    # ========================================================================
 
     def __enter__(self):
         """Context manager entry"""
