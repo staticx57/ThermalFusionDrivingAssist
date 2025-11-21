@@ -18,7 +18,10 @@
       "Bash(pip install:*)",
       "Bash(\"C:\\Users\\stati\\Desktop\\Projects\\ThermalFusionDrivingAssist\\developer_panel_temp.py\")",
       "Bash(cat:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(git rm:*)",
+      "WebSearch",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,4 +1,385 @@
-# ThermalFusionDrivingAssist - Changelog
+# Thermal Inspection Fusion Tool - Changelog
+
+## [2.0.0] - 2025-11-20 - MAJOR TRANSFORMATION TO INSPECTION TOOL 🔧
+
+### 🎯 Overview
+Complete transformation from **ThermalFusionDrivingAssist** (ADAS system) to **Thermal Inspection Fusion Tool** for circuit board and residential house inspection applications.
+
+**Project Renamed**: ThermalFusionDrivingAssist → Thermal Inspection Fusion Tool
+
+---
+
+## BREAKING CHANGES
+
+### ❌ REMOVED - Driving-Specific Features
+
+#### Deleted Modules (6 files, ~1,442 lines removed)
+- **distance_estimator.py** (384 lines) - Road distance calculation, TTC
+- **road_analyzer.py** (330 lines) - Lane position, driving alerts
+- **audio_alert_system.py** - ISO 26262 compliant audio warnings
+- **lidar_pandar.py** - Hesai Pandar 40P LiDAR integration
+- **pandar_integration.py** - LiDAR-camera fusion
+- **lidar_interface.py** - LiDAR abstraction layer
+
+#### Transformed Modules
+- **vpi_detector.py** → **thermal_processor.py**
+  - ❌ Removed YOLO object detection (~442 lines)
+  - ❌ Removed road-specific classes
+  - ❌ Removed model loading/management
+  - ✅ PRESERVED: Motion detection (100%)
+  - ✅ PRESERVED: Edge detection (100%)
+  - ✅ PRESERVED: 14 thermal palettes (100%)
+  - ✅ Added: New inspection data structures
+
+- **main.py** → **inspection_main.py**
+  - ❌ Removed RoadAnalyzer integration
+  - ❌ Removed audio alert system
+  - ❌ Removed YOLO detection worker
+  - ✅ PRESERVED: Complete fusion processor (100% - PARAMOUNT!)
+  - ✅ PRESERVED: Camera hot-plug support
+  - ✅ Added: All new inspection modules
+
+---
+
+### ✅ ADDED - Inspection Features
+
+#### New Core Modules (4 files, ~2,590 lines)
+
+**1. thermal_analyzer.py** (780 lines) - Comprehensive Temperature Analysis
+- **Temperature Measurement**:
+  - Absolute temperature (radiometric data with calibration)
+  - Relative temperature analysis (min/max/mean/median/std/percentiles)
+  - Temperature unit conversion (°C/°F/K)
+  - Calibration support (offset and scale)
+
+- **Hot/Cold Spot Detection**:
+  - Percentile-based thresholds (configurable)
+  - Absolute temperature thresholds
+  - Contour-based region identification
+  - Confidence scoring
+  - Area filtering (min 100 pixels)
+
+- **Temperature Gradient Analysis**:
+  - Sobel-based gradient computation
+  - Gradient magnitude calculation
+  - Thermal edge detection
+
+- **Thermal Anomaly Detection**:
+  - Rapid temperature increase/decrease detection
+  - Gradient anomalies (extreme temperature changes)
+  - Statistical outlier detection
+  - Configurable sensitivity levels
+
+- **Temperature Trend Tracking**:
+  - Time-series data collection
+  - Linear regression for trend analysis
+  - Trend direction (increasing/decreasing/stable)
+  - Rate of change calculation (degrees/second)
+  - Future temperature prediction
+  - Configurable 60-second window
+
+- **New Data Classes**:
+  - `ThermalStatistics` - Complete statistical metrics
+  - `HotSpot` - Hot spot detection results
+  - `ColdSpot` - Cold spot detection results
+  - `ThermalAnomaly` - Anomaly detection results
+  - `TemperatureTrend` - Trend tracking data with prediction
+
+**2. roi_manager.py** (710 lines) - Smart ROI Management
+- **ROI Data Structures**:
+  - Rectangle ROIs
+  - Polygon ROIs (arbitrary shapes)
+  - Ellipse ROIs
+  - Circle ROIs
+  - Full metadata (label, color, active/inactive, locked/unlocked)
+
+- **Automatic ROI Detection (4 methods)**:
+  - **Temperature Threshold**: Hot/cold regions based on percentile
+  - **Temperature Gradient**: Areas with significant thermal changes
+  - **Motion-Triggered**: ROIs around detected motion
+  - **Edge Clustering**: Group dense edge regions
+
+- **Manual ROI Creation**:
+  - Point-based creation
+  - Interactive drawing (will be added in GUI phase)
+  - Bounding box calculation
+  - Binary mask generation
+  - Centroid computation
+
+- **ROI Management**:
+  - Add/update/delete operations
+  - Lock/unlock (prevent editing)
+  - Active/inactive toggle
+  - Query by source type
+  - Query by ROI type
+
+- **ROI Persistence**:
+  - Save/load ROI sets to JSON
+  - Full metadata preservation
+  - Timestamp tracking
+
+- **ROI Utilities**:
+  - Point containment test
+  - Visualization (draw on frame)
+  - Multiple color schemes
+
+- **New Classes**:
+  - `ROI` - Complete ROI data structure
+  - `ROIType` enum - RECTANGLE, POLYGON, ELLIPSE, CIRCLE
+  - `ROISource` enum - MANUAL, AUTO_TEMPERATURE, AUTO_GRADIENT, AUTO_MOTION, AUTO_EDGE
+
+**3. palette_manager.py** (540 lines) - Multi-Palette System
+- **Architecture**:
+  - Global default palette (entire image)
+  - Per-ROI palette overrides (independent per ROI)
+  - Composite rendering (global + ROI-specific)
+
+- **14 Thermal Palettes** (all preserved from ADAS):
+  1. WHITE_HOT - Grayscale (FLIR standard)
+  2. BLACK_HOT - Inverted grayscale
+  3. IRONBOW - Black→purple→red→orange→yellow→white
+  4. RAINBOW - Standard rainbow (OpenCV JET)
+  5. RAINBOW_HC - High contrast rainbow
+  6. FUSION - Blue→purple→pink→red
+  7. LAVA - Black→red→orange→yellow→white
+  8. ARCTIC - White→cyan→blue→dark blue
+  9. GLOBOW - Green→yellow→orange→red
+  10. GRADEDFIRE - Sophisticated fire (10 gradient stops)
+  11. HOTTEST - Purple→magenta→red→yellow→white
+  12. MEDICAL - Medical imaging (Viridis)
+  13. BLUE_RED - Diverging (Blue→white→red)
+  14. COOL_HOT - Cool to hot
+
+- **Palette Customization**:
+  - Auto-contrast (automatic range stretching)
+  - Manual contrast range
+  - Gamma correction
+  - Invert option
+
+- **Palette Utilities**:
+  - Generate preview images
+  - Save/load configuration to JSON
+  - Query palette settings
+
+- **New Classes**:
+  - `PaletteManager` - Main management
+  - `PaletteConfig` - Configuration dataclass
+  - `PaletteType` enum - All 14 palettes
+
+**4. thermal_processor.py** (560 lines) - Inspection-Focused Processing
+- **Simplified from vpi_detector.py**:
+  - Removed all YOLO code (442 lines)
+  - Removed road-specific logic
+  - Added inspection-focused API
+
+- **Motion Detection** (100% preserved):
+  - Temporal differencing
+  - Gaussian blur noise reduction
+  - Contour detection with size filtering
+  - Persistence tracking (2+ frames)
+  - Camera motion rejection (>60% frame)
+  - Grid-based region tracking
+  - Confidence scoring
+
+- **Edge Detection** (100% preserved):
+  - VPI hardware acceleration (Jetson)
+  - OpenCV fallback (cross-platform)
+  - Canny edge detection
+  - Edge cluster identification
+  - Edge density calculation
+
+- **Thermal Palette Application** (legacy support):
+  - All 14 palettes
+  - 16-bit to 8-bit conversion
+  - LUT-based colorization
+
+- **VPI Acceleration**:
+  - CUDA backend (GPU)
+  - PVA/VIC backends (Jetson)
+  - CPU fallback
+
+- **New Data Classes**:
+  - `MotionDetection` - Motion results
+  - `EdgeCluster` - Edge cluster results
+
+**5. inspection_main.py** (NEW) - Main Application
+- **ThermalInspectionFusion** class (replaces ThermalRoadMonitorFusion):
+  - Integration of all new modules
+  - Simplified inspection workflow
+  - **PRESERVED**: Complete fusion processor (PARAMOUNT!)
+  - Hot-plug camera support
+  - Platform detection (Jetson/x86)
+  - Performance monitoring
+
+- **New Inspection Pipeline**:
+  1. Capture thermal + RGB frames
+  2. Process thermal (motion + edge detection)
+  3. Apply multi-palette (global + ROI overrides)
+  4. Auto-detect ROIs (4 methods)
+  5. Analyze thermal per ROI (stats, hot/cold spots, anomalies)
+  6. Fuse thermal + RGB (7 modes - PARAMOUNT!)
+  7. Draw ROIs and display
+
+---
+
+## 🔄 PRESERVED - Critical Components (100%)
+
+### Fusion Engine (PARAMOUNT! - NO CHANGES)
+**fusion_processor.py** - Completely untouched
+- ✅ All 7 fusion algorithms intact:
+  1. Alpha Blend (weighted average)
+  2. Edge Enhanced (base + edges)
+  3. Thermal Overlay (hot regions on base)
+  4. Side-by-Side (horizontal concat)
+  5. Picture-in-Picture (inset view)
+  6. Max Intensity (brightest pixels)
+  7. Feature Weighted (adaptive blending)
+- ✅ Priority control (thermal/RGB base)
+- ✅ Fusion intensity control (0.0-1.0)
+- ✅ Homography-based alignment
+- ✅ Edge color customization
+
+### Camera System (100% Preserved)
+- **flir_camera.py** - FLIR Boson thermal camera
+- **rgb_camera_firefly.py** - FLIR Firefly RGB
+- **rgb_camera_uvc.py** - Generic UVC webcam
+- **camera_factory.py** - Auto-detection
+- **camera_detector.py** - Discovery
+- **camera_monitor.py** - Health monitoring
+- **placeholder_frames.py** - Placeholders
+
+### Performance & Utilities (100% Preserved)
+- **performance_monitor.py** - FPS tracking
+- **view_mode.py** - View mode enum
+- Platform detection (Jetson/x86)
+- Hot-plug camera support
+- Logging system
+
+---
+
+## 📊 Statistics
+
+### Code Changes
+- **Files Deleted**: 6 (driving modules)
+- **Files Created**: 5 (inspection modules)
+- **Files Modified**: 1 (vpi_detector.py → thermal_processor.py)
+- **Lines Removed**: ~1,442 (driving + YOLO)
+- **Lines Added**: ~2,590 (inspection features)
+- **Net Change**: +1,148 lines
+
+### Feature Comparison
+
+| Category | Before (ADAS) | After (Inspection) |
+|----------|---------------|-------------------|
+| Object Detection | YOLO (80 classes) | ❌ Removed |
+| Motion Detection | Road safety | ✅ Inspection |
+| Edge Detection | VPI-accelerated | ✅ VPI-accelerated |
+| Thermal Palettes | 14 palettes | ✅ 14 palettes |
+| Fusion Engine | 7 algorithms | ✅ **7 algorithms** |
+| Distance Estimation | LiDAR + monocular | ❌ Removed |
+| Road Analysis | Lane position | ❌ Removed |
+| Audio Alerts | ISO 26262 | ❌ Removed |
+| Thermal Analysis | None | ✅ **NEW** |
+| ROI Management | None | ✅ **NEW** (4 methods) |
+| Multi-Palette | Single | ✅ **NEW** (global + ROI) |
+| Hot/Cold Spots | None | ✅ **NEW** |
+| Trend Tracking | None | ✅ **NEW** |
+| Anomaly Detection | None | ✅ **NEW** |
+
+---
+
+## 🚀 Use Cases
+
+### Circuit Board Inspection
+```python
+# Detect overheating components
+hot_spots = thermal_analyzer.detect_hot_spots(thermal_frame, threshold=80.0)
+
+# Create ROI on specific IC
+roi = roi_manager.create_rectangle_roi(100, 100, 50, 50, label="IC1")
+palette_manager.set_roi_palette(roi.roi_id, PaletteType.WHITE_HOT)
+
+# Track temperature over time
+thermal_analyzer.update_trend(roi.roi_id, temperature)
+trend = thermal_analyzer.get_trend(roi.roi_id)
+```
+
+### Residential House Inspection
+```python
+# Auto-detect thermal leaks
+temp_rois = roi_manager.detect_temperature_rois(thermal_frame, detect_cold=True)
+gradient_rois = roi_manager.detect_gradient_rois(thermal_frame)
+
+# Apply different palettes
+palette_manager.set_global_palette(PaletteType.RAINBOW)
+for roi in temp_rois:
+    palette_manager.set_roi_palette(roi.roi_id, PaletteType.IRONBOW)
+
+# Save inspection
+roi_manager.save_rois("inspection_2025_11_20.json")
+```
+
+---
+
+## 📝 Migration Notes
+
+### Running the New Tool
+```bash
+# Old (ADAS):
+python main.py --detection-mode model --model yolov8s.pt --enable-audio
+
+# New (Inspection):
+python inspection_main.py --auto-roi --fusion-mode thermal_overlay
+```
+
+### Fusion Engine (No Changes)
+```python
+# Same API - 100% compatible!
+from fusion_processor import FusionProcessor
+
+fusion = FusionProcessor(fusion_mode='thermal_overlay', alpha=0.5)
+fused = fusion.fuse(thermal_frame, rgb_frame, mode='thermal_overlay')
+```
+
+---
+
+## 🔮 Remaining Work
+
+### Phase 4: GUI Transformation (Next)
+- Create inspection_gui_qt.py
+- ROI drawing tools
+- Thermal analysis display
+- Multi-palette controls
+
+### Phase 5: Configuration
+- Update config.json (remove ADAS, add inspection)
+- Update settings_schema.json
+
+### Phase 6: Additional Features
+- Recording/playback
+- CSV export
+- PDF reports
+
+### Phase 7: Testing
+- All modules
+- Cross-platform
+- Performance
+
+---
+
+## 🤝 Contributors
+- Transformation: Claude Code (Anthropic) - 2025-11-20
+- Original ADAS: staticx57 + Claude
+
+---
+
+**Last Updated**: 2025-11-20
+**Version**: 2.0.0
+**Status**: Phase 1-3 Complete (Core modules + main application)
+
+---
+
+# ThermalFusionDrivingAssist - Changelog (Previous Versions)
 
 ## [v3.7.0] - 2025-11-17 - Advanced Detection Visualization & Alert Control
 
