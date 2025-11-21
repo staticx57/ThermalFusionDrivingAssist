@@ -18,7 +18,22 @@ try:
 except ImportError:
     PYQT_AVAILABLE = False
 
-from road_analyzer import Alert, AlertLevel
+# from road_analyzer import Alert, AlertLevel  # Commented out - road_analyzer removed
+
+# Stub classes for compatibility
+class AlertLevel:
+    """Stub AlertLevel class for compatibility"""
+    INFO = "INFO"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+class Alert:
+    """Stub Alert class for compatibility"""
+    def __init__(self, level=AlertLevel.INFO, message="", detection=None):
+        self.level = level
+        self.message = message
+        self.detection = detection
+
 from object_detector import Detection
 from config import get_config
 

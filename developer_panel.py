@@ -453,10 +453,16 @@ class DeveloperPanel(QFrame):
             }
         """)
 
+        # All 24 palettes (ADAS-Critical + Scientific + General Purpose + Experimental)
         palettes = [
-            "White Hot", "Black Hot", "Ironbow", "Rainbow", "Rainbow HC",
-            "Arctic", "Lava", "Medical", "Plasma", "Sepia",
-            "Ocean", "Amber", "Gray", "Feather"
+            # ADAS-Critical (Simple Mode)
+            "White Hot", "Black Hot", "Ironbow", "Arctic", "Cividis", "Outdoor Alert",
+            # Scientific / Perceptually Uniform
+            "Viridis", "Plasma", "Lava", "Magma", "Bone", "Parula",
+            # General Purpose
+            "Rainbow", "Rainbow HC", "Sepia", "Gray", "Amber", "Ocean", "Feather",
+            # Fun / Experimental
+            "Twilight", "Twilight Shifted", "Deepgreen", "HSV", "Pink"
         ]
         self.palette_combo.addItems(palettes)
         self.palette_combo.currentTextChanged.connect(self._on_palette_changed)

@@ -86,7 +86,7 @@ class VPIDetector:
         self.color_palettes = self._create_color_palettes()
 
     def _create_color_palettes(self) -> dict:
-        """Create thermal color palette lookup tables (14 industry-standard palettes)"""
+        """Create thermal color palette lookup tables (24 palettes: ADAS-critical + scientific + experimental)"""
         palettes = {}
 
         # Helper to create (256, 1, 3) LUT from colormap
@@ -94,6 +94,8 @@ class VPIDetector:
             # Create 256x1 gradient
             gradient = np.arange(256, dtype=np.uint8).reshape(256, 1)
             return cv2.applyColorMap(gradient, colormap_id)
+
+        # ========== ADAS-CRITICAL PALETTES (Simple Mode - 6 palettes) ==========
 
         # White Hot (default - FLIR standard, surveillance/security)
         # Manual creation for white hot to ensure perfect grayscale
@@ -108,40 +110,109 @@ class VPIDetector:
             black_hot_lut[i, 0, :] = 255 - i
         palettes['black_hot'] = black_hot_lut
 
-        # Standard OpenCV Colormaps
+        # Ironbow (Hot) - Classic thermal gradient
         palettes['ironbow'] = create_lut(cv2.COLORMAP_HOT)
-        palettes['rainbow'] = create_lut(cv2.COLORMAP_JET)
-        palettes['rainbow_hc'] = create_lut(cv2.COLORMAP_TURBO)
-        palettes['arctic'] = create_lut(cv2.COLORMAP_WINTER)
-        palettes['lava'] = create_lut(cv2.COLORMAP_INFERNO)
-        palettes['medical'] = create_lut(cv2.COLORMAP_VIRIDIS)
-        palettes['plasma'] = create_lut(cv2.COLORMAP_PLASMA)
-        palettes['sepia'] = create_lut(cv2.COLORMAP_AUTUMN)
-        palettes['ocean'] = create_lut(cv2.COLORMAP_OCEAN)
-        palettes['feather'] = create_lut(cv2.COLORMAP_COOL)
 
-        # Amber (gold/amber - firefighting visualization)
-        # Create custom amber gradient (Black -> Orange -> Yellow -> White)
+        # Arctic (Winter) - Blue-cyan gradient for cold environments
+        palettes['arctic'] = create_lut(cv2.COLORMAP_WINTER)
+
+        # Cividis - Colorblind-accessible (all CVD types), perceptually uniform
+        # Replaces medical/viridis for ADAS mode due to CVD accessibility
+        palettes['cividis'] = create_lut(cv2.COLORMAP_CIVIDIS)
+
+        # Outdoor Alert - Custom blue→green/yellow→red gradient for driving
+        # Optimized for outdoor visibility and threat perception
+        outdoor_alert_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            # BGR format
+            if i < 85:  # Cold: Blue → Cyan
+                outdoor_alert_lut[i, 0, 0] = 255 - int(i * 1.5)  # Blue decreases
+                outdoor_alert_lut[i, 0, 1] = int(i * 3.0)        # Green increases
+                outdoor_alert_lut[i, 0, 2] = 0                   # Red stays low
+            elif i < 170:  # Warm: Cyan → Yellow
+                outdoor_alert_lut[i, 0, 0] = 0                   # Blue low
+                outdoor_alert_lut[i, 0, 1] = 255                 # Green high
+                outdoor_alert_lut[i, 0, 2] = int((i - 85) * 3.0) # Red increases
+            else:  # Hot: Yellow → Red
+                outdoor_alert_lut[i, 0, 0] = 0                          # Blue low
+                outdoor_alert_lut[i, 0, 1] = 255 - int((i - 170) * 3.0) # Green decreases
+                outdoor_alert_lut[i, 0, 2] = 255                        # Red high
+        palettes['outdoor_alert'] = outdoor_alert_lut
+
+        # ========== SCIENTIFIC / PERCEPTUALLY UNIFORM (6 palettes) ==========
+
+        # Viridis - Perceptually uniform, colorblind-friendly (renamed from 'medical')
+        palettes['viridis'] = create_lut(cv2.COLORMAP_VIRIDIS)
+
+        # Plasma - High-contrast perceptually uniform
+        palettes['plasma'] = create_lut(cv2.COLORMAP_PLASMA)
+
+        # Lava (Inferno) - Black→purple→red→yellow gradient
+        palettes['lava'] = create_lut(cv2.COLORMAP_INFERNO)
+
+        # Magma - Similar to inferno but with more purple/magenta
+        palettes['magma'] = create_lut(cv2.COLORMAP_MAGMA)
+
+        # Bone - X-ray style grayscale with blue tint
+        palettes['bone'] = create_lut(cv2.COLORMAP_BONE)
+
+        # Parula - MATLAB default, excellent perceptual uniformity
+        palettes['parula'] = create_lut(cv2.COLORMAP_PARULA)
+
+        # ========== GENERAL PURPOSE (7 palettes) ==========
+
+        # Rainbow (Jet) - Classic rainbow gradient
+        palettes['rainbow'] = create_lut(cv2.COLORMAP_JET)
+
+        # Rainbow HC (Turbo) - High contrast rainbow, Google Turbo
+        palettes['rainbow_hc'] = create_lut(cv2.COLORMAP_TURBO)
+
+        # Sepia (Autumn) - Warm red-yellow tones
+        palettes['sepia'] = create_lut(cv2.COLORMAP_AUTUMN)
+
+        # Gray - Pure grayscale for maximum detail
+        gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            gray_lut[i, 0, :] = i  # All channels equal = grayscale
+        palettes['gray'] = gray_lut
+
+        # Amber - Custom gold/amber gradient for firefighting
         amber_lut = np.zeros((256, 1, 3), dtype=np.uint8)
         for i in range(256):
             # BGR format
             amber_lut[i, 0, 0] = 0  # Blue (keep low for amber/gold)
             amber_lut[i, 0, 1] = min(255, int(i * 0.8))   # Green
             amber_lut[i, 0, 2] = min(255, int(i * 1.0))   # Red
-            
+
             # Add white tip for hottest values (>200)
             if i > 200:
                 boost = (i - 200) * 5
                 amber_lut[i, 0, 0] = min(255, boost) # Bring up blue to create white
                 amber_lut[i, 0, 1] = min(255, int(i * 0.8) + boost)
-                
         palettes['amber'] = amber_lut
 
-        # Gray (pure grayscale - maximum monochrome detail)
-        gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
-        for i in range(256):
-            gray_lut[i, 0, :] = i  # All channels equal = grayscale
-        palettes['gray'] = gray_lut
+        # Ocean - Blue-green gradient
+        palettes['ocean'] = create_lut(cv2.COLORMAP_OCEAN)
+
+        # Feather (Cool) - Cyan-magenta gradient
+        palettes['feather'] = create_lut(cv2.COLORMAP_COOL)
+
+        # ========== FUN / EXPERIMENTAL (5 palettes) ==========
+
+        # Twilight - Cyclic colormap (purple→pink→orange→purple)
+        palettes['twilight'] = create_lut(cv2.COLORMAP_TWILIGHT)
+
+        # Twilight Shifted - Twilight with shifted hues
+        palettes['twilight_shifted'] = create_lut(cv2.COLORMAP_TWILIGHT_SHIFTED)
+
+        # Deep Green - Dark green gradient
+        palettes['deepgreen'] = create_lut(cv2.COLORMAP_DEEPGREEN)
+
+        # HSV - Full hue spectrum (red→yellow→green→cyan→blue→magenta→red)
+        palettes['hsv'] = create_lut(cv2.COLORMAP_HSV)
+
+        # Pink - Purple-pink gradient
+        palettes['pink'] = create_lut(cv2.COLORMAP_PINK)
 
         return palettes
 
