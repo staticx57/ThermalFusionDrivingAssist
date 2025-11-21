@@ -223,15 +223,38 @@ class ThermalInspectionFusion:
 
             logger.info("Scanning for FLIR Boson thermal camera...")
 
+            # NEW: Phase 7 - Enable SDK for serial control
+            enable_sdk = getattr(self.args, 'enable_boson_sdk', False)
+            com_port = getattr(self.args, 'boson_com_port', 'COM6')
+
             self.thermal_camera = FLIRBosonCamera(
                 device_id=getattr(self.args, 'thermal_device', 0),
-                width=getattr(self.args, 'width', 640),
-                height=getattr(self.args, 'height', 512)
+                resolution=(getattr(self.args, 'width', 640), getattr(self.args, 'height', 512)),
+                enable_sdk=enable_sdk,
+                com_port=com_port
             )
 
             if self.thermal_camera.open():
                 actual_res = self.thermal_camera.get_actual_resolution()
                 logger.info(f"[OK] Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
+
+                # NEW: Log SDK status (Phase 7)
+                if self.thermal_camera.is_sdk_connected():
+                    logger.info("=" * 60)
+                    logger.info("✓ Boson SDK connected - serial control enabled")
+                    info = self.thermal_camera.get_camera_info()
+                    if info:
+                        logger.info(f"  Camera SN: {info.serial_number}")
+                        logger.info(f"  Software: {info.software_version}")
+                        temp = self.thermal_camera.get_fpa_temperature()
+                        if temp:
+                            logger.info(f"  FPA Temp: {temp[1]:.1f}°C")
+                        logger.info(f"  Gain Mode: {info.gain_mode.name if info.gain_mode else 'Unknown'}")
+                    logger.info("  Press 'f' to trigger FFC (Flat Field Correction)")
+                    logger.info("=" * 60)
+                elif enable_sdk:
+                    logger.warning("SDK was requested but connection failed - continuing in video-only mode")
+
                 self.thermal_connected = True
                 return True
             else:
@@ -686,6 +709,26 @@ class ThermalInspectionFusion:
                             )
                             if snapshot_path:
                                 logger.info(f"Snapshot saved: {snapshot_path}")
+                    elif key == ord('f'):
+                        # Trigger FFC (Flat Field Correction) - NEW: Phase 7
+                        if self.thermal_camera and self.thermal_camera.is_sdk_connected():
+                            logger.info("Triggering FFC (watch camera shutter)...")
+                            if self.thermal_camera.trigger_ffc():
+                                logger.info("✓ FFC completed successfully")
+                            else:
+                                logger.error("✗ FFC failed")
+                        else:
+                            logger.warning("FFC requires Boson SDK connection (use --enable-boson-sdk)")
+                    elif key == ord('t'):
+                        # Show FPA temperature - NEW: Phase 7
+                        if self.thermal_camera and self.thermal_camera.is_sdk_connected():
+                            temp = self.thermal_camera.get_fpa_temperature()
+                            if temp:
+                                logger.info(f"FPA Temperature: {temp[0]:.1f}K ({temp[1]:.1f}°C)")
+                            else:
+                                logger.warning("Could not read FPA temperature")
+                        else:
+                            logger.warning("Temperature reading requires Boson SDK connection")
 
                 # 6. Update performance metrics
                 loop_time = time.time() - loop_start
@@ -754,6 +797,12 @@ def parse_arguments():
                        help='Thermal camera height (default: 512)')
     parser.add_argument('--disable-rgb', action='store_true',
                        help='Disable RGB camera')
+
+    # Boson SDK settings (NEW - Phase 7)
+    parser.add_argument('--enable-boson-sdk', action='store_true',
+                       help='Enable FLIR Boson SDK for serial control (FFC, gain, temperature)')
+    parser.add_argument('--boson-com-port', type=str, default='COM6',
+                       help='Boson COM port for SDK control (default: COM6)')
 
     # Processing settings
     parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda',

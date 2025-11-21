@@ -62,6 +62,24 @@ This tool combines **thermal + RGB fusion** (7 algorithms) with **smart ROI mana
 - ✅ **Linux** (x86-64 and ARM64)
 - ✅ **NVIDIA Jetson** (Orin, Xavier, Nano) with GPU acceleration
 
+### 🎛️ FLIR Boson SDK Integration (Phase 7 - NEW!)
+- ✅ **Video + Serial Control**: Combined USB interface
+- ✅ **FFC Trigger**: Manual flat field correction (press `f`)
+- ✅ **Temperature Monitoring**: FPA sensor temperature (press `t`)
+- ✅ **Gain Control**: HIGH, LOW, AUTO, MANUAL modes
+- ✅ **Color LUT**: 10+ thermal color palettes
+- ✅ **Camera Info**: Serial number, software version, part numbers
+- ⏳ **Radiometric Support**: 16-bit absolute temperature (pending)
+
+**Keyboard Shortcuts:**
+- `f` - Trigger FFC (Flat Field Correction)
+- `t` - Show FPA temperature
+- `r` - Toggle recording
+- `s` - Capture snapshot
+- `q` - Quit
+
+See [BOSON_SDK_USAGE.md](BOSON_SDK_USAGE.md) for complete documentation.
+
 ---
 
 ## 🚀 Quick Start
@@ -91,6 +109,9 @@ python inspection_main.py --fusion-mode thermal_overlay --palette ironbow
 
 # Run without RGB camera
 python inspection_main.py --disable-rgb
+
+# Run with Boson SDK for advanced camera control (Phase 7 - NEW!)
+python inspection_main.py --enable-boson-sdk --boson-com-port COM6 --use-opencv-gui
 ```
 
 ---
@@ -267,6 +288,10 @@ See [CHANGELOG.md](CHANGELOG.md) for complete transformation details.
 --height 512                # Thermal camera height
 --disable-rgb               # Disable RGB camera
 
+# Boson SDK settings (Phase 7 - NEW!)
+--enable-boson-sdk          # Enable FLIR Boson SDK for serial control
+--boson-com-port COM6       # Boson COM port (default: COM6)
+
 # Processing settings
 --device cuda               # Processing device (cuda/cpu)
 --palette ironbow           # Default thermal palette
@@ -334,28 +359,43 @@ python inspection_main.py --disable-rgb
 
 ## 🔮 Roadmap
 
+### ✅ Phase 1-3: Core Transformation (COMPLETE)
+- Thermal analyzer, ROI manager, palette manager
+- 14 thermal palettes
+- Motion & edge detection
+- Fusion engine preserved
+
+### ✅ Phase 6: Media Recording (COMPLETE)
+- Video recording with ROI metadata
+- Snapshot capture
+- Playback mode
+
+### ✅ Phase 7: FLIR Boson SDK Integration (PARTIAL - Non-Radiometric Complete)
+**Completed:**
+- ✅ VPC (Video over USB) support
+- ✅ Native communication via serial COM over USB
+- ✅ Camera control (FFC, AGC, shutter, gain)
+- ✅ FPA temperature monitoring
+- ✅ Non-radiometric camera support tested and working
+- ✅ Keyboard shortcuts (f=FFC trigger, t=temperature)
+
+**Pending:**
+- ⏳ Radiometric camera testing (16-bit absolute temperature)
+- ⏳ Radiometric data extraction and calibration
+- ⏳ GUI integration (Qt controls)
+
+**See:** [BOSON_SDK_USAGE.md](BOSON_SDK_USAGE.md) for complete SDK documentation
+
 ### Phase 4 (Next): GUI Transformation
 - Create inspection_gui_qt.py
-- ROI drawing tools
+- ROI drawing tools with SDK controls
 - Thermal analysis display panel
 - Multi-palette controls
+- FFC trigger button, gain mode selector
 
 ### Phase 5: Configuration
 - Update config.json for inspection
 - Remove ADAS settings
-
-### Phase 6: Additional Features
-- Recording/playback mode
-- CSV export of statistics
-- PDF report generation
-
-### Phase 7: FLIR Boson SDK Integration
-- VPC (Video over USB) support
-- Native communication via serial COM over USB
-- Full radiometric measurements (16-bit absolute temperature)
-- Camera control (AGC, FFC, shutter, gain)
-- Support both radiometric and non-radiometric Boson cameras
-- Comprehensive testing and cross-platform validation
 
 ---
 
@@ -392,6 +432,6 @@ MIT License - See LICENSE file for details
 
 ---
 
-**Version**: 2.0.0
-**Status**: Phase 1-3 Complete (Core modules operational, 45 thermal palettes)
+**Version**: 2.1.0
+**Status**: Phase 1-3, 6, 7 (partial) Complete - Boson SDK integrated (non-radiometric tested)
 **Last Updated**: 2025-11-21
