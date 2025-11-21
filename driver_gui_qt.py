@@ -960,14 +960,36 @@ class DriverAppWindow(QMainWindow):
         logger.info(f"Frame skip set to: {skip_values[next_idx]}")
 
     def _on_palette_cycle(self):
-        """Cycle through thermal color palettes"""
+        """Cycle through thermal color palettes (mode-aware: Simple=6 palettes, Developer=24 palettes)"""
         if not self.app or not self.app.detector:
             return
-        # Available palettes (must match VPIDetector)
-        palettes = ['white_hot', 'black_hot', 'ironbow', 'rainbow', 'rainbow_hc', 
-                   'arctic', 'lava', 'medical', 'plasma', 'sepia', 
-                   'ocean', 'amber', 'gray', 'feather']
-                   
+
+        # Simple mode: ADAS-focused palettes (6 total)
+        simple_mode_palettes = [
+            'white_hot', 'black_hot', 'ironbow',
+            'arctic', 'cividis', 'outdoor_alert'
+        ]
+
+        # Developer mode: All 24 palettes (ADAS + Scientific + Experimental)
+        all_palettes = [
+            # ADAS-Critical (Simple mode)
+            'white_hot', 'black_hot', 'ironbow', 'arctic', 'cividis', 'outdoor_alert',
+            # Scientific / Perceptually Uniform
+            'viridis', 'plasma', 'lava', 'magma', 'bone', 'parula',
+            # General Purpose
+            'rainbow', 'rainbow_hc', 'sepia', 'gray', 'amber', 'ocean', 'feather',
+            # Fun / Experimental
+            'twilight', 'twilight_shifted', 'deepgreen', 'hsv', 'pink'
+        ]
+
+        # Select palette list based on mode
+        if self.developer_mode:
+            palettes = all_palettes
+            mode_label = "Developer"
+        else:
+            palettes = simple_mode_palettes
+            mode_label = "Simple"
+
         current = getattr(self.app.detector, 'thermal_palette', 'white_hot')
         current_idx = palettes.index(current) if current in palettes else 0
         next_idx = (current_idx + 1) % len(palettes)
@@ -977,12 +999,12 @@ class DriverAppWindow(QMainWindow):
         if hasattr(self.app.detector, 'set_palette'):
             self.app.detector.set_palette(next_palette)
         self.control_panel.set_palette(next_palette)
-        
+
         # Sync developer panel
         if hasattr(self.developer_panel, 'update_palette_selection'):
             self.developer_panel.update_palette_selection(next_palette)
-            
-        logger.info(f"Thermal palette: {next_palette}")
+
+        logger.info(f"Thermal palette [{mode_label} mode]: {next_palette} ({current_idx + 1}/{len(palettes)})")
 
     def _on_palette_selected_from_dev_panel(self, palette_name):
         """Handle palette selection from developer panel"""
