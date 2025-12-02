@@ -20739,3 +20739,1553 @@ ModuleNotFoundError: No module named 'road_analyzer'
 2025-11-21 09:17:00,725 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
 2025-11-21 09:17:00,725 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
 2025-11-21 09:17:00,726 - __main__ - INFO - [main.py:1349] - Shutdown complete
+2025-11-21 10:00:32,147 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-11-21 10:00:32,174 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-11-21 10:00:32,187 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-11-21 10:00:32,187 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-11-21 10:00:32,188 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-11-21 10:00:32,188 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-11-21 10:00:32,189 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-11-21 10:00:32,189 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-11-21 10:00:32,189 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-11-21 10:00:32,190 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-11-21 10:00:32,190 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-11-21 10:00:34,785 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-11-21 10:00:34,785 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 480)
+2025-11-21 10:00:34,785 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-11-21 10:00:34,786 - __main__ - WARNING - [main.py:308] - Warning: Opened camera has resolution 640x480 which is not typical for thermal cameras
+2025-11-21 10:00:34,786 - __main__ - WARNING - [main.py:309] - This may be a regular webcam. Thermal cameras typically use 640x512 or 320x256
+2025-11-21 10:00:34,786 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x480
+2025-11-21 10:00:34,787 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-11-21 10:00:34,787 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-11-21 10:00:34,787 - camera_factory - INFO - [camera_factory.py:119] - Skipping thermal camera device 0, using next available device
+2025-11-21 10:00:34,787 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 10:00:34,788 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 10:00:34,788 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 10:00:34,789 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 10:00:34,790 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 10:00:34,790 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 10:00:34,790 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-11-21 10:00:34,819 - rgb_camera - WARNING - [rgb_camera.py:102] - Platform-specific backend failed, trying default
+2025-11-21 10:00:34,858 - rgb_camera - ERROR - [rgb_camera.py:106] - Failed to open camera 1
+2025-11-21 10:00:34,858 - __main__ - WARNING - [main.py:514] - RGB camera failed to open - continuing with thermal only
+2025-11-21 10:00:34,859 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 10:00:34,859 - __main__ - INFO - [main.py:536] - Fusion processor not initialized (no RGB camera)
+2025-11-21 10:00:34,859 - __main__ - INFO - [main.py:543] - Initializing VPI detector (mode: model, device: cuda)...
+2025-11-21 10:00:34,859 - __main__ - WARNING - [main.py:552] - VPI not available on this platform - using CPU-only processing
+2025-11-21 10:00:34,860 - __main__ - INFO - [main.py:554] - Forcing device to CPU (VPI not available)
+2025-11-21 10:00:34,860 - vpi_detector - INFO - [vpi_detector.py:60] - VPI not available - using OpenCV fallback for image processing
+2025-11-21 10:00:34,864 - vpi_detector - WARNING - [vpi_detector.py:417] - VPI not available - using OpenCV fallback mode
+2025-11-21 10:00:34,864 - vpi_detector - INFO - [vpi_detector.py:418] - Cross-platform mode: Windows/macOS/Linux (non-Jetson)
+2025-11-21 10:00:34,864 - vpi_detector - INFO - [vpi_detector.py:423] - Initializing VPI-accelerated detector (mode: model)...
+2025-11-21 10:00:34,864 - vpi_detector - INFO - [vpi_detector.py:434] - Loading YOLO model: yolov8n.pt
+2025-11-21 10:00:34,865 - vpi_detector - INFO - [vpi_detector.py:435] - CUDA available: False
+2025-11-21 10:00:34,891 - vpi_detector - INFO - [vpi_detector.py:444] - YOLO model moved to device: cpu
+2025-11-21 10:00:34,892 - vpi_detector - INFO - [vpi_detector.py:446] - YOLO model loaded successfully
+2025-11-21 10:00:34,892 - vpi_detector - INFO - [vpi_detector.py:505] - VPI not available - using OpenCV fallback (full functionality)
+2025-11-21 10:00:34,892 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-11-21 10:00:34,895 - __main__ - INFO - [main.py:607] - [OK] Using Qt GUI (professional mode)
+2025-11-21 10:00:34,895 - auto_daynight - INFO - [auto_daynight.py:54] - AutoDayNightDetector initialized: lat=37.7749, lon=-122.4194, ambient_threshold=80, time=7-19
+2025-11-21 10:00:34,895 - auto_daynight - INFO - [auto_daynight.py:332] - Created global AutoDayNightDetector instance
+2025-11-21 10:00:34,896 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-11-21 10:00:34,897 - alert_overlay - INFO - [alert_overlay.py:111] - AlertOverlayWidget initialized (ADAS-compliant)
+2025-11-21 10:00:35,173 - developer_panel - INFO - [developer_panel.py:646] - Developer panel connected to main app
+2025-11-21 10:00:35,181 - driver_gui_qt - INFO - [driver_gui_qt.py:869] - Control panel signals connected (all 22 controls)
+2025-11-21 10:00:35,190 - driver_gui_qt - INFO - [driver_gui_qt.py:1441] - Applied 'dark' theme (Day=bright, Night=dark, Auto=intelligent)
+2025-11-21 10:00:35,190 - driver_gui_qt - INFO - [driver_gui_qt.py:783] - Initialized window sizes - Base: 1280x960, Expanded: 1580x960
+2025-11-21 10:00:35,190 - driver_gui_qt - INFO - [driver_gui_qt.py:786] - Qt GUI initialized successfully
+2025-11-21 10:00:35,191 - __main__ - INFO - [main.py:611] - [OK] Qt GUI window created successfully with app reference
+2025-11-21 10:00:35,191 - performance_monitor - WARNING - [performance_monitor.py:59] - jtop not available, using basic metrics only
+2025-11-21 10:00:35,191 - __main__ - INFO - [main.py:646] - Initialization complete!
+2025-11-21 10:00:35,191 - __main__ - INFO - [main.py:647] - RGB camera: DISABLED
+2025-11-21 10:00:35,192 - __main__ - INFO - [main.py:648] - View mode: thermal
+2025-11-21 10:00:35,192 - __main__ - INFO - [main.py:863] - Starting main loop...
+2025-11-21 10:00:35,274 - __main__ - INFO - [main.py:869] - Qt GUI window shown
+2025-11-21 10:00:35,275 - __main__ - INFO - [main.py:657] - Detection worker thread started
+2025-11-21 10:00:35,275 - __main__ - INFO - [main.py:874] - Async detection thread started
+2025-11-21 10:00:35,276 - __main__ - INFO - [main.py:879] - Phase 3: Starting VideoProcessorWorker thread...
+2025-11-21 10:00:35,276 - driver_gui_qt - INFO - [driver_gui_qt.py:1450] - Worker signals connected to GUI
+2025-11-21 10:00:35,277 - __main__ - INFO - [main.py:887] - VideoProcessorWorker started - entering Qt event loop
+2025-11-21 10:00:35,277 - video_worker - INFO - [video_worker.py:46] - VideoProcessorWorker thread started
+2025-11-21 10:00:35,277 - video_worker - INFO - [video_worker.py:53] - Platform: x86-64, Target FPS: 30 (adaptive throttling)
+2025-11-21 10:00:35,279 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-11-21 10:00:35,279 - camera_factory - INFO - [camera_factory.py:119] - Skipping thermal camera device 0, using next available device
+2025-11-21 10:00:35,279 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 10:00:35,280 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 10:00:35,280 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 10:00:35,280 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 10:00:35,280 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 10:00:35,281 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 10:00:35,281 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-11-21 10:00:35,301 - rgb_camera - WARNING - [rgb_camera.py:102] - Platform-specific backend failed, trying default
+2025-11-21 10:00:35,352 - rgb_camera - ERROR - [rgb_camera.py:106] - Failed to open camera 1
+2025-11-21 10:00:35,353 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 10:00:35,458 - vpi_detector - INFO - [vpi_detector.py:288] - Detection mode changed: model -> model
+2025-11-21 10:00:35,459 - driver_gui_qt - INFO - [driver_gui_qt.py:897] - YOLO detection enabled (model mode with yolov8n.pt)
+2025-11-21 10:00:35,750 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:35,752 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,756 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,759 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,777 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,812 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,846 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,881 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,917 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,953 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:35,988 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,026 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,058 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,092 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,129 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,163 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,199 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,235 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,270 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,306 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,344 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,377 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,410 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,446 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,582 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,586 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,618 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,653 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,688 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,723 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,762 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,796 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,827 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,864 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,898 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,941 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:36,970 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,002 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,037 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,073 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,107 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,147 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,181 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,214 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,252 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,282 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,317 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,352 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,388 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,422 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,458 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,498 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,526 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,562 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,698 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,700 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,733 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,769 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,802 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,838 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,873 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,908 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,943 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:37,978 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,011 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,048 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,082 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,119 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,154 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,188 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,222 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,256 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,292 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,328 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:38,363 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:38,399 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,435 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,471 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=1
+2025-11-21 10:00:38,505 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=1
+2025-11-21 10:00:38,541 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-21 10:00:38,574 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-11-21 10:00:38,609 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:38,645 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:38,681 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,816 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,817 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,851 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,888 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,921 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,957 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:38,991 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,026 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,060 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,096 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,130 - video_worker - INFO - [video_worker.py:406] - Frame 100 | FPS: 60.0/30 | Loop: 0.0ms | Throttle: [OK] | Detections: 3 | View: thermal
+2025-11-21 10:00:39,134 - driver_gui_qt - INFO - [driver_gui_qt.py:593] - Developer controls shown (18 controls in 6x3 grid)
+2025-11-21 10:00:39,166 - driver_gui_qt - INFO - [driver_gui_qt.py:1308] - [OK] Developer mode ENABLED | Window: 1452x1215
+2025-11-21 10:00:39,168 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,173 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,206 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,242 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=8, RIGHT=1
+2025-11-21 10:00:39,277 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=8, RIGHT=1
+2025-11-21 10:00:39,312 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=5, RIGHT=1
+2025-11-21 10:00:39,348 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=5, RIGHT=1
+2025-11-21 10:00:39,383 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,417 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+2025-11-21 10:00:39,452 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:39,498 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:39,531 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:39,561 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:00:39,594 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,626 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,661 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,695 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,729 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,764 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,800 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,936 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,939 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:39,971 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,007 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,041 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,077 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,113 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,149 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,182 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,217 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,252 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,287 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,323 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,357 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,391 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,428 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,462 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,506 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,537 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,570 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,602 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,638 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,672 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,706 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,740 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,775 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,811 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,847 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,864 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: rgb
+2025-11-21 10:00:40,881 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:40,916 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,052 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,057 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,088 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,123 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,158 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,193 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,227 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,263 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,298 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,334 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,368 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,403 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,438 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,473 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,515 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,547 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,578 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,611 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,646 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,681 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,717 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,751 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,786 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,820 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,856 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,891 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,926 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,962 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:41,998 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,033 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,169 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,173 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,206 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,241 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,275 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,312 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,346 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,380 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,416 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,451 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,487 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,523 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,686 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,688 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,690 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,693 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,695 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 10:00:42,715 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:00:42,716 - __main__ - INFO - [main.py:893] - Qt event loop exited
+2025-11-21 10:00:42,718 - video_worker - INFO - [video_worker.py:417] - Stopping VideoProcessorWorker...
+2025-11-21 10:00:42,729 - video_worker - INFO - [video_worker.py:420] - VideoProcessorWorker stopped
+2025-11-21 10:00:42,729 - __main__ - INFO - [main.py:1329] - Shutting down...
+2025-11-21 10:00:42,730 - __main__ - INFO - [main.py:1333] - Waiting for detection thread...
+2025-11-21 10:00:42,730 - __main__ - INFO - [main.py:702] - Detection worker thread stopped
+2025-11-21 10:00:43,169 - flir_camera - INFO - [flir_camera.py:209] - FLIR Boson camera released
+2025-11-21 10:00:43,170 - vpi_detector - INFO - [vpi_detector.py:918] - VPI detector released
+2025-11-21 10:00:43,170 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 10:00:43,170 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
+2025-11-21 10:00:43,170 - __main__ - INFO - [main.py:1349] - Shutdown complete
+2025-11-21 10:08:15,721 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-11-21 10:08:15,747 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-11-21 10:08:15,759 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-11-21 10:08:15,759 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-11-21 10:08:15,761 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-11-21 10:08:15,761 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-11-21 10:08:15,761 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-11-21 10:08:15,761 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-11-21 10:08:15,761 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-11-21 10:08:15,761 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-11-21 10:08:15,761 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-11-21 10:08:18,237 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-11-21 10:08:18,237 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 480)
+2025-11-21 10:08:18,237 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-11-21 10:08:18,238 - __main__ - WARNING - [main.py:308] - Warning: Opened camera has resolution 640x480 which is not typical for thermal cameras
+2025-11-21 10:08:18,238 - __main__ - WARNING - [main.py:309] - This may be a regular webcam. Thermal cameras typically use 640x512 or 320x256
+2025-11-21 10:08:18,238 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x480
+2025-11-21 10:08:18,238 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-11-21 10:08:18,239 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-11-21 10:08:18,239 - camera_factory - INFO - [camera_factory.py:119] - Skipping thermal camera device 0, using next available device
+2025-11-21 10:08:18,239 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 10:08:18,240 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 10:08:18,240 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 10:08:18,240 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 10:08:18,241 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 10:08:18,241 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 10:08:18,242 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-11-21 10:08:18,275 - rgb_camera - WARNING - [rgb_camera.py:102] - Platform-specific backend failed, trying default
+2025-11-21 10:08:18,321 - rgb_camera - ERROR - [rgb_camera.py:106] - Failed to open camera 1
+2025-11-21 10:08:18,321 - __main__ - WARNING - [main.py:514] - RGB camera failed to open - continuing with thermal only
+2025-11-21 10:08:18,322 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 10:08:18,322 - __main__ - INFO - [main.py:536] - Fusion processor not initialized (no RGB camera)
+2025-11-21 10:08:18,322 - __main__ - INFO - [main.py:543] - Initializing VPI detector (mode: model, device: cuda)...
+2025-11-21 10:08:18,322 - __main__ - WARNING - [main.py:552] - VPI not available on this platform - using CPU-only processing
+2025-11-21 10:08:18,323 - __main__ - INFO - [main.py:554] - Forcing device to CPU (VPI not available)
+2025-11-21 10:08:18,323 - vpi_detector - INFO - [vpi_detector.py:60] - VPI not available - using OpenCV fallback for image processing
+2025-11-21 10:08:18,327 - vpi_detector - WARNING - [vpi_detector.py:417] - VPI not available - using OpenCV fallback mode
+2025-11-21 10:08:18,327 - vpi_detector - INFO - [vpi_detector.py:418] - Cross-platform mode: Windows/macOS/Linux (non-Jetson)
+2025-11-21 10:08:18,328 - vpi_detector - INFO - [vpi_detector.py:423] - Initializing VPI-accelerated detector (mode: model)...
+2025-11-21 10:08:18,328 - vpi_detector - INFO - [vpi_detector.py:434] - Loading YOLO model: yolov8n.pt
+2025-11-21 10:08:18,328 - vpi_detector - INFO - [vpi_detector.py:435] - CUDA available: False
+2025-11-21 10:08:18,360 - vpi_detector - INFO - [vpi_detector.py:444] - YOLO model moved to device: cpu
+2025-11-21 10:08:18,361 - vpi_detector - INFO - [vpi_detector.py:446] - YOLO model loaded successfully
+2025-11-21 10:08:18,361 - vpi_detector - INFO - [vpi_detector.py:505] - VPI not available - using OpenCV fallback (full functionality)
+2025-11-21 10:08:18,362 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-11-21 10:08:18,365 - __main__ - INFO - [main.py:607] - [OK] Using Qt GUI (professional mode)
+2025-11-21 10:08:18,365 - auto_daynight - INFO - [auto_daynight.py:54] - AutoDayNightDetector initialized: lat=37.7749, lon=-122.4194, ambient_threshold=80, time=7-19
+2025-11-21 10:08:18,365 - auto_daynight - INFO - [auto_daynight.py:332] - Created global AutoDayNightDetector instance
+2025-11-21 10:08:18,368 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-11-21 10:08:18,368 - alert_overlay - INFO - [alert_overlay.py:111] - AlertOverlayWidget initialized (ADAS-compliant)
+2025-11-21 10:08:18,609 - developer_panel - INFO - [developer_panel.py:646] - Developer panel connected to main app
+2025-11-21 10:08:18,615 - driver_gui_qt - INFO - [driver_gui_qt.py:869] - Control panel signals connected (all 22 controls)
+2025-11-21 10:08:18,624 - driver_gui_qt - INFO - [driver_gui_qt.py:1441] - Applied 'dark' theme (Day=bright, Night=dark, Auto=intelligent)
+2025-11-21 10:08:18,625 - driver_gui_qt - INFO - [driver_gui_qt.py:783] - Initialized window sizes - Base: 1280x960, Expanded: 1580x960
+2025-11-21 10:08:18,625 - driver_gui_qt - INFO - [driver_gui_qt.py:786] - Qt GUI initialized successfully
+2025-11-21 10:08:18,625 - __main__ - INFO - [main.py:611] - [OK] Qt GUI window created successfully with app reference
+2025-11-21 10:08:18,625 - performance_monitor - WARNING - [performance_monitor.py:59] - jtop not available, using basic metrics only
+2025-11-21 10:08:18,627 - __main__ - INFO - [main.py:646] - Initialization complete!
+2025-11-21 10:08:18,627 - __main__ - INFO - [main.py:647] - RGB camera: DISABLED
+2025-11-21 10:08:18,627 - __main__ - INFO - [main.py:648] - View mode: thermal
+2025-11-21 10:08:18,628 - __main__ - INFO - [main.py:863] - Starting main loop...
+2025-11-21 10:08:18,694 - __main__ - INFO - [main.py:869] - Qt GUI window shown
+2025-11-21 10:08:18,694 - __main__ - INFO - [main.py:657] - Detection worker thread started
+2025-11-21 10:08:18,695 - __main__ - INFO - [main.py:874] - Async detection thread started
+2025-11-21 10:08:18,695 - __main__ - INFO - [main.py:879] - Phase 3: Starting VideoProcessorWorker thread...
+2025-11-21 10:08:18,695 - driver_gui_qt - INFO - [driver_gui_qt.py:1450] - Worker signals connected to GUI
+2025-11-21 10:08:18,695 - __main__ - INFO - [main.py:887] - VideoProcessorWorker started - entering Qt event loop
+2025-11-21 10:08:18,695 - video_worker - INFO - [video_worker.py:46] - VideoProcessorWorker thread started
+2025-11-21 10:08:18,696 - video_worker - INFO - [video_worker.py:53] - Platform: x86-64, Target FPS: 30 (adaptive throttling)
+2025-11-21 10:08:18,696 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-11-21 10:08:18,697 - camera_factory - INFO - [camera_factory.py:119] - Skipping thermal camera device 0, using next available device
+2025-11-21 10:08:18,697 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 10:08:18,697 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 10:08:18,697 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 10:08:18,697 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 10:08:18,699 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 10:08:18,699 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 10:08:18,699 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-11-21 10:08:18,710 - rgb_camera - WARNING - [rgb_camera.py:102] - Platform-specific backend failed, trying default
+2025-11-21 10:08:18,746 - rgb_camera - ERROR - [rgb_camera.py:106] - Failed to open camera 1
+2025-11-21 10:08:18,747 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 10:08:18,852 - vpi_detector - INFO - [vpi_detector.py:288] - Detection mode changed: model -> model
+2025-11-21 10:08:18,852 - driver_gui_qt - INFO - [driver_gui_qt.py:897] - YOLO detection enabled (model mode with yolov8n.pt)
+2025-11-21 10:08:19,157 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,160 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,162 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,163 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,165 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,181 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,203 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,251 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,285 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,317 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,347 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,379 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,427 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,459 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,490 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,523 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,571 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,604 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,634 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,668 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,715 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,746 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,777 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,810 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,843 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,981 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:19,984 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,013 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,049 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,084 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,119 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,156 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,190 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,225 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,260 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,294 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,329 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,363 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,397 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,434 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,466 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,503 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,539 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,575 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,610 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,645 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,680 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,715 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,752 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,786 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,820 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,857 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,891 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:20,932 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:08:20,962 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:08:21,100 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,102 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,135 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,171 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,204 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,240 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,275 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:08:21,311 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-11-21 10:08:21,347 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,382 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,418 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,453 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,486 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,522 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,555 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,603 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,635 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,665 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,699 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,732 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,768 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,803 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,837 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,873 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,908 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,943 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:21,978 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,012 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,048 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,082 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,223 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,225 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,256 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,290 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,327 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,363 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,397 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,432 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,469 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,537 - video_worker - INFO - [video_worker.py:406] - Frame 100 | FPS: 60.0/30 | Loop: 0.0ms | Throttle: [OK] | Detections: 1 | View: thermal
+2025-11-21 10:08:22,613 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,616 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,619 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,619 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 10:08:22,622 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 10:08:22,635 - __main__ - INFO - [main.py:893] - Qt event loop exited
+2025-11-21 10:08:22,636 - video_worker - INFO - [video_worker.py:417] - Stopping VideoProcessorWorker...
+2025-11-21 10:08:22,643 - video_worker - INFO - [video_worker.py:420] - VideoProcessorWorker stopped
+2025-11-21 10:08:22,643 - __main__ - INFO - [main.py:1329] - Shutting down...
+2025-11-21 10:08:22,643 - __main__ - INFO - [main.py:1333] - Waiting for detection thread...
+2025-11-21 10:08:22,664 - __main__ - INFO - [main.py:702] - Detection worker thread stopped
+2025-11-21 10:08:23,054 - flir_camera - INFO - [flir_camera.py:209] - FLIR Boson camera released
+2025-11-21 10:08:23,054 - vpi_detector - INFO - [vpi_detector.py:918] - VPI detector released
+2025-11-21 10:08:23,054 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 10:08:23,054 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
+2025-11-21 10:08:23,054 - __main__ - INFO - [main.py:1349] - Shutdown complete
+2025-11-21 15:00:31,775 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-11-21 15:00:31,801 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-11-21 15:00:31,816 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-11-21 15:00:31,818 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-11-21 15:00:31,818 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-11-21 15:00:31,819 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-11-21 15:00:31,819 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-11-21 15:00:31,819 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-11-21 15:00:31,820 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-11-21 15:00:31,820 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-11-21 15:00:31,820 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-11-21 15:00:32,962 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-11-21 15:00:32,963 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 512)
+2025-11-21 15:00:32,963 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-11-21 15:00:32,964 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x512
+2025-11-21 15:00:32,964 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-11-21 15:00:32,964 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-11-21 15:00:32,964 - camera_factory - INFO - [camera_factory.py:119] - Skipping thermal camera device 0, using next available device
+2025-11-21 15:00:32,964 - camera_factory - INFO - [camera_factory.py:122] - ============================================================
+2025-11-21 15:00:32,964 - camera_factory - INFO - [camera_factory.py:123] - RGB Camera Factory - Auto-detection
+2025-11-21 15:00:32,965 - camera_factory - INFO - [camera_factory.py:124] - ============================================================
+2025-11-21 15:00:32,965 - camera_factory - INFO - [camera_factory.py:154] - Auto-detecting RGB cameras...
+2025-11-21 15:00:32,966 - camera_factory - INFO - [camera_factory.py:193] - [X] No UVC cameras detected
+2025-11-21 15:00:32,966 - camera_factory - WARNING - [camera_factory.py:199] - Falling back to legacy RGBCamera class
+2025-11-21 15:00:32,967 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-11-21 15:00:34,995 - rgb_camera - INFO - [rgb_camera.py:125] - RGB camera opened successfully
+2025-11-21 15:00:34,996 - rgb_camera - INFO - [rgb_camera.py:126] - Resolution: 640x480 @ 30 FPS
+2025-11-21 15:00:35,797 - __main__ - INFO - [main.py:511] - [OK] RGB camera opened: USB/CSI (Legacy)
+2025-11-21 15:00:35,797 - __main__ - INFO - [main.py:512] -   Resolution: 640x480
+2025-11-21 15:00:35,835 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-11-21 15:00:35,835 - fusion_processor - WARNING - [fusion_processor.py:63] - No calibration file provided - using identity transform
+2025-11-21 15:00:35,836 - __main__ - INFO - [main.py:531] - Fusion processor initialized (mode: alpha_blend)
+2025-11-21 15:00:35,836 - __main__ - INFO - [main.py:543] - Initializing VPI detector (mode: model, device: cuda)...
+2025-11-21 15:00:35,837 - __main__ - WARNING - [main.py:552] - VPI not available on this platform - using CPU-only processing
+2025-11-21 15:00:35,837 - __main__ - INFO - [main.py:554] - Forcing device to CPU (VPI not available)
+2025-11-21 15:00:35,838 - vpi_detector - INFO - [vpi_detector.py:60] - VPI not available - using OpenCV fallback for image processing
+2025-11-21 15:00:35,841 - vpi_detector - WARNING - [vpi_detector.py:417] - VPI not available - using OpenCV fallback mode
+2025-11-21 15:00:35,841 - vpi_detector - INFO - [vpi_detector.py:418] - Cross-platform mode: Windows/macOS/Linux (non-Jetson)
+2025-11-21 15:00:35,841 - vpi_detector - INFO - [vpi_detector.py:423] - Initializing VPI-accelerated detector (mode: model)...
+2025-11-21 15:00:35,842 - vpi_detector - INFO - [vpi_detector.py:434] - Loading YOLO model: yolov8n.pt
+2025-11-21 15:00:35,842 - vpi_detector - INFO - [vpi_detector.py:435] - CUDA available: False
+2025-11-21 15:00:35,914 - vpi_detector - INFO - [vpi_detector.py:444] - YOLO model moved to device: cpu
+2025-11-21 15:00:35,915 - vpi_detector - INFO - [vpi_detector.py:446] - YOLO model loaded successfully
+2025-11-21 15:00:35,915 - vpi_detector - INFO - [vpi_detector.py:505] - VPI not available - using OpenCV fallback (full functionality)
+2025-11-21 15:00:35,915 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-11-21 15:00:35,922 - __main__ - INFO - [main.py:607] - [OK] Using Qt GUI (professional mode)
+2025-11-21 15:00:35,922 - auto_daynight - INFO - [auto_daynight.py:54] - AutoDayNightDetector initialized: lat=37.7749, lon=-122.4194, ambient_threshold=80, time=7-19
+2025-11-21 15:00:35,924 - auto_daynight - INFO - [auto_daynight.py:332] - Created global AutoDayNightDetector instance
+2025-11-21 15:00:35,925 - alert_overlay - INFO - [alert_overlay.py:111] - AlertOverlayWidget initialized (ADAS-compliant)
+2025-11-21 15:00:36,200 - developer_panel - INFO - [developer_panel.py:646] - Developer panel connected to main app
+2025-11-21 15:00:36,206 - driver_gui_qt - INFO - [driver_gui_qt.py:869] - Control panel signals connected (all 22 controls)
+2025-11-21 15:00:36,213 - driver_gui_qt - INFO - [driver_gui_qt.py:1441] - Applied 'dark' theme (Day=bright, Night=dark, Auto=intelligent)
+2025-11-21 15:00:36,214 - driver_gui_qt - INFO - [driver_gui_qt.py:783] - Initialized window sizes - Base: 1280x960, Expanded: 1580x960
+2025-11-21 15:00:36,214 - driver_gui_qt - INFO - [driver_gui_qt.py:786] - Qt GUI initialized successfully
+2025-11-21 15:00:36,214 - __main__ - INFO - [main.py:611] - [OK] Qt GUI window created successfully with app reference
+2025-11-21 15:00:36,215 - performance_monitor - WARNING - [performance_monitor.py:59] - jtop not available, using basic metrics only
+2025-11-21 15:00:36,215 - __main__ - INFO - [main.py:646] - Initialization complete!
+2025-11-21 15:00:36,215 - __main__ - INFO - [main.py:647] - RGB camera: ENABLED
+2025-11-21 15:00:36,215 - __main__ - INFO - [main.py:648] - View mode: fusion
+2025-11-21 15:00:36,215 - __main__ - INFO - [main.py:863] - Starting main loop...
+2025-11-21 15:00:36,275 - __main__ - INFO - [main.py:869] - Qt GUI window shown
+2025-11-21 15:00:36,275 - __main__ - INFO - [main.py:657] - Detection worker thread started
+2025-11-21 15:00:36,275 - __main__ - INFO - [main.py:874] - Async detection thread started
+2025-11-21 15:00:36,276 - __main__ - INFO - [main.py:879] - Phase 3: Starting VideoProcessorWorker thread...
+2025-11-21 15:00:36,276 - driver_gui_qt - INFO - [driver_gui_qt.py:1450] - Worker signals connected to GUI
+2025-11-21 15:00:36,276 - __main__ - INFO - [main.py:887] - VideoProcessorWorker started - entering Qt event loop
+2025-11-21 15:00:36,276 - video_worker - INFO - [video_worker.py:46] - VideoProcessorWorker thread started
+2025-11-21 15:00:36,277 - video_worker - INFO - [video_worker.py:53] - Platform: x86-64, Target FPS: 30 (adaptive throttling)
+2025-11-21 15:00:36,384 - vpi_detector - INFO - [vpi_detector.py:288] - Detection mode changed: model -> model
+2025-11-21 15:00:36,385 - driver_gui_qt - INFO - [driver_gui_qt.py:897] - YOLO detection enabled (model mode with yolov8n.pt)
+2025-11-21 15:00:36,628 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,631 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,659 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,670 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 41.4ms (24.1 FPS), 1 detections
+2025-11-21 15:00:36,694 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,729 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,762 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,799 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,833 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,869 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,903 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,937 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:36,985 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,018 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,050 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,081 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,115 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,146 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,182 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,216 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,251 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,286 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,320 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,354 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,491 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,495 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,526 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,561 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,596 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,632 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,666 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,701 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,737 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,772 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,805 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,842 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,876 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,910 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,946 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:37,994 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,025 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,058 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,089 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,122 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,157 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,192 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,227 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,261 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,296 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,329 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,365 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,401 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,436 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,470 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,609 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,612 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,644 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,680 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,714 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,747 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 33.1ms (30.3 FPS), 1 detections
+2025-11-21 15:00:38,749 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,785 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,819 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,854 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:38,890 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,040 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,042 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,044 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,046 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,056 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 15:00:39,078 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-11-21 15:00:39,078 - __main__ - INFO - [main.py:893] - Qt event loop exited
+2025-11-21 15:00:39,079 - video_worker - INFO - [video_worker.py:417] - Stopping VideoProcessorWorker...
+2025-11-21 15:00:39,099 - video_worker - INFO - [video_worker.py:420] - VideoProcessorWorker stopped
+2025-11-21 15:00:39,100 - __main__ - INFO - [main.py:1329] - Shutting down...
+2025-11-21 15:00:39,100 - __main__ - INFO - [main.py:1333] - Waiting for detection thread...
+2025-11-21 15:00:39,114 - __main__ - INFO - [main.py:702] - Detection worker thread stopped
+2025-11-21 15:00:39,374 - flir_camera - INFO - [flir_camera.py:209] - FLIR Boson camera released
+2025-11-21 15:00:39,782 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-11-21 15:00:39,783 - vpi_detector - INFO - [vpi_detector.py:918] - VPI detector released
+2025-11-21 15:00:39,783 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-11-21 15:00:39,783 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
+2025-11-21 15:00:39,784 - __main__ - INFO - [main.py:1349] - Shutdown complete
+2025-12-01 19:59:09,241 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-01 19:59:09,276 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-12-01 19:59:09,294 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-12-01 19:59:09,303 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-12-01 19:59:09,303 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-12-01 19:59:09,304 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-12-01 19:59:09,304 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-12-01 19:59:09,304 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-12-01 19:59:09,304 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-12-01 19:59:09,306 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-12-01 19:59:09,306 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-12-01 19:59:10,795 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-12-01 19:59:10,795 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 512)
+2025-12-01 19:59:10,795 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-12-01 19:59:10,796 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x512
+2025-12-01 19:59:10,796 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-12-01 19:59:10,796 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-12-01 19:59:10,797 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 19:59:10,797 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 19:59:10,797 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 19:59:10,797 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 19:59:10,798 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 19:59:11,511 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 19:59:11,512 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 19:59:11,512 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:508] - Spinnaker error during detection: Spinnaker: Can't clear a camera because something still holds a reference to the camera [-1004]
+2025-12-01 19:59:36,501 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-01 19:59:53,652 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-01 19:59:53,685 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-12-01 19:59:53,702 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-12-01 19:59:53,704 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-12-01 19:59:53,704 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-12-01 19:59:53,704 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-12-01 19:59:53,704 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-12-01 19:59:53,705 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-12-01 19:59:53,705 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-12-01 19:59:53,705 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-12-01 19:59:53,706 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-12-01 19:59:55,186 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-12-01 19:59:55,187 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 512)
+2025-12-01 19:59:55,187 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-12-01 19:59:55,188 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x512
+2025-12-01 19:59:55,188 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-12-01 19:59:55,189 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-12-01 19:59:55,189 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 19:59:55,189 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 19:59:55,191 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 19:59:55,191 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 19:59:55,191 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 19:59:55,871 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 19:59:55,871 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 19:59:55,872 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:508] - Spinnaker error during detection: Spinnaker: Can't clear a camera because something still holds a reference to the camera [-1004]
+2025-12-01 20:00:15,633 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-01 20:00:15,666 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-12-01 20:00:15,692 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-12-01 20:00:15,694 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-12-01 20:00:15,694 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-12-01 20:00:15,695 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-12-01 20:00:15,695 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-12-01 20:00:15,696 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-12-01 20:00:15,697 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-12-01 20:00:15,697 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-12-01 20:00:15,697 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-12-01 20:00:17,122 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-12-01 20:00:17,123 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 512)
+2025-12-01 20:00:17,123 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-12-01 20:00:17,123 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x512
+2025-12-01 20:00:17,123 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-12-01 20:00:17,123 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-12-01 20:00:17,123 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:00:17,123 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:00:17,123 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:00:17,124 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:00:17,124 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:00:17,763 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:00:17,763 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:00:17,763 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:508] - Spinnaker error during detection: Spinnaker: Can't clear a camera because something still holds a reference to the camera [-1004]
+2025-12-01 20:01:42,429 - root - INFO - [main.py:81] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-01 20:01:42,458 - __main__ - INFO - [main.py:1456] - QApplication initialized (Qt GUI)
+2025-12-01 20:01:42,481 - __main__ - INFO - [main.py:111] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-12-01 20:01:42,482 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-12-01 20:01:42,482 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-12-01 20:01:42,482 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-12-01 20:01:42,482 - __main__ - INFO - [main.py:462] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-12-01 20:01:42,482 - __main__ - INFO - [main.py:463] - Platform: x86-64 (AMD64)
+2025-12-01 20:01:42,483 - __main__ - INFO - [main.py:260] - Using manually assigned thermal camera: device 0
+2025-12-01 20:01:42,483 - __main__ - INFO - [main.py:296] - Opening thermal camera device 0...
+2025-12-01 20:01:42,483 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-12-01 20:01:43,877 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-12-01 20:01:43,878 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 512)
+2025-12-01 20:01:43,879 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-12-01 20:01:43,879 - __main__ - INFO - [main.py:311] - [OK] Thermal camera connected: 640x512
+2025-12-01 20:01:43,880 - __main__ - INFO - [main.py:490] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-12-01 20:01:43,880 - __main__ - INFO - [main.py:499] - Skipping thermal camera device 0 during RGB detection
+2025-12-01 20:01:43,880 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:01:43,881 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:01:43,881 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:01:43,881 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:01:43,882 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:01:44,567 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:01:44,567 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:01:44,573 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:01:44,573 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:01:44,573 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:01:44,573 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:01:44,574 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:01:45,204 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:01:45,205 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:01:45,210 - __main__ - WARNING - [main.py:514] - RGB camera failed to open - continuing with thermal only
+2025-12-01 20:01:45,210 - __main__ - INFO - [main.py:536] - Fusion processor not initialized (no RGB camera)
+2025-12-01 20:01:45,210 - __main__ - INFO - [main.py:543] - Initializing VPI detector (mode: model, device: cuda)...
+2025-12-01 20:01:45,211 - __main__ - WARNING - [main.py:552] - VPI not available on this platform - using CPU-only processing
+2025-12-01 20:01:45,211 - __main__ - INFO - [main.py:554] - Forcing device to CPU (VPI not available)
+2025-12-01 20:01:45,211 - vpi_detector - INFO - [vpi_detector.py:60] - VPI not available - using OpenCV fallback for image processing
+2025-12-01 20:01:45,223 - vpi_detector - WARNING - [vpi_detector.py:417] - VPI not available - using OpenCV fallback mode
+2025-12-01 20:01:45,223 - vpi_detector - INFO - [vpi_detector.py:418] - Cross-platform mode: Windows/macOS/Linux (non-Jetson)
+2025-12-01 20:01:45,223 - vpi_detector - INFO - [vpi_detector.py:423] - Initializing VPI-accelerated detector (mode: model)...
+2025-12-01 20:01:45,223 - vpi_detector - INFO - [vpi_detector.py:434] - Loading YOLO model: yolov8n.pt
+2025-12-01 20:01:45,223 - vpi_detector - INFO - [vpi_detector.py:435] - CUDA available: False
+2025-12-01 20:01:45,298 - vpi_detector - INFO - [vpi_detector.py:444] - YOLO model moved to device: cpu
+2025-12-01 20:01:45,298 - vpi_detector - INFO - [vpi_detector.py:446] - YOLO model loaded successfully
+2025-12-01 20:01:45,298 - vpi_detector - INFO - [vpi_detector.py:505] - VPI not available - using OpenCV fallback (full functionality)
+2025-12-01 20:01:45,298 - __main__ - INFO - [main.py:602] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-12-01 20:01:45,304 - __main__ - INFO - [main.py:607] - [OK] Using Qt GUI (professional mode)
+2025-12-01 20:01:45,305 - auto_daynight - INFO - [auto_daynight.py:54] - AutoDayNightDetector initialized: lat=37.7749, lon=-122.4194, ambient_threshold=80, time=7-19
+2025-12-01 20:01:45,305 - auto_daynight - INFO - [auto_daynight.py:332] - Created global AutoDayNightDetector instance
+2025-12-01 20:01:45,314 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-12-01 20:01:45,314 - alert_overlay - INFO - [alert_overlay.py:111] - AlertOverlayWidget initialized (ADAS-compliant)
+2025-12-01 20:01:45,517 - developer_panel - INFO - [developer_panel.py:646] - Developer panel connected to main app
+2025-12-01 20:01:45,524 - driver_gui_qt - INFO - [driver_gui_qt.py:869] - Control panel signals connected (all 22 controls)
+2025-12-01 20:01:45,534 - driver_gui_qt - INFO - [driver_gui_qt.py:1441] - Applied 'dark' theme (Day=bright, Night=dark, Auto=intelligent)
+2025-12-01 20:01:45,535 - driver_gui_qt - INFO - [driver_gui_qt.py:783] - Initialized window sizes - Base: 1280x960, Expanded: 1580x960
+2025-12-01 20:01:45,535 - driver_gui_qt - INFO - [driver_gui_qt.py:786] - Qt GUI initialized successfully
+2025-12-01 20:01:45,535 - __main__ - INFO - [main.py:611] - [OK] Qt GUI window created successfully with app reference
+2025-12-01 20:01:45,535 - performance_monitor - WARNING - [performance_monitor.py:59] - jtop not available, using basic metrics only
+2025-12-01 20:01:45,536 - __main__ - INFO - [main.py:646] - Initialization complete!
+2025-12-01 20:01:45,536 - __main__ - INFO - [main.py:647] - RGB camera: DISABLED
+2025-12-01 20:01:45,536 - __main__ - INFO - [main.py:648] - View mode: thermal
+2025-12-01 20:01:45,536 - __main__ - INFO - [main.py:863] - Starting main loop...
+2025-12-01 20:01:46,023 - __main__ - INFO - [main.py:869] - Qt GUI window shown
+2025-12-01 20:01:46,024 - __main__ - INFO - [main.py:657] - Detection worker thread started
+2025-12-01 20:01:46,024 - __main__ - INFO - [main.py:874] - Async detection thread started
+2025-12-01 20:01:46,025 - __main__ - INFO - [main.py:879] - Phase 3: Starting VideoProcessorWorker thread...
+2025-12-01 20:01:46,025 - driver_gui_qt - INFO - [driver_gui_qt.py:1450] - Worker signals connected to GUI
+2025-12-01 20:01:46,025 - __main__ - INFO - [main.py:887] - VideoProcessorWorker started - entering Qt event loop
+2025-12-01 20:01:46,027 - video_worker - INFO - [video_worker.py:46] - VideoProcessorWorker thread started
+2025-12-01 20:01:46,027 - video_worker - INFO - [video_worker.py:53] - Platform: x86-64, Target FPS: 30 (adaptive throttling)
+2025-12-01 20:01:46,027 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:01:46,027 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:01:46,028 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:01:46,028 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:01:46,028 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:01:46,028 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:01:46,626 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:01:46,626 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:01:46,630 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:01:46,630 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:01:46,631 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:01:46,631 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:01:46,631 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:01:47,543 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:01:47,543 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:01:47,671 - vpi_detector - INFO - [vpi_detector.py:288] - Detection mode changed: model -> model
+2025-12-01 20:01:47,671 - driver_gui_qt - INFO - [driver_gui_qt.py:897] - YOLO detection enabled (model mode with yolov8n.pt)
+2025-12-01 20:01:48,030 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:01:48,051 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,085 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,132 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,178 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,224 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,272 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,318 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,365 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,408 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,454 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,503 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,546 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,595 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,642 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,690 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,732 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,888 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,895 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,935 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:48,981 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,026 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,073 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,123 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,167 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,214 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,263 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,311 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,354 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,403 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,441 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,489 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,536 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,582 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,630 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,676 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,723 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,766 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,813 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,858 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,904 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:49,950 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,104 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,108 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,153 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,199 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,247 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,293 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,337 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,384 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,430 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,478 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,524 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,572 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,618 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,666 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,712 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,758 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,806 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,851 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,897 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,943 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:50,991 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,039 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,082 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,132 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,177 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,290 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 58.4ms (17.1 FPS), 1 detections
+2025-12-01 20:01:51,331 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,333 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,377 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,421 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,471 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,509 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,559 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,602 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,650 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,696 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,744 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,789 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,836 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,882 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,930 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:51,977 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,023 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,069 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,115 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,163 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,210 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,255 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,303 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,350 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:52,442 - video_worker - INFO - [video_worker.py:406] - Frame 100 | FPS: 60.0/30 | Loop: 2.2ms | Throttle: [OK] | Detections: 0 | View: thermal
+2025-12-01 20:01:54,041 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:54,076 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:54,252 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+2025-12-01 20:01:54,287 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+2025-12-01 20:01:54,322 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:54,357 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:54,391 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=3, RIGHT=2
+2025-12-01 20:01:54,427 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=3, RIGHT=2
+2025-12-01 20:01:54,441 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 51.1ms (19.6 FPS), 1 detections
+2025-12-01 20:01:54,462 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:54,498 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:54,532 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=6, CENTER=5, RIGHT=0
+2025-12-01 20:01:54,569 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=6, CENTER=5, RIGHT=0
+2025-12-01 20:01:54,705 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=2, RIGHT=0
+2025-12-01 20:01:54,709 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=5, CENTER=5, RIGHT=0
+2025-12-01 20:01:54,745 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=7, RIGHT=0
+2025-12-01 20:01:54,779 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=7, RIGHT=0
+2025-12-01 20:01:54,814 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=7, RIGHT=0
+2025-12-01 20:01:54,849 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-12-01 20:01:54,885 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=1
+2025-12-01 20:01:54,921 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=1
+2025-12-01 20:01:54,957 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=3, RIGHT=1
+2025-12-01 20:01:54,991 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=4, RIGHT=1
+2025-12-01 20:01:55,026 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,060 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,095 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:55,130 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:55,165 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:55,201 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,235 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,271 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,307 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,341 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,378 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,412 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:55,452 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:55,483 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:55,515 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:55,528 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 69.6ms (14.4 FPS), 0 detections
+2025-12-01 20:01:55,550 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=0, RIGHT=0
+2025-12-01 20:01:55,586 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=0, RIGHT=0
+2025-12-01 20:01:55,635 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=0, RIGHT=0
+2025-12-01 20:01:55,657 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,691 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,828 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,832 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,862 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-12-01 20:01:55,897 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,932 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:55,968 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,003 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,039 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,074 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,109 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,146 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,180 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,216 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,249 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,287 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,308 - driver_gui_qt - INFO - [driver_gui_qt.py:593] - Developer controls shown (18 controls in 6x3 grid)
+2025-12-01 20:01:56,319 - video_worker - INFO - [video_worker.py:406] - Frame 200 | FPS: 60.0/30 | Loop: 0.0ms | Throttle: [OK] | Detections: 4 | View: thermal
+2025-12-01 20:01:56,357 - driver_gui_qt - INFO - [driver_gui_qt.py:1308] - [OK] Developer mode ENABLED | Window: 1380x1215
+2025-12-01 20:01:56,359 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,362 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=4, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,390 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,425 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,459 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,494 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,528 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,563 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:56,597 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,634 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,668 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,703 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,808 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,945 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,948 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=1, RIGHT=0
+2025-12-01 20:01:56,984 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,016 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,085 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=0, RIGHT=0
+2025-12-01 20:01:57,121 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=0, RIGHT=0
+2025-12-01 20:01:57,158 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=0, RIGHT=0
+2025-12-01 20:01:57,190 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:57,226 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=0, RIGHT=0
+2025-12-01 20:01:57,262 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=0, RIGHT=0
+2025-12-01 20:01:57,295 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,329 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,436 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,472 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,578 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,614 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,649 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:57,682 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:57,717 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,754 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:01:57,787 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:57,824 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:01:57,860 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:57,897 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:57,930 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=1
+2025-12-01 20:01:58,070 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=3
+2025-12-01 20:01:58,075 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=3, RIGHT=2
+2025-12-01 20:01:58,105 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=3, RIGHT=2
+2025-12-01 20:01:58,139 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:58,174 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:01:58,210 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,245 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,280 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:01:58,315 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:01:58,350 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,386 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,421 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,458 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,493 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,528 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,562 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:01:58,618 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 49.0ms (20.4 FPS), 0 detections
+2025-12-01 20:02:00,028 - video_worker - INFO - [video_worker.py:406] - Frame 300 | FPS: 60.0/30 | Loop: 0.0ms | Throttle: [OK] | Detections: 0 | View: thermal
+2025-12-01 20:02:00,028 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:00,028 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:00,028 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:00,028 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:00,028 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:00,030 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:00,660 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:00,660 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:00,667 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:00,667 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:00,667 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:00,668 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:00,668 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:00,852 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: rgb
+2025-12-01 20:02:01,166 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:01,166 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:01,393 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 78.7ms (12.7 FPS), 0 detections
+2025-12-01 20:02:01,414 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: fusion
+2025-12-01 20:02:01,985 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 41.0ms (24.4 FPS), 0 detections
+2025-12-01 20:02:02,744 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 38.1ms (26.3 FPS), 0 detections
+2025-12-01 20:02:04,305 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,343 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,376 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,410 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,445 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,481 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,617 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=4
+2025-12-01 20:02:04,621 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:04,654 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=4
+2025-12-01 20:02:04,688 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=4
+2025-12-01 20:02:04,723 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:04,759 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:04,794 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,828 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:04,862 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:04,898 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:04,930 - video_worker - INFO - [video_worker.py:406] - Frame 400 | FPS: 60.0/30 | Loop: 1.0ms | Throttle: [OK] | Detections: 3 | View: fusion
+2025-12-01 20:02:04,930 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:04,930 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:04,930 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:04,931 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:04,931 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:04,932 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:05,517 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:05,518 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:05,521 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:05,521 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:05,523 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:05,523 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:05,523 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:06,126 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:06,127 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:06,239 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,346 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,381 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,417 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,469 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,484 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,519 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,554 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,588 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,623 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,660 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,696 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:06,730 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:06,764 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,798 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,833 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,867 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:06,902 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:06,939 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:06,972 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,009 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,041 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,077 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,111 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,145 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,179 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,215 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,350 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,354 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,385 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,421 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,455 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,491 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,527 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,561 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,596 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,632 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,666 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,702 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,739 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,771 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,806 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,841 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,876 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,910 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:07,946 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:07,981 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,017 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,053 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,088 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,123 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,158 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,192 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,229 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,263 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,298 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,332 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,471 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,476 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,507 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,541 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,578 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,613 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,647 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,684 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:08,718 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:08,752 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:08,789 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:08,823 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,857 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,893 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,928 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,963 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:08,998 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,033 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,067 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,102 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,139 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,173 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,208 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,242 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,346 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,381 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,592 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,625 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,659 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:09,697 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,730 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,764 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,799 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,835 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,870 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:09,902 - video_worker - INFO - [video_worker.py:406] - Frame 500 | FPS: 60.0/30 | Loop: 1.1ms | Throttle: [OK] | Detections: 1 | View: fusion
+2025-12-01 20:02:09,902 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:09,902 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:09,902 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:09,903 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:09,903 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:09,903 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:10,567 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:10,567 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:10,573 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:10,573 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:10,573 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:10,574 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:10,574 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:11,291 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:11,291 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:11,401 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=4
+2025-12-01 20:02:11,407 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=4
+2025-12-01 20:02:11,437 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:11,473 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:11,507 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,542 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,577 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,611 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,646 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,682 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,717 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,753 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,787 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,823 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:11,859 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,894 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,927 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,962 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:11,996 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,030 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,064 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,099 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,135 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,172 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,204 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,240 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,276 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,310 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,347 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,381 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,521 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,523 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,554 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,589 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,624 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,662 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,693 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,729 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,764 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,803 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,833 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,868 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,904 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,938 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:12,974 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,008 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,044 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,077 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,113 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,148 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,184 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,217 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,254 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,287 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,323 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:13,357 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:13,395 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,427 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,738 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,772 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,807 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,841 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,878 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,913 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,953 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:13,983 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,019 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,054 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,087 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,122 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,156 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,191 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,228 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,263 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,297 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,332 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,368 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,404 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,436 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,687 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 42.5ms (23.5 FPS), 1 detections
+2025-12-01 20:02:14,751 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,785 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,821 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,854 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,889 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,923 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,962 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:14,994 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:15,031 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:15,049 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 55.3ms (18.1 FPS), 1 detections
+2025-12-01 20:02:15,062 - video_worker - INFO - [video_worker.py:406] - Frame 600 | FPS: 60.0/30 | Loop: 0.6ms | Throttle: [OK] | Detections: 1 | View: fusion
+2025-12-01 20:02:15,062 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:15,062 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:15,063 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:15,063 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:15,064 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:15,064 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:15,726 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:15,727 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:15,733 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:15,733 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:15,733 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:15,733 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:15,733 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:16,445 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:16,447 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:16,563 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,667 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,705 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,739 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,772 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,808 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:16,844 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,020 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,056 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,097 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,124 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,231 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,266 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,302 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,338 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,511 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,546 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,788 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:17,822 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:17,857 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,891 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,927 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,964 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:17,996 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:18,031 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:18,068 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+2025-12-01 20:02:18,104 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=2
+2025-12-01 20:02:18,137 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=5, RIGHT=2
+2025-12-01 20:02:18,173 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=5, RIGHT=2
+2025-12-01 20:02:18,208 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=2
+2025-12-01 20:02:18,243 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=2
+2025-12-01 20:02:18,277 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+2025-12-01 20:02:18,314 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=1
+2025-12-01 20:02:18,348 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=1
+2025-12-01 20:02:18,384 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=1
+2025-12-01 20:02:18,391 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 43.1ms (23.2 FPS), 1 detections
+2025-12-01 20:02:18,419 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=5, RIGHT=0
+2025-12-01 20:02:18,454 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=5, RIGHT=0
+2025-12-01 20:02:18,490 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=5, RIGHT=0
+2025-12-01 20:02:18,526 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=5, RIGHT=0
+2025-12-01 20:02:18,562 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,596 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,630 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,664 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=2, CENTER=1, RIGHT=0
+2025-12-01 20:02:18,804 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,808 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,838 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,873 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=3, CENTER=3, RIGHT=0
+2025-12-01 20:02:18,885 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 46.8ms (21.3 FPS), 1 detections
+2025-12-01 20:02:18,909 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:18,944 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:18,980 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:02:19,015 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=2, RIGHT=0
+2025-12-01 20:02:19,050 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,085 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,121 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:02:19,156 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=3, RIGHT=0
+2025-12-01 20:02:19,191 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=1
+2025-12-01 20:02:19,225 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=1, CENTER=4, RIGHT=1
+2025-12-01 20:02:19,261 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,295 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,330 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,364 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:19,400 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:19,435 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:19,470 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:19,505 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:19,610 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:19,645 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=3
+2025-12-01 20:02:19,680 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:19,719 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:20,235 - video_worker - INFO - [video_worker.py:406] - Frame 700 | FPS: 60.0/30 | Loop: 1.6ms | Throttle: [OK] | Detections: 0 | View: fusion
+2025-12-01 20:02:20,235 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:20,235 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:20,235 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:20,237 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:20,237 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:20,238 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:20,851 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:20,851 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:20,855 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:20,855 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:20,857 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:20,857 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:20,857 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:20,989 - driver_gui_qt - INFO - [driver_gui_qt.py:1103] - Fusion mode: edge_enhanced
+2025-12-01 20:02:21,447 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:21,447 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:21,529 - driver_gui_qt - INFO - [driver_gui_qt.py:1103] - Fusion mode: thermal_overlay
+2025-12-01 20:02:22,129 - driver_gui_qt - INFO - [driver_gui_qt.py:1103] - Fusion mode: side_by_side
+2025-12-01 20:02:22,324 - driver_gui_qt - INFO - [driver_gui_qt.py:1103] - Fusion mode: picture_in_picture
+2025-12-01 20:02:23,450 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 46.0ms (21.7 FPS), 0 detections
+2025-12-01 20:02:23,509 - vpi_detector - INFO - [vpi_detector.py:317] - Motion detection: disabled
+2025-12-01 20:02:23,509 - driver_gui_qt - INFO - [driver_gui_qt.py:1174] - Motion detection: disabled
+2025-12-01 20:02:24,246 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-12-01 20:02:24,280 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=1
+2025-12-01 20:02:24,315 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,351 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,386 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,419 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,455 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,490 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=2, RIGHT=0
+2025-12-01 20:02:24,594 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,629 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,637 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 43.6ms (23.0 FPS), 1 detections
+2025-12-01 20:02:24,665 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,699 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,733 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,768 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:24,903 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:25,213 - video_worker - INFO - [video_worker.py:406] - Frame 800 | FPS: 60.0/30 | Loop: 1.0ms | Throttle: [OK] | Detections: 0 | View: fusion
+2025-12-01 20:02:25,213 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:25,213 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:25,214 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:25,214 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:25,214 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:25,214 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:25,757 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:25,757 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:25,762 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:25,762 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:25,762 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:25,763 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:25,763 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:26,310 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:26,311 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:26,524 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:26,559 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:26,565 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 41.1ms (24.3 FPS), 1 detections
+2025-12-01 20:02:26,594 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:26,630 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:26,801 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:26,836 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=1, RIGHT=0
+2025-12-01 20:02:27,010 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:27,045 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:28,259 - vpi_detector - INFO - [vpi_detector.py:603] - YOLO inference: 58.8ms (17.0 FPS), 0 detections
+2025-12-01 20:02:28,341 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:28,376 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:28,895 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:28,932 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:28,965 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,001 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,035 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,069 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,383 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,418 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,441 - vpi_detector - INFO - [vpi_detector.py:223] - Switched to arctic palette
+2025-12-01 20:02:29,441 - driver_gui_qt - INFO - [driver_gui_qt.py:1007] - Thermal palette [Developer mode]: arctic (3/24)
+2025-12-01 20:02:29,453 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,489 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,635 - vpi_detector - INFO - [vpi_detector.py:223] - Switched to cividis palette
+2025-12-01 20:02:29,637 - driver_gui_qt - INFO - [driver_gui_qt.py:1007] - Thermal palette [Developer mode]: cividis (4/24)
+2025-12-01 20:02:29,940 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:29,974 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:30,078 - video_worker - INFO - [video_worker.py:406] - Frame 900 | FPS: 60.0/30 | Loop: 1.0ms | Throttle: [OK] | Detections: 0 | View: fusion
+2025-12-01 20:02:30,078 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:30,078 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:30,080 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:30,080 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:30,080 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:30,080 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:30,330 - vpi_detector - INFO - [vpi_detector.py:223] - Switched to outdoor_alert palette
+2025-12-01 20:02:30,330 - driver_gui_qt - INFO - [driver_gui_qt.py:1007] - Thermal palette [Developer mode]: outdoor_alert (5/24)
+2025-12-01 20:02:30,478 - vpi_detector - INFO - [vpi_detector.py:223] - Switched to viridis palette
+2025-12-01 20:02:30,478 - driver_gui_qt - INFO - [driver_gui_qt.py:1007] - Thermal palette [Developer mode]: viridis (6/24)
+2025-12-01 20:02:30,641 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:30,641 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:30,645 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:30,645 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:30,645 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:30,646 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:30,646 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:31,231 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:31,231 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:35,005 - video_worker - INFO - [video_worker.py:406] - Frame 1000 | FPS: 60.0/30 | Loop: 1.1ms | Throttle: [OK] | Detections: 0 | View: fusion
+2025-12-01 20:02:35,006 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:35,006 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:35,007 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:35,007 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:35,007 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:35,007 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:35,596 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:35,596 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:35,600 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:35,600 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:35,600 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:35,600 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:35,601 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:36,206 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:36,206 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:39,992 - video_worker - INFO - [video_worker.py:406] - Frame 1100 | FPS: 60.0/30 | Loop: 1.0ms | Throttle: [OK] | Detections: 0 | View: fusion
+2025-12-01 20:02:39,992 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:39,992 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:39,992 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:39,992 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:39,993 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:39,993 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:40,644 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:40,644 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:40,649 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:40,649 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:40,649 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:40,649 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:40,649 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:41,254 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:41,254 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:43,843 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:43,880 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:43,983 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,018 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,160 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,194 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,228 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,263 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,300 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,334 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,370 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,402 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,438 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,472 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,508 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,541 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,577 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,714 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,718 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,749 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,783 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,817 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,853 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,888 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,923 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,958 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:44,993 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:45,026 - video_worker - INFO - [video_worker.py:406] - Frame 1200 | FPS: 60.0/30 | Loop: 1.0ms | Throttle: [OK] | Detections: 1 | View: fusion
+2025-12-01 20:02:45,026 - video_worker - INFO - [video_worker.py:133] - Attempting to reconnect RGB camera...
+2025-12-01 20:02:45,026 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-01 20:02:45,027 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-01 20:02:45,027 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-01 20:02:45,027 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-01 20:02:45,027 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-01 20:02:45,611 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:45,611 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:491] - Found FLIR camera 0: Firefly FFY-U3-16S2C-DL (S/N: 21304514)
+2025-12-01 20:02:45,616 - camera_factory - INFO - [camera_factory.py:181] - [OK] Found 1 FLIR Firefly camera(s)
+2025-12-01 20:02:45,616 - camera_factory - INFO - [camera_factory.py:182] -   Model: Firefly FFY-U3-16S2C-DL
+2025-12-01 20:02:45,616 - camera_factory - INFO - [camera_factory.py:183] -   Serial: 21304514
+2025-12-01 20:02:45,616 - camera_factory - INFO - [camera_factory.py:184] -   Features: Global shutter, no motion blur
+2025-12-01 20:02:45,616 - camera_factory - INFO - [camera_factory.py:185] - Creating FLIR Firefly camera...
+2025-12-01 20:02:46,374 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:97] - Number of FLIR cameras detected: 1
+2025-12-01 20:02:46,374 - rgb_camera_firefly - ERROR - [rgb_camera_firefly.py:107] - Camera index 1 out of range (0-0)
+2025-12-01 20:02:46,498 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:46,502 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:46,544 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:46,591 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:46,638 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,685 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,733 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,778 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,826 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,873 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,920 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:46,967 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,013 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,061 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,110 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,155 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,202 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,250 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,300 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:47,344 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:47,498 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=2
+2025-12-01 20:02:47,504 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:47,549 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-01 20:02:47,591 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1

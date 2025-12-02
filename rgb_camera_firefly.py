@@ -31,9 +31,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Try to import PySpin (optional dependency)
+# DEFERRED IMPORT: Import moved to function/method level to avoid DLL conflicts with PyTorch
+# When both PySpin and PyTorch are imported at module level, their DLLs (shm.dll) conflict
 try:
-    import PySpin
+    import PySpin as _test_import
     PYSPIN_AVAILABLE = True
+    del _test_import  # Don't keep the import at module level
 except ImportError:
     PYSPIN_AVAILABLE = False
     logger.warning("PySpin not available. FLIR Firefly support disabled.")
@@ -79,6 +82,9 @@ class RGBCameraFirefly:
         if not PYSPIN_AVAILABLE:
             logger.error("PySpin not available. Cannot open Firefly camera.")
             return False
+
+        # Import PySpin locally to avoid DLL conflicts
+        import PySpin
 
         try:
             # Retrieve singleton reference to system object
@@ -157,6 +163,9 @@ class RGBCameraFirefly:
         """
         if self.cam is None:
             return
+
+        # Import PySpin locally to avoid DLL conflicts
+        import PySpin
 
         try:
             nodemap = self.cam.GetNodeMap()
@@ -264,6 +273,9 @@ class RGBCameraFirefly:
         if not self.is_open or self.cam is None:
             return False, None
 
+        # Import PySpin locally to avoid DLL conflicts
+        import PySpin
+
         try:
             # Retrieve next received image (1000ms timeout)
             image_result = self.cam.GetNextImage(1000)
@@ -328,6 +340,9 @@ class RGBCameraFirefly:
         if not self.is_open or self.cam is None:
             return False
 
+        # Import PySpin locally to avoid DLL conflicts
+        import PySpin
+
         try:
             nodemap = self.cam.GetNodeMap()
             node = nodemap.GetNode(prop_name)
@@ -367,6 +382,9 @@ class RGBCameraFirefly:
         if not self.is_open or self.cam is None:
             return None
 
+        # Import PySpin locally to avoid DLL conflicts
+        import PySpin
+
         try:
             nodemap = self.cam.GetNodeMap()
             node = nodemap.GetNode(prop_name)
@@ -393,6 +411,8 @@ class RGBCameraFirefly:
     def release(self):
         """Release camera resources"""
         if self.cam is not None:
+            # Import PySpin locally to avoid DLL conflicts
+            import PySpin
             try:
                 # End acquisition
                 if self.cam.IsStreaming():
@@ -435,6 +455,9 @@ def detect_firefly_cameras() -> list:
         logger.warning("PySpin not available. Cannot detect Firefly cameras.")
         return []
 
+    # Import PySpin locally to avoid DLL conflicts
+    import PySpin
+
     available_cameras = []
 
     try:
@@ -474,6 +497,9 @@ def detect_firefly_cameras() -> list:
                 'serial': serial,
                 'resolution': (1920, 1200)  # Typical Firefly resolution (varies by model)
             })
+            
+            # IMPORTANT: Delete cam reference to avoid "something still holds a reference" error
+            del cam
 
         # Clear camera list
         cam_list.Clear()

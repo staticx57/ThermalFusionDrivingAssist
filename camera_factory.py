@@ -22,13 +22,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Try to import camera classes
+# DEFERRED IMPORT: rgb_camera_firefly import moved to function level to avoid DLL conflicts
+# The module does a test import of PySpin which conflicts with PyTorch's DLLs
 try:
-    from rgb_camera_firefly import RGBCameraFirefly, detect_firefly_cameras, PYSPIN_AVAILABLE
-except ImportError:
-    RGBCameraFirefly = None
-    detect_firefly_cameras = None
-    PYSPIN_AVAILABLE = False
+    # Test if rgb_camera_firefly module is available
+    import importlib.util
+    rgb_firefly_spec = importlib.util.find_spec("rgb_camera_firefly")
+    RGB_CAMERA_FIREFLY_AVAILABLE = rgb_firefly_spec is not None
+except:
+    RGB_CAMERA_FIREFLY_AVAILABLE = False
     logger.warning("FLIR Firefly support not available (rgb_camera_firefly.py not found)")
+
+# Check if PySpin is available (without importing)
+try:
+    import importlib.util
+    pyspin_spec = importlib.util.find_spec("PySpin")
+    PYSPIN_AVAILABLE = pyspin_spec is not None
+except:
+    PYSPIN_AVAILABLE = False
 
 try:
     from rgb_camera_uvc import RGBCameraUVC, detect_uvc_cameras
@@ -59,7 +70,10 @@ def detect_all_rgb_cameras() -> dict:
     }
 
     # Detect FLIR Firefly cameras
-    if PYSPIN_AVAILABLE and detect_firefly_cameras is not None:
+    if RGB_CAMERA_FIREFLY_AVAILABLE and PYSPIN_AVAILABLE:
+        # Import locally to avoid DLL conflicts
+        from rgb_camera_firefly import detect_firefly_cameras
+        
         try:
             firefly_cams = detect_firefly_cameras()
             cameras['firefly'] = firefly_cams
@@ -125,8 +139,11 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
 
     # Force FLIR Firefly
     if camera_type == "firefly":
-        if not PYSPIN_AVAILABLE or RGBCameraFirefly is None:
+        if not RGB_CAMERA_FIREFLY_AVAILABLE or not PYSPIN_AVAILABLE:
             raise RuntimeError("FLIR Firefly support not available. Install Spinnaker SDK + PySpin.")
+
+        # Import locally to avoid DLL conflicts
+        from rgb_camera_firefly import RGBCameraFirefly
 
         logger.info("Creating FLIR Firefly camera (forced)")
         return RGBCameraFirefly(
@@ -154,7 +171,10 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         logger.info("Auto-detecting RGB cameras...")
 
         # Try FLIR Firefly first (global shutter, best quality)
-        if PYSPIN_AVAILABLE and RGBCameraFirefly is not None:
+        if RGB_CAMERA_FIREFLY_AVAILABLE and PYSPIN_AVAILABLE:
+            # Import locally to avoid DLL conflicts
+            from rgb_camera_firefly import RGBCameraFirefly, detect_firefly_cameras
+
             try:
                 firefly_cams = detect_firefly_cameras()
                 if firefly_cams and len(firefly_cams) > 0:

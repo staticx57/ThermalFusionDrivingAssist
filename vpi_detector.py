@@ -22,39 +22,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class VPIDetector:
-    """
-    Hardware-accelerated detector using VPI + lightweight model
-    Optimized for Jetson Orin when PyTorch CUDA is not working
-    """
-
-    def __init__(self, confidence_threshold: float = 0.5, thermal_palette: str = "white_hot",
-                 model_path: Optional[str] = None, detection_mode: str = "edge", device: str = "cuda"):
-        """
-        Initialize VPI detector
-
-        Args:
-            confidence_threshold: Minimum confidence for detections
-            thermal_palette: Color palette for thermal display
-                           Options: white_hot, black_hot, ironbow, rainbow, arctic, lava, medical
-            model_path: Path to YOLO model (used only in 'model' mode)
-            detection_mode: 'edge' for edge detection or 'model' for YOLO detection
-            device: 'cuda' for GPU acceleration or 'cpu' for CPU-only processing
-        """
-        self.confidence_threshold = confidence_threshold
-        self.is_initialized = False
-        self.fps = 0
-        self.last_inference_time = 0
-        self.thermal_palette = thermal_palette
-        self.detection_mode = detection_mode
-        self.model_path = model_path
-        self.model = None
-        self.model_loading = False  # Track model loading state to prevent race conditions
-        self.device = device
-
-        # VPI backend - use CUDA for GPU, CPU for CPU-only mode (only if VPI available)
-        if VPI_AVAILABLE:
-            self.vpi_backend = vpi.Backend.CUDA if device == 'cuda' else vpi.Backend.CPU
         else:
             self.vpi_backend = None
             logger.info("VPI not available - using OpenCV fallback for image processing")
