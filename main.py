@@ -26,6 +26,7 @@ from camera_registry import get_camera_registry, CameraRole
 from placeholder_frames import (create_thermal_placeholder, create_rgb_placeholder,
                                  create_feed_unavailable_frame, CameraStatus)
 from vpi_detector import VPIDetector
+from dual_model_detector import DualModelDetector
 from fusion_processor import FusionProcessor
 # from road_analyzer import RoadAnalyzer  # Commented out - file removed during transformation
 from view_mode import ViewMode
@@ -566,11 +567,37 @@ class ThermalRoadMonitorFusion:
                     logger.error("Failed to initialize VPI detector")
                     return False
 
+                # Initialize DualModelDetector for specialized thermal/RGB models
+                if detection_mode == 'model':
+                    import os
+                    thermal_model_exists = os.path.exists("thermal.pt")
+                    rgb_model_exists = os.path.exists("yolov8n.pt")
+                    
+                    if thermal_model_exists or rgb_model_exists:
+                        logger.info("Initializing DualModelDetector for thermal/RGB specialized detection")
+                        self.dual_detector = DualModelDetector(
+                            thermal_model_path="thermal.pt" if thermal_model_exists else "yolov8n.pt",
+                            rgb_model_path="yolov8n.pt" if rgb_model_exists else "thermal.pt",
+                            device=self.device,
+                            confidence_threshold=self.args.confidence
+                        )
+                        if self.dual_detector.load_models():
+                            logger.info("✓ DualModelDetector loaded - using specialized models")
+                        else:
+                            logger.warning("DualModelDetector failed, falling back to VPIDetector")
+                            self.dual_detector = None
+                    else:
+                        logger.info("No specialized models found (thermal.pt/yolov8n.pt), using VPIDetector")
+                        self.dual_detector = None
+                else:
+                    self.dual_detector = None
+
                 self.available_palettes = self.detector.get_available_palettes()
                 self.current_palette_idx = self.available_palettes.index(palette) if palette in self.available_palettes else 0
             else:
                 logger.info("Detector initialization deferred until thermal camera connects")
                 self.detector = None
+                self.dual_detector = None
                 self.available_palettes = ['ironbow']  # Default
                 self.current_palette_idx = 0
 

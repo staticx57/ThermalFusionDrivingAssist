@@ -6,6 +6,7 @@ Uses thermal.pt (FLIR-trained) for thermal, yolov8n.pt for RGB
 import logging
 from typing import List, Optional
 import numpy as np
+from object_detector import Detection
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ class DualModelDetector:
     
     def __init__(self, thermal_model_path: str = "thermal.pt", 
                  rgb_model_path: str = "yolov8n.pt",
-                 device: str = "cpu"):
+                 device: str = "cpu",
+                 confidence_threshold: float = 0.5):
         """
         Initialize dual model detector
         
@@ -29,10 +31,12 @@ class DualModelDetector:
             thermal_model_path: Path to thermal YOLO model
             rgb_model_path: Path to RGB YOLO model  
             device: 'cuda' or 'cpu'
+            confidence_threshold: Minimum confidence for detections
         """
         self.thermal_model_path = thermal_model_path
         self.rgb_model_path = rgb_model_path
         self.device = device
+        self.confidence_threshold = confidence_threshold
         
         self.thermal_model = None
         self.rgb_model = None
@@ -66,15 +70,13 @@ class DualModelDetector:
             logger.error(f"Failed to load models: {e}")
             return False
     
-    def detect(self, frame: np.ndarray, frame_source: str = "thermal", 
-               confidence_threshold: float = 0.5) -> List:
+    def detect(self, frame: np.ndarray, frame_source: str = "thermal") -> List[Detection]:
         """
         Run detection on frame using appropriate model
         
         Args:
             frame: Input image (BGR format)
             frame_source: 'thermal', 'rgb', or 'fusion'
-            confidence_threshold: Minimum confidence for detections
             
         Returns:
             List of Detection objects
@@ -95,10 +97,9 @@ class DualModelDetector:
             
         try:
             # Run YOLO inference
-            results = model(frame, conf=confidence_threshold, verbose=False)
+            results = model(frame, conf=self.confidence_threshold, verbose=False)
             
             # Convert to Detection objects
-            from object_detector import Detection
             detections = []
             
             for result in results:
