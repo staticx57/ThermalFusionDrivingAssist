@@ -115,6 +115,24 @@ class VPIDetector:
         # Plasma (purple-yellow)
         palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
 
+        # Viridis (blue-green-yellow)
+        palettes['viridis'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
+
+        # Cividis (blue-yellow, colorblind friendly)
+        palettes['cividis'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_CIVIDIS)
+
+        # Magma (black-red-white)
+        palettes['magma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_MAGMA)
+
+        # Inferno (black-red-yellow)
+        palettes['inferno'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
+
+        # Outdoor Alert (high contrast red/yellow for detection) - maps to AUTUMN
+        palettes['outdoor_alert'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
+
+        # Rainbow High Contrast
+        palettes['rainbow_hc'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_RAINBOW)
+
         return palettes
 
     def set_palette(self, palette_name: str):
@@ -258,7 +276,13 @@ class VPIDetector:
             'arctic': cv2.COLORMAP_WINTER,
             'lava': cv2.COLORMAP_INFERNO,
             'medical': cv2.COLORMAP_VIRIDIS,
-            'plasma': cv2.COLORMAP_PLASMA
+            'plasma': cv2.COLORMAP_PLASMA,
+            'viridis': cv2.COLORMAP_VIRIDIS,
+            'cividis': cv2.COLORMAP_CIVIDIS,
+            'magma': cv2.COLORMAP_MAGMA,
+            'inferno': cv2.COLORMAP_INFERNO,
+            'outdoor_alert': cv2.COLORMAP_AUTUMN,
+            'rainbow_hc': cv2.COLORMAP_RAINBOW
         }
         return colormap_mapping.get(palette_name, cv2.COLORMAP_HOT)
 
@@ -267,7 +291,7 @@ class VPIDetector:
         Apply thermal color palette to grayscale frame (CPU-optimized for low latency)
 
         Args:
-            frame: Grayscale or BGR thermal frame
+            frame: Grayscale or BGR thermal frame (8-bit or 16-bit)
 
         Returns:
             Colorized thermal frame
@@ -279,15 +303,23 @@ class VPIDetector:
             else:
                 gray = frame
 
+            # Normalize 16-bit to 8-bit if needed
+            if gray.dtype == np.uint16:
+                gray = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+            elif gray.dtype != np.uint8:
+                gray = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
             # Apply palette directly on CPU (faster than VPI conversion overhead)
             # cv2.applyColorMap is highly optimized and fast enough
-            if self.thermal_palette in self.color_palettes:
-                # Invert for black_hot
-                if self.thermal_palette == 'black_hot':
-                    gray = 255 - gray
-                return cv2.applyColorMap(gray, self._get_colormap_id(self.thermal_palette))
-            else:
-                return cv2.applyColorMap(gray, cv2.COLORMAP_HOT)
+            
+            # Ensure palette exists in our mapping, default to ironbow if not
+            palette_id = self._get_colormap_id(self.thermal_palette)
+            
+            # Invert for black_hot
+            if self.thermal_palette == 'black_hot':
+                gray = 255 - gray
+                
+            return cv2.applyColorMap(gray, palette_id)
 
         except Exception as e:
             logger.error(f"Error applying palette: {e}")

@@ -128,11 +128,8 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
 
     camera_type = camera_type.lower()
 
-    # Skip thermal camera device if provided
-    if thermal_device_id is not None and camera_index == thermal_device_id:
-        logger.info(f"Skipping thermal camera device {thermal_device_id}, using next available device")
-        camera_index = thermal_device_id + 1
-
+    # Skip thermal camera device logic - moved to specific camera types
+    
     logger.info("="*60)
     logger.info("RGB Camera Factory - Auto-detection")
     logger.info("="*60)
@@ -146,6 +143,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         from rgb_camera_firefly import RGBCameraFirefly
 
         logger.info("Creating FLIR Firefly camera (forced)")
+        # Firefly uses independent indexing, so we don't skip thermal_device_id (which is a system device ID)
         return RGBCameraFirefly(
             camera_index=camera_index,
             resolution=resolution,
@@ -158,9 +156,15 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         if RGBCameraUVC is None:
             raise RuntimeError("UVC camera support not available.")
 
+        # Apply skipping for UVC (shares system device IDs)
+        uvc_index = camera_index
+        if thermal_device_id is not None and uvc_index == thermal_device_id:
+            logger.info(f"Skipping thermal camera device {thermal_device_id} for UVC camera")
+            uvc_index = thermal_device_id + 1
+
         logger.info("Creating UVC webcam (forced)")
         return RGBCameraUVC(
-            device_id=camera_index,
+            device_id=uvc_index,
             resolution=resolution,
             fps=fps,
             use_gstreamer=use_gstreamer
@@ -183,6 +187,7 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
                     logger.info(f"  Serial: {firefly_cams[0]['serial']}")
                     logger.info("  Features: Global shutter, no motion blur")
                     logger.info("Creating FLIR Firefly camera...")
+                    # Firefly uses independent indexing
                     return RGBCameraFirefly(
                         camera_index=camera_index,
                         resolution=resolution,
@@ -202,9 +207,16 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
                     logger.info(f"[OK] Found {len(uvc_cams)} UVC camera(s)")
                     logger.info(f"  Type: {uvc_cams[0]['type']}")
                     logger.info(f"  Resolution: {uvc_cams[0]['resolution']}")
+                    
+                    # Apply skipping for UVC
+                    uvc_index = camera_index
+                    if thermal_device_id is not None and uvc_index == thermal_device_id:
+                        logger.info(f"Skipping thermal camera device {thermal_device_id} for UVC camera")
+                        uvc_index = thermal_device_id + 1
+                        
                     logger.info("Creating UVC webcam...")
                     return RGBCameraUVC(
-                        device_id=camera_index,
+                        device_id=uvc_index,
                         resolution=resolution,
                         fps=fps,
                         use_gstreamer=use_gstreamer
@@ -217,8 +229,15 @@ def create_rgb_camera(resolution: Tuple[int, int] = (640, 480),
         # Final fallback to original RGBCamera class (legacy)
         if RGBCamera is not None:
             logger.warning("Falling back to legacy RGBCamera class")
+            
+            # Apply skipping for legacy
+            legacy_index = camera_index
+            if thermal_device_id is not None and legacy_index == thermal_device_id:
+                logger.info(f"Skipping thermal camera device {thermal_device_id} for legacy camera")
+                legacy_index = thermal_device_id + 1
+                
             return RGBCamera(
-                device_id=camera_index,
+                device_id=legacy_index,
                 resolution=resolution,
                 fps=fps,
                 use_gstreamer=use_gstreamer

@@ -113,6 +113,7 @@ class DualModelDetector:
                     detection = Detection(
                         bbox=(int(x1), int(y1), int(x2), int(y2)),
                         confidence=conf,
+                        class_id=cls,
                         class_name=label
                     )
                     detections.append(detection)

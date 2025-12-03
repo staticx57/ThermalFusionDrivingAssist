@@ -309,8 +309,20 @@ class ThermalRoadMonitorFusion:
                 # Validate resolution is thermal-like
                 thermal_resolutions = [(640, 512), (320, 256), (512, 640), (256, 320)]
                 if actual_res not in thermal_resolutions:
-                    logger.warning(f"Warning: Opened camera has resolution {actual_res[0]}x{actual_res[1]} which is not typical for thermal cameras")
-                    logger.warning("This may be a regular webcam. Thermal cameras typically use 640x512 or 320x256")
+                    logger.error(f"Opened camera has resolution {actual_res[0]}x{actual_res[1]} which is not a thermal resolution")
+                    logger.error("Rejecting this camera as thermal source. Retrying detection...")
+                    self.thermal_camera.release()
+                    self.thermal_camera = None
+                    
+                    # If we used a manual assignment (registry), it might be wrong/stale
+                    # Clear the assignment and try auto-detection if we haven't already
+                    if self.args.camera_id is not None:
+                         logger.info("Invalidating manual camera assignment and retrying auto-detection...")
+                         self.args.camera_id = None
+                         # Recursive call to try again with auto-detection
+                         return self._try_connect_thermal()
+                         
+                    return False
 
                 logger.info(f"[OK] Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
                 self.thermal_connected = True

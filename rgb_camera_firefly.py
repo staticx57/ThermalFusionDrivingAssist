@@ -123,7 +123,13 @@ class RGBCameraFirefly:
                 features = node_device_info.GetFeatures()
                 for feature in features:
                     node_feature = PySpin.CValuePtr(feature)
-                    logger.info(f'{node_feature.GetName()}: {node_feature.ToString()}')
+                    try:
+                        # Check if feature is readable before accessing
+                        if PySpin.IsReadable(node_feature):
+                            logger.info(f'{node_feature.GetName()}: {node_feature.ToString()}')
+                    except Exception:
+                        # Skip features that throw access exceptions (like DeviceBootloaderVersion)
+                        pass
 
             # Configure camera settings
             self._configure_camera()
