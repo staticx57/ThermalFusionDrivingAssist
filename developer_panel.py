@@ -462,7 +462,7 @@ class DeveloperPanel(QFrame):
             # General Purpose
             "Rainbow", "Rainbow HC", "Sepia", "Gray", "Amber", "Ocean", "Feather",
             # Fun / Experimental
-            "Twilight", "Twilight Shifted", "Deepgreen", "HSV", "Pink"
+            "Twilight", "Twilight Shift", "Deepgreen", "HSV", "Pink"
         ]
         self.palette_combo.addItems(palettes)
         self.palette_combo.currentTextChanged.connect(self._on_palette_changed)

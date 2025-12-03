@@ -346,7 +346,7 @@ class CameraDetector:
         return None
 
     @staticmethod
-    def _probe_windows_cameras(max_devices: int = 5, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
+    def _probe_windows_cameras(max_devices: int = 10, skip_device_ids: Optional[List[int]] = None) -> List[CameraInfo]:
         """
         Probe cameras on Windows using DirectShow/MSMF with ROBUST frame-based detection
         
@@ -354,7 +354,7 @@ class CameraDetector:
         FLIR Boson cameras may report incorrect resolutions until frames are read.
 
         Args:
-            max_devices: Maximum number of device indices to probe (default: 5)
+            max_devices: Maximum number of device indices to probe (default: 10)
             skip_device_ids: List of device IDs to skip (already in use)
 
         Returns:
@@ -362,7 +362,7 @@ class CameraDetector:
         """
         cameras = []
         consecutive_failures = 0
-        MAX_CONSECUTIVE_FAILURES = 2
+        MAX_CONSECUTIVE_FAILURES = 3  # Increased to skip over empty slots
 
         if skip_device_ids is None:
             skip_device_ids = []

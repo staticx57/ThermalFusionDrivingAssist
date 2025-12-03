@@ -318,11 +318,12 @@ class ThermalRoadMonitorFusion:
                     self.thermal_camera.release()
                     self.thermal_camera = None
                     
-                    # CRITICAL FIX: Clear registry assignment to prevent infinite loop
-                    # If we used a manual or auto assignment, it was wrong - clear it
+                    # CRITICAL FIX: Mark incorrect camera as RGB to prevent infinite loop
+                    # If we used a manual or auto assignment, it was wrong - reassign it
                     if thermal_cam_descriptor or self.args.camera_id is not None:
-                        logger.info("Clearing incorrect camera assignment from registry...")
-                        self.camera_registry.unregister_camera(self.args.camera_id)
+                        logger.info(f"Marking device {self.args.camera_id} as RGB (was incorrectly identified as thermal)...")
+                        # Force assignment to RGB so it's not picked up as thermal again
+                        self.camera_registry.set_camera_role(self.args.camera_id, CameraRole.RGB, manual=True)
                         self.args.camera_id = None
                         # Recursive call to try again with fresh auto-detection
                         return self._try_connect_thermal()

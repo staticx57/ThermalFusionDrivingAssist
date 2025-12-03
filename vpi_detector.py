@@ -137,12 +137,8 @@ class VPIDetector:
         palettes['rainbow_hc'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_RAINBOW)
 
         # Sepia (warm brownish tone)
-        sepia_lut = np.zeros((256, 1, 3), dtype=np.uint8)
-        for i in range(256):
-            sepia_lut[i, 0] = [min(255, int(i * 0.393 + i * 0.769 + i * 0.189)),
-                               min(255, int(i * 0.349 + i * 0.686 + i * 0.168)),
-                               min(255, int(i * 0.272 + i * 0.534 + i * 0.131))]
-        palettes['sepia'] = sepia_lut
+        # OpenCV's COLORMAP_PINK is actually a sepia tone, perfect for this
+        palettes['sepia'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PINK)
 
         # Gray (pure grayscale)
         gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
@@ -164,7 +160,9 @@ class VPIDetector:
         palettes['twilight'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TWILIGHT)
 
         # Twilight Shifted (shifted version)
-        palettes['twilight_shifted'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TWILIGHT_SHIFTED)
+        palettes['twilight_shift'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TWILIGHT_SHIFTED)
+        # Alias for backward compatibility with GUI
+        palettes['twilight_shifted'] = palettes['twilight_shift']
 
         # Deepgreen (use SUMMER as closest green-based match)
         palettes['deepgreen'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_SUMMER)
@@ -172,8 +170,14 @@ class VPIDetector:
         # HSV (full spectrum)
         palettes['hsv'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HSV)
 
-        # Pink (pink-based, use PINK colormap)
-        palettes['pink'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PINK)
+        # Pink (custom black-pink-white)
+        pink_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            # BGR format
+            pink_lut[i, 0] = [min(255, int(i * 0.6)),  # Blue
+                              min(255, int(i * 0.6)),  # Green
+                              min(255, int(i * 1.0))]  # Red (dominant)
+        palettes['pink'] = pink_lut
 
         return palettes
 
@@ -308,42 +312,7 @@ class VPIDetector:
             return False
             # Keep the old model if loading fails
 
-    def _get_colormap_id(self, palette_name: str) -> int:
-        """Map palette name to OpenCV colormap ID"""
-        colormap_mapping = {
-            # ADAS-Critical
-            'white_hot': cv2.COLORMAP_BONE,
-            'black_hot': cv2.COLORMAP_BONE,  # Will invert separately
-            'ironbow': cv2.COLORMAP_HOT,
-            'arctic': cv2.COLORMAP_WINTER,
-            'cividis': cv2.COLORMAP_CIVIDIS,
-            'outdoor_alert': cv2.COLORMAP_AUTUMN,
-            # Scientific / Perceptually Uniform
-            'viridis': cv2.COLORMAP_VIRIDIS,
-            'plasma': cv2.COLORMAP_PLASMA,
-            'lava': cv2.COLORMAP_INFERNO,
-            'magma': cv2.COLORMAP_MAGMA,
-            'bone': cv2.COLORMAP_BONE,
-            'parula': cv2.COLORMAP_VIRIDIS,  # Closest match
-            # General Purpose
-            'rainbow': cv2.COLORMAP_JET,
-            'rainbow_hc': cv2.COLORMAP_RAINBOW,
-            'sepia': None,  # Custom LUT
-            'gray': None,   # Custom LUT
-            'amber': cv2.COLORMAP_AUTUMN,
-            'ocean': cv2.COLORMAP_OCEAN,
-            'feather': cv2.COLORMAP_SPRING,
-            # Experimental / Fun
-            'twilight': cv2.COLORMAP_TWILIGHT,
-            'twilight_shifted': cv2.COLORMAP_TWILIGHT_SHIFTED,
-            'deepgreen': cv2.COLORMAP_SUMMER,
-            'hsv': cv2.COLORMAP_HSV,
-            'pink': cv2.COLORMAP_PINK,
-            # Legacy aliases
-            'medical': cv2.COLORMAP_VIRIDIS,
-            'inferno': cv2.COLORMAP_INFERNO,
-        }
-        return colormap_mapping.get(palette_name, cv2.COLORMAP_HOT)
+
 
     def apply_thermal_palette(self, frame: np.ndarray) -> np.ndarray:
         """
@@ -371,14 +340,18 @@ class VPIDetector:
             # Apply palette directly on CPU (faster than VPI conversion overhead)
             # cv2.applyColorMap is highly optimized and fast enough
             
-            # Ensure palette exists in our mapping, default to ironbow if not
-            palette_id = self._get_colormap_id(self.thermal_palette)
-            
-            # Invert for black_hot
-            if self.thermal_palette == 'black_hot':
-                gray = 255 - gray
-                
-            return cv2.applyColorMap(gray, palette_id)
+            # Apply palette directly using pre-calculated LUTs
+            # This ensures custom palettes (sepia, gray) work correctly
+            if self.thermal_palette in self.color_palettes:
+                palette_lut = self.color_palettes[self.thermal_palette]
+                # cv2.LUT requires input to have same channels as LUT (or LUT be 1-channel)
+                # So we must convert grayscale to BGR first to get 3-channel output
+                gray_bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+                return cv2.LUT(gray_bgr, palette_lut)
+            else:
+                # Fallback to Ironbow if palette not found
+                logger.warning(f"Palette {self.thermal_palette} not found, using ironbow")
+                return cv2.applyColorMap(gray, cv2.COLORMAP_HOT)
 
         except Exception as e:
             logger.error(f"Error applying palette: {e}")
