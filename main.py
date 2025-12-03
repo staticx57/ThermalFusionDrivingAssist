@@ -292,6 +292,9 @@ class ThermalRoadMonitorFusion:
                     self.args.camera_id = thermal_camera.device_id
                     self.args.width = thermal_camera.resolution[0] if thermal_camera.resolution[0] > 0 else self.args.width
                     self.args.height = thermal_camera.resolution[1] if thermal_camera.resolution[1] > 0 else self.args.height
+                    logger.info(f"Selected thermal camera: Device {thermal_camera.device_id}")
+                    logger.info(f"  Type: {thermal_camera.camera_type.value}")
+                    logger.info(f"  Resolution: {thermal_camera.resolution[0]}x{thermal_camera.resolution[1]}")
                 else:
                     logger.debug("No thermal camera detected - application will use placeholder")
                     return False
@@ -310,21 +313,24 @@ class ThermalRoadMonitorFusion:
                 thermal_resolutions = [(640, 512), (320, 256), (512, 640), (256, 320)]
                 if actual_res not in thermal_resolutions:
                     logger.error(f"Opened camera has resolution {actual_res[0]}x{actual_res[1]} which is not a thermal resolution")
+                    logger.error("Expected thermal resolutions: 640x512, 320x256, 512x640, or 256x320")
                     logger.error("Rejecting this camera as thermal source. Retrying detection...")
                     self.thermal_camera.release()
                     self.thermal_camera = None
                     
-                    # If we used a manual assignment (registry), it might be wrong/stale
-                    # Clear the assignment and try auto-detection if we haven't already
-                    if self.args.camera_id is not None:
-                         logger.info("Invalidating manual camera assignment and retrying auto-detection...")
-                         self.args.camera_id = None
-                         # Recursive call to try again with auto-detection
-                         return self._try_connect_thermal()
-                         
+                    # CRITICAL FIX: Clear registry assignment to prevent infinite loop
+                    # If we used a manual or auto assignment, it was wrong - clear it
+                    if thermal_cam_descriptor or self.args.camera_id is not None:
+                        logger.info("Clearing incorrect camera assignment from registry...")
+                        self.camera_registry.unregister_camera(self.args.camera_id)
+                        self.args.camera_id = None
+                        # Recursive call to try again with fresh auto-detection
+                        return self._try_connect_thermal()
+                          
                     return False
 
                 logger.info(f"[OK] Thermal camera connected: {actual_res[0]}x{actual_res[1]}")
+                logger.info(f"  Is radiometric: {getattr(self.thermal_camera, 'is_radiometric', False)}")
                 self.thermal_connected = True
                 return True
             else:
@@ -385,6 +391,7 @@ class ThermalRoadMonitorFusion:
                 self.rgb_available = True
                 logger.info(f"[OK] RGB camera connected: {self.rgb_camera.camera_type}")
                 logger.info(f"  Resolution: {rgb_res[0]}x{rgb_res[1]}")
+                logger.info(f"  Type: RGB/Color camera")
                 return True
             else:
                 logger.debug("RGB camera failed to open")

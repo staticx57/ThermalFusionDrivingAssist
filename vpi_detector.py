@@ -89,6 +89,7 @@ class VPIDetector:
         """Create thermal color palette lookup tables"""
         palettes = {}
 
+        # ADAS-Critical Palettes (Essential for driving)
         # White Hot (default - already provided by camera)
         white_hot = np.arange(256, dtype=np.uint8)
         palettes['white_hot'] = cv2.applyColorMap(white_hot.reshape(1, -1), cv2.COLORMAP_BONE)
@@ -100,38 +101,79 @@ class VPIDetector:
         # Ironbow (classic thermal imaging palette)
         palettes['ironbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HOT)
 
-        # Rainbow
-        palettes['rainbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_JET)
-
         # Arctic (blue-white)
         palettes['arctic'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_WINTER)
-
-        # Lava (red-yellow)
-        palettes['lava'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
-
-        # Medical (green-based)
-        palettes['medical'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
-
-        # Plasma (purple-yellow)
-        palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
-
-        # Viridis (blue-green-yellow)
-        palettes['viridis'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
 
         # Cividis (blue-yellow, colorblind friendly)
         palettes['cividis'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_CIVIDIS)
 
+        # Outdoor Alert (high contrast red/yellow for detection)
+        palettes['outdoor_alert'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
+
+        # Scientific / Perceptually Uniform Palettes
+        # Viridis (blue-green-yellow)
+        palettes['viridis'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
+
+        # Plasma (purple-yellow)
+        palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
+
+        # Lava (alias for Inferno - red-yellow)
+        palettes['lava'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
+
         # Magma (black-red-white)
         palettes['magma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_MAGMA)
 
-        # Inferno (black-red-yellow)
-        palettes['inferno'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
+        # Bone (grayscale with blue tint)
+        palettes['bone'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_BONE)
 
-        # Outdoor Alert (high contrast red/yellow for detection) - maps to AUTUMN
-        palettes['outdoor_alert'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
+        # Parula (MATLAB-style, use VIRIDIS as closest match)
+        palettes['parula'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
+
+        # General Purpose Palettes
+        # Rainbow
+        palettes['rainbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_JET)
 
         # Rainbow High Contrast
         palettes['rainbow_hc'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_RAINBOW)
+
+        # Sepia (warm brownish tone)
+        sepia_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            sepia_lut[i, 0] = [min(255, int(i * 0.393 + i * 0.769 + i * 0.189)),
+                               min(255, int(i * 0.349 + i * 0.686 + i * 0.168)),
+                               min(255, int(i * 0.272 + i * 0.534 + i * 0.131))]
+        palettes['sepia'] = sepia_lut
+
+        # Gray (pure grayscale)
+        gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            gray_lut[i, 0] = [i, i, i]
+        palettes['gray'] = gray_lut
+
+        # Amber (warm amber tone)
+        palettes['amber'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_AUTUMN)
+
+        # Ocean (blue-green-cyan)
+        palettes['ocean'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_OCEAN)
+
+        # Feather (light colorful, use SPRING as closest match)
+        palettes['feather'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_SPRING)
+
+        # Experimental / Fun Palettes
+        # Twilight (purple-blue-pink)
+        palettes['twilight'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TWILIGHT)
+
+        # Twilight Shifted (shifted version)
+        palettes['twilight_shifted'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_TWILIGHT_SHIFTED)
+
+        # Deepgreen (use SUMMER as closest green-based match)
+        palettes['deepgreen'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_SUMMER)
+
+        # HSV (full spectrum)
+        palettes['hsv'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HSV)
+
+        # Pink (pink-based, use PINK colormap)
+        palettes['pink'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PINK)
 
         return palettes
 
@@ -269,20 +311,37 @@ class VPIDetector:
     def _get_colormap_id(self, palette_name: str) -> int:
         """Map palette name to OpenCV colormap ID"""
         colormap_mapping = {
+            # ADAS-Critical
             'white_hot': cv2.COLORMAP_BONE,
             'black_hot': cv2.COLORMAP_BONE,  # Will invert separately
             'ironbow': cv2.COLORMAP_HOT,
-            'rainbow': cv2.COLORMAP_JET,
             'arctic': cv2.COLORMAP_WINTER,
-            'lava': cv2.COLORMAP_INFERNO,
-            'medical': cv2.COLORMAP_VIRIDIS,
-            'plasma': cv2.COLORMAP_PLASMA,
-            'viridis': cv2.COLORMAP_VIRIDIS,
             'cividis': cv2.COLORMAP_CIVIDIS,
-            'magma': cv2.COLORMAP_MAGMA,
-            'inferno': cv2.COLORMAP_INFERNO,
             'outdoor_alert': cv2.COLORMAP_AUTUMN,
-            'rainbow_hc': cv2.COLORMAP_RAINBOW
+            # Scientific / Perceptually Uniform
+            'viridis': cv2.COLORMAP_VIRIDIS,
+            'plasma': cv2.COLORMAP_PLASMA,
+            'lava': cv2.COLORMAP_INFERNO,
+            'magma': cv2.COLORMAP_MAGMA,
+            'bone': cv2.COLORMAP_BONE,
+            'parula': cv2.COLORMAP_VIRIDIS,  # Closest match
+            # General Purpose
+            'rainbow': cv2.COLORMAP_JET,
+            'rainbow_hc': cv2.COLORMAP_RAINBOW,
+            'sepia': None,  # Custom LUT
+            'gray': None,   # Custom LUT
+            'amber': cv2.COLORMAP_AUTUMN,
+            'ocean': cv2.COLORMAP_OCEAN,
+            'feather': cv2.COLORMAP_SPRING,
+            # Experimental / Fun
+            'twilight': cv2.COLORMAP_TWILIGHT,
+            'twilight_shifted': cv2.COLORMAP_TWILIGHT_SHIFTED,
+            'deepgreen': cv2.COLORMAP_SUMMER,
+            'hsv': cv2.COLORMAP_HSV,
+            'pink': cv2.COLORMAP_PINK,
+            # Legacy aliases
+            'medical': cv2.COLORMAP_VIRIDIS,
+            'inferno': cv2.COLORMAP_INFERNO,
         }
         return colormap_mapping.get(palette_name, cv2.COLORMAP_HOT)
 
