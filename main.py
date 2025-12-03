@@ -128,6 +128,7 @@ class ThermalRoadMonitorFusion:
 
         # Processing
         self.detector = None
+        self.dual_detector = None  # Specialized thermal/RGB model detector
         self.fusion_processor = None
         self.analyzer = None
         self.gui = None
@@ -186,11 +187,13 @@ class ThermalRoadMonitorFusion:
 
         # Async detection
         self.detection_thread = None
-        self.detection_queue = Queue(maxsize=2)
+        self.detection_queue = Queue(maxsize=2)  # Now stores (frame, frame_source) tuples
         self.result_queue = Queue(maxsize=2)
         self.detection_lock = threading.Lock()
         self.latest_detections = []
         self.latest_alerts = []
+        self.current_frame_source = 'thermal'  # Track current frame source for model selection
+        self.active_model_name = 'None'  # Track which model is currently active
 
         # Thermal camera connection state
         self.thermal_connected = False
@@ -686,13 +689,43 @@ class ThermalRoadMonitorFusion:
         while self.running:
             try:
                 if self.yolo_enabled and not self.detection_queue.empty():
-                    frame = self.detection_queue.get(timeout=0.1)
+                    # Get frame and source from queue (now a tuple)
+                    queue_item = self.detection_queue.get(timeout=0.1)
+                    
+                    # Handle both old (frame only) and new (frame, source) formats
+                    if isinstance(queue_item, tuple) and len(queue_item) == 2:
+                        frame, frame_source = queue_item
+                    else:
+                        # Fallback for old format
+                        frame = queue_item
+                        frame_source = self.current_frame_source
 
                     # Check if detector is available (requires thermal camera connection)
-                    if self.detector:
-                        self.detector.frame_skip = self.frame_skip_value
+                    if self.dual_detector and hasattr(self, 'dual_detector'):
+                        # Use dual model detector for specialized thermal/RGB models
+                        detections = self.dual_detector.detect(frame, frame_source=frame_source)
+                        self.active_model_name = self.dual_detector.get_current_model_name()
+                        
+                        # Log model usage (every 100 frames)
+                        if self.frame_count % 100 == 0:
+                            logger.debug(f"Using model: {self.active_model_name} for {frame_source} frame")
+                        
+                        alerts = []  # Placeholder - analyzer disabled
+                        # alerts = self.analyzer.analyze(detections) if self.analyzer else []
 
+                        with self.detection_lock:
+                            self.latest_detections = detections
+                            self.latest_alerts = alerts
+
+                        # Update performance metrics (dual detector doesn't have fps/time attrs)
+                        # self.perf_monitor.update_inference_metrics(...)
+                        
+                    elif self.detector:
+                        # Fallback to VPI detector
+                        self.detector.frame_skip = self.frame_skip_value
                         detections = self.detector.detect(frame, filter_road_objects=True)
+                        self.active_model_name = "VPIDetector"
+                        
                         alerts = []  # Placeholder - analyzer disabled
                         # alerts = self.analyzer.analyze(detections) if self.analyzer else []
 
@@ -1067,17 +1100,25 @@ class ThermalRoadMonitorFusion:
                         fusion_frame = None
 
                 # 5. Select frame for detection based on view mode
+                # Also determine frame source for dual model detector
                 if self.view_mode == ViewMode.RGB_ONLY and rgb_frame is not None:
                     detection_frame = rgb_frame
+                    frame_source = 'rgb'
                 elif self.view_mode == ViewMode.FUSION and fusion_frame is not None:
                     detection_frame = fusion_frame
+                    frame_source = 'fusion'
                 else:
                     detection_frame = thermal_colored
+                    frame_source = 'thermal'
+                
+                # Update current frame source for tracking
+                self.current_frame_source = frame_source
 
-                # 6. Send frame to async detection
+                # 6. Send frame to async detection with source metadata
                 if not self.detection_queue.full():
                     try:
-                        self.detection_queue.put_nowait(detection_frame.copy())
+                        # Send as tuple: (frame, frame_source)
+                        self.detection_queue.put_nowait((detection_frame.copy(), frame_source))
                     except:
                         pass
 

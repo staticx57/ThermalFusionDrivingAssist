@@ -22289,3 +22289,334 @@ ModuleNotFoundError: No module named 'road_analyzer'
 2025-12-01 20:02:47,504 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
 2025-12-01 20:02:47,549 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
 2025-12-01 20:02:47,591 - alert_overlay - INFO - [alert_overlay.py:215] - Proximity zones: LEFT=0, CENTER=0, RIGHT=1
+2025-12-02 18:49:55,711 - root - INFO - [main.py:82] - [OK] Debug logging enabled: thermal_fusion_debug.log (10MB x5 files)
+2025-12-02 18:49:55,869 - __main__ - INFO - [main.py:1524] - QApplication initialized (Qt GUI)
+2025-12-02 18:49:55,884 - __main__ - INFO - [main.py:112] - Platform detection: {'machine': 'AMD64', 'is_jetson': False, 'is_arm': False, 'is_x86': True, 'system': 'Windows', 'platform': 'Windows-10-10.0.26200-SP0'}
+2025-12-02 18:49:55,884 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: FLIR Boson 640x512 (Camera 1) -> thermal
+2025-12-02 18:49:55,885 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 2 (DSHOW) -> rgb
+2025-12-02 18:49:55,885 - camera_registry - INFO - [camera_registry.py:90] - Loaded camera assignment: Camera 1 (DSHOW) -> rgb
+2025-12-02 18:49:55,886 - __main__ - INFO - [main.py:466] - Initializing Thermal + RGB Fusion Road Monitor...
+2025-12-02 18:49:55,886 - __main__ - INFO - [main.py:467] - Platform: x86-64 (AMD64)
+2025-12-02 18:49:55,886 - __main__ - INFO - [main.py:264] - Using manually assigned thermal camera: device 0
+2025-12-02 18:49:55,886 - __main__ - INFO - [main.py:300] - Opening thermal camera device 0...
+2025-12-02 18:49:55,886 - flir_camera - INFO - [flir_camera.py:70] - Windows detected - trying DirectShow backend
+2025-12-02 18:49:58,403 - flir_camera - INFO - [flir_camera.py:96] - FLIR Boson camera opened successfully on device 0
+2025-12-02 18:49:58,403 - flir_camera - INFO - [flir_camera.py:97] - Resolution: (640, 480)
+2025-12-02 18:49:58,403 - flir_camera - INFO - [flir_camera.py:98] - FPS: 60.000240000960005
+2025-12-02 18:49:58,404 - __main__ - WARNING - [main.py:312] - Warning: Opened camera has resolution 640x480 which is not typical for thermal cameras
+2025-12-02 18:49:58,404 - __main__ - WARNING - [main.py:313] - This may be a regular webcam. Thermal cameras typically use 640x512 or 320x256
+2025-12-02 18:49:58,404 - __main__ - INFO - [main.py:315] - [OK] Thermal camera connected: 640x480
+2025-12-02 18:49:58,405 - __main__ - INFO - [main.py:494] - Detecting RGB cameras (FLIR Firefly or UVC)...
+2025-12-02 18:49:58,405 - __main__ - INFO - [main.py:503] - Skipping thermal camera device 0 during RGB detection
+2025-12-02 18:49:58,406 - camera_factory - INFO - [camera_factory.py:133] - Skipping thermal camera device 0, using next available device
+2025-12-02 18:49:58,406 - camera_factory - INFO - [camera_factory.py:136] - ============================================================
+2025-12-02 18:49:58,407 - camera_factory - INFO - [camera_factory.py:137] - RGB Camera Factory - Auto-detection
+2025-12-02 18:49:58,407 - camera_factory - INFO - [camera_factory.py:138] - ============================================================
+2025-12-02 18:49:58,408 - camera_factory - INFO - [camera_factory.py:171] - Auto-detecting RGB cameras...
+2025-12-02 18:49:59,012 - rgb_camera_firefly - INFO - [rgb_camera_firefly.py:471] - Number of FLIR cameras detected: 0
+2025-12-02 18:49:59,018 - camera_factory - INFO - [camera_factory.py:193] - [X] No FLIR Firefly cameras detected
+2025-12-02 18:49:59,021 - camera_factory - INFO - [camera_factory.py:213] - [X] No UVC cameras detected
+2025-12-02 18:49:59,021 - camera_factory - WARNING - [camera_factory.py:219] - Falling back to legacy RGBCamera class
+2025-12-02 18:49:59,021 - rgb_camera - INFO - [rgb_camera.py:90] - Windows detected - opening camera 1 with DirectShow
+2025-12-02 18:50:00,428 - rgb_camera - INFO - [rgb_camera.py:125] - RGB camera opened successfully
+2025-12-02 18:50:00,429 - rgb_camera - INFO - [rgb_camera.py:126] - Resolution: 640x512 @ 30 FPS
+2025-12-02 18:50:01,230 - __main__ - INFO - [main.py:515] - [OK] RGB camera opened: USB/CSI (Legacy)
+2025-12-02 18:50:01,231 - __main__ - INFO - [main.py:516] -   Resolution: 640x512
+2025-12-02 18:50:01,232 - config - INFO - [config.py:114] - Configuration loaded from config.json
+2025-12-02 18:50:01,232 - fusion_processor - WARNING - [fusion_processor.py:63] - No calibration file provided - using identity transform
+2025-12-02 18:50:01,234 - __main__ - INFO - [main.py:535] - Fusion processor initialized (mode: alpha_blend)
+2025-12-02 18:50:01,235 - __main__ - INFO - [main.py:547] - Initializing VPI detector (mode: model, device: cuda)...
+2025-12-02 18:50:01,236 - __main__ - WARNING - [main.py:556] - VPI not available on this platform - using CPU-only processing
+2025-12-02 18:50:01,236 - __main__ - INFO - [main.py:558] - Forcing device to CPU (VPI not available)
+2025-12-02 18:50:01,237 - vpi_detector - INFO - [vpi_detector.py:60] - VPI not available - using OpenCV fallback for image processing
+2025-12-02 18:50:01,238 - vpi_detector - WARNING - [vpi_detector.py:303] - VPI not available - using OpenCV fallback mode
+2025-12-02 18:50:01,238 - vpi_detector - INFO - [vpi_detector.py:304] - Cross-platform mode: Windows/macOS/Linux (non-Jetson)
+2025-12-02 18:50:01,239 - vpi_detector - INFO - [vpi_detector.py:309] - Initializing VPI-accelerated detector (mode: model)...
+2025-12-02 18:50:01,240 - vpi_detector - INFO - [vpi_detector.py:320] - Loading YOLO model: thermal.pt
+2025-12-02 18:50:01,240 - vpi_detector - INFO - [vpi_detector.py:321] - CUDA available: False
+2025-12-02 18:50:01,297 - vpi_detector - INFO - [vpi_detector.py:326] - YOLO model loaded successfully
+2025-12-02 18:50:01,298 - vpi_detector - INFO - [vpi_detector.py:385] - VPI not available - using OpenCV fallback (full functionality)
+2025-12-02 18:50:01,299 - __main__ - INFO - [main.py:580] - Initializing DualModelDetector for thermal/RGB specialized detection
+2025-12-02 18:50:01,299 - dual_model_detector - INFO - [dual_model_detector.py:45] - DualModelDetector initialized:
+2025-12-02 18:50:01,300 - dual_model_detector - INFO - [dual_model_detector.py:46] -   Thermal model: thermal.pt
+2025-12-02 18:50:01,302 - dual_model_detector - INFO - [dual_model_detector.py:47] -   RGB model: yolov8n.pt
+2025-12-02 18:50:01,302 - dual_model_detector - INFO - [dual_model_detector.py:48] -   Device: cpu
+2025-12-02 18:50:01,303 - dual_model_detector - INFO - [dual_model_detector.py:56] - Loading thermal model: thermal.pt
+2025-12-02 18:50:01,346 - dual_model_detector - INFO - [dual_model_detector.py:62] - Loading RGB model: yolov8n.pt
+2025-12-02 18:50:01,373 - __main__ - INFO - [main.py:632] - GUI Selection: use_opencv=False, qt_app=present, use_qt=True
+2025-12-02 18:50:01,377 - __main__ - INFO - [main.py:637] - [OK] Using Qt GUI (professional mode)
+2025-12-02 18:50:01,382 - auto_daynight - INFO - [auto_daynight.py:54] - AutoDayNightDetector initialized: lat=37.7749, lon=-122.4194, ambient_threshold=80, time=7-19
+2025-12-02 18:50:01,382 - auto_daynight - INFO - [auto_daynight.py:332] - Created global AutoDayNightDetector instance
+2025-12-02 18:50:01,394 - alert_overlay - INFO - [alert_overlay.py:111] - AlertOverlayWidget initialized (ADAS-compliant)
+2025-12-02 18:50:01,860 - developer_panel - INFO - [developer_panel.py:646] - Developer panel connected to main app
+2025-12-02 18:50:01,867 - driver_gui_qt - INFO - [driver_gui_qt.py:869] - Control panel signals connected (all 22 controls)
+2025-12-02 18:50:01,874 - driver_gui_qt - INFO - [driver_gui_qt.py:1441] - Applied 'dark' theme (Day=bright, Night=dark, Auto=intelligent)
+2025-12-02 18:50:01,876 - driver_gui_qt - INFO - [driver_gui_qt.py:783] - Initialized window sizes - Base: 1280x960, Expanded: 1580x960
+2025-12-02 18:50:01,877 - driver_gui_qt - INFO - [driver_gui_qt.py:786] - Qt GUI initialized successfully
+2025-12-02 18:50:01,877 - __main__ - INFO - [main.py:641] - [OK] Qt GUI window created successfully with app reference
+2025-12-02 18:50:01,877 - performance_monitor - WARNING - [performance_monitor.py:59] - jtop not available, using basic metrics only
+2025-12-02 18:50:01,878 - __main__ - INFO - [main.py:676] - Initialization complete!
+2025-12-02 18:50:01,878 - __main__ - INFO - [main.py:677] - RGB camera: ENABLED
+2025-12-02 18:50:01,878 - __main__ - INFO - [main.py:678] - View mode: fusion
+2025-12-02 18:50:01,879 - __main__ - INFO - [main.py:923] - Starting main loop...
+2025-12-02 18:50:01,926 - __main__ - INFO - [main.py:929] - Qt GUI window shown
+2025-12-02 18:50:01,928 - __main__ - INFO - [main.py:687] - Detection worker thread started
+2025-12-02 18:50:01,928 - __main__ - INFO - [main.py:934] - Async detection thread started
+2025-12-02 18:50:01,928 - __main__ - INFO - [main.py:939] - Phase 3: Starting VideoProcessorWorker thread...
+2025-12-02 18:50:01,928 - driver_gui_qt - INFO - [driver_gui_qt.py:1450] - Worker signals connected to GUI
+2025-12-02 18:50:01,929 - __main__ - INFO - [main.py:947] - VideoProcessorWorker started - entering Qt event loop
+2025-12-02 18:50:01,929 - video_worker - INFO - [video_worker.py:46] - VideoProcessorWorker thread started
+2025-12-02 18:50:01,930 - video_worker - INFO - [video_worker.py:53] - Platform: x86-64, Target FPS: 30 (adaptive throttling)
+2025-12-02 18:50:02,037 - vpi_detector - INFO - [vpi_detector.py:186] - Detection mode changed: model -> model
+2025-12-02 18:50:02,037 - driver_gui_qt - INFO - [driver_gui_qt.py:897] - YOLO detection enabled (model mode with yolov8n.pt)
+2025-12-02 18:50:02,302 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:02,559 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:02,796 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:03,042 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:03,228 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:03,455 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:03,690 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:03,878 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:04,107 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:04,313 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:04,519 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:04,736 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:04,924 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:05,096 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:05,340 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:05,563 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:05,779 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:05,968 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:06,179 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:06,389 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:06,612 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:06,827 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:07,006 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:07,210 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:07,428 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:07,642 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:07,844 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:08,038 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:08,254 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:08,478 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:08,682 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:08,896 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:09,103 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:09,312 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:09,521 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:09,714 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:09,918 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:10,110 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:10,271 - driver_gui_qt - INFO - [driver_gui_qt.py:593] - Developer controls shown (18 controls in 6x3 grid)
+2025-12-02 18:50:10,315 - driver_gui_qt - INFO - [driver_gui_qt.py:1308] - [OK] Developer mode ENABLED | Window: 1452x1215
+2025-12-02 18:50:10,326 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:10,545 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:10,732 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:10,922 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:11,135 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:11,334 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:11,529 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:11,722 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:11,897 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:12,108 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:12,286 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:12,507 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:12,710 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:12,909 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:13,106 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:13,302 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:13,445 - video_worker - INFO - [video_worker.py:406] - Frame 100 | FPS: 60.0/30 | Loop: 116.8ms | Throttle: [X] OVERRUN | Detections: 0 | View: fusion
+2025-12-02 18:50:13,523 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:13,743 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:13,960 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:14,171 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:14,390 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:15,360 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:15,575 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:15,788 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:16,004 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:16,231 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:16,445 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:16,657 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:16,866 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:17,065 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:17,270 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:17,461 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:17,650 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:17,859 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:18,074 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:18,313 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:18,530 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:18,798 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:18,996 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:19,226 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:19,438 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:19,655 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:19,847 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:20,085 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:20,307 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:20,528 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:20,743 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:20,987 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:21,230 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:21,489 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:21,687 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:21,899 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:22,103 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:22,330 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:22,556 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:22,768 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:22,973 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:23,200 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:23,434 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:23,645 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:23,859 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:24,112 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:24,346 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:24,559 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:24,782 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:25,020 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:25,111 - video_worker - INFO - [video_worker.py:406] - Frame 200 | FPS: 60.0/30 | Loop: 115.6ms | Throttle: [X] OVERRUN | Detections: 0 | View: fusion
+2025-12-02 18:50:25,207 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:25,404 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:25,600 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:25,784 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:26,009 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:26,226 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:26,437 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:26,618 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:26,835 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:27,059 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:27,274 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:27,463 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:27,669 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:27,890 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:28,100 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:28,315 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:28,537 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:28,734 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:28,943 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:29,140 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:29,371 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:29,586 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:29,783 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:30,001 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:30,220 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:30,443 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:30,648 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:30,869 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:31,068 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:31,696 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:31,919 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:32,132 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:32,301 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: side_by_side
+2025-12-02 18:50:32,360 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:32,572 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:32,772 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:32,906 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: pip
+2025-12-02 18:50:32,981 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:33,185 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:33,367 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:33,575 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:33,688 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: thermal
+2025-12-02 18:50:33,784 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:33,982 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:34,199 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:34,405 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:34,858 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:35,056 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:35,237 - driver_gui_qt - INFO - [driver_gui_qt.py:882] - View mode changed to: rgb
+2025-12-02 18:50:35,306 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:35,560 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:35,753 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:36,778 - video_worker - INFO - [video_worker.py:406] - Frame 300 | FPS: 60.0/30 | Loop: 116.0ms | Throttle: [X] OVERRUN | Detections: 0 | View: rgb
+2025-12-02 18:50:38,058 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:38,465 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:38,690 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:39,601 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:50:48,445 - video_worker - INFO - [video_worker.py:406] - Frame 400 | FPS: 60.0/30 | Loop: 116.6ms | Throttle: [X] OVERRUN | Detections: 0 | View: rgb
+2025-12-02 18:50:59,318 - driver_gui_qt - INFO - [driver_gui_qt.py:1028] - Detection bounding boxes: shown
+2025-12-02 18:50:59,318 - driver_gui_qt - INFO - [driver_gui_qt.py:1233] - Thermal colorization mode ENABLED (thermal view, whitehot palette, colored detections)
+2025-12-02 18:51:00,046 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:00,112 - video_worker - INFO - [video_worker.py:406] - Frame 500 | FPS: 60.0/30 | Loop: 116.3ms | Throttle: [X] OVERRUN | Detections: 0 | View: thermal
+2025-12-02 18:51:00,253 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:00,450 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:00,655 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:00,852 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:01,082 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:01,439 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:01,951 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:02,646 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:02,989 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:03,297 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:03,543 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:03,779 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:04,060 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:04,647 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:04,931 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:05,313 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:05,573 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:05,901 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:06,150 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:06,439 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:06,734 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:07,034 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:07,317 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:07,597 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:07,935 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:08,221 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:08,604 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:08,867 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:09,159 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:09,530 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:09,866 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:10,121 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:10,466 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:10,732 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:11,065 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:11,686 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:11,778 - video_worker - INFO - [video_worker.py:406] - Frame 600 | FPS: 60.0/30 | Loop: 116.9ms | Throttle: [X] OVERRUN | Detections: 0 | View: thermal
+2025-12-02 18:51:12,034 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:12,354 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:12,710 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:12,955 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:13,289 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:13,654 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:14,000 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:14,279 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:14,880 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:15,178 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:15,693 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:15,929 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:16,301 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:16,537 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:16,799 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:17,087 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:17,386 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:17,646 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:17,908 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:18,203 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:18,485 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:18,781 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:19,047 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:19,312 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:19,589 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:19,812 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,017 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,211 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,419 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,646 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,675 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-12-02 18:51:20,693 - __main__ - INFO - [main.py:953] - Qt event loop exited
+2025-12-02 18:51:20,693 - video_worker - INFO - [video_worker.py:417] - Stopping VideoProcessorWorker...
+2025-12-02 18:51:20,762 - video_worker - INFO - [video_worker.py:420] - VideoProcessorWorker stopped
+2025-12-02 18:51:20,764 - __main__ - INFO - [main.py:1397] - Shutting down...
+2025-12-02 18:51:20,764 - __main__ - INFO - [main.py:1401] - Waiting for detection thread...
+2025-12-02 18:51:20,869 - dual_model_detector - ERROR - [dual_model_detector.py:123] - Detection failed: Detection.__init__() missing 1 required positional argument: 'class_id'
+2025-12-02 18:51:20,870 - __main__ - INFO - [main.py:762] - Detection worker thread stopped
+2025-12-02 18:51:21,351 - flir_camera - INFO - [flir_camera.py:209] - FLIR Boson camera released
+2025-12-02 18:51:22,048 - rgb_camera - INFO - [rgb_camera.py:244] - RGB camera released
+2025-12-02 18:51:22,048 - vpi_detector - INFO - [vpi_detector.py:798] - VPI detector released
+2025-12-02 18:51:22,049 - driver_gui_qt - INFO - [driver_gui_qt.py:1588] - Qt GUI closing...
+2025-12-02 18:51:22,049 - performance_monitor - INFO - [performance_monitor.py:189] - Performance monitor released
+2025-12-02 18:51:22,049 - __main__ - INFO - [main.py:1417] - Shutdown complete

@@ -22,39 +22,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class VPIDetector:
-    """
-    Hardware-accelerated detector using VPI + lightweight model
-    Optimized for Jetson Orin when PyTorch CUDA is not working
-    """
-
-    def __init__(self, confidence_threshold: float = 0.5, thermal_palette: str = "white_hot",
-                 model_path: Optional[str] = None, detection_mode: str = "edge", device: str = "cuda"):
-        """
-        Initialize VPI detector
-
-        Args:
-            confidence_threshold: Minimum confidence for detections
-            thermal_palette: Color palette for thermal display
-                           Options: white_hot, black_hot, ironbow, rainbow, arctic, lava, medical
-            model_path: Path to YOLO model (used only in 'model' mode)
-            detection_mode: 'edge' for edge detection or 'model' for YOLO detection
-            device: 'cuda' for GPU acceleration or 'cpu' for CPU-only processing
-        """
-        self.confidence_threshold = confidence_threshold
-        self.is_initialized = False
-        self.fps = 0
-        self.last_inference_time = 0
-        self.thermal_palette = thermal_palette
-        self.detection_mode = detection_mode
-        self.model_path = model_path
-        self.model = None
-        self.model_loading = False  # Track model loading state to prevent race conditions
-        self.device = device
-
-        # VPI backend - use CUDA for GPU, CPU for CPU-only mode (only if VPI available)
-        if VPI_AVAILABLE:
-            self.vpi_backend = vpi.Backend.CUDA if device == 'cuda' else vpi.Backend.CPU
         else:
             self.vpi_backend = None
             logger.info("VPI not available - using OpenCV fallback for image processing")
@@ -86,34 +53,133 @@ class VPIDetector:
         self.color_palettes = self._create_color_palettes()
 
     def _create_color_palettes(self) -> dict:
-        """Create thermal color palette lookup tables"""
+        """Create thermal color palette lookup tables (24 palettes: ADAS-critical + scientific + experimental)"""
         palettes = {}
 
-        # White Hot (default - already provided by camera)
-        white_hot = np.arange(256, dtype=np.uint8)
-        palettes['white_hot'] = cv2.applyColorMap(white_hot.reshape(1, -1), cv2.COLORMAP_BONE)
+        # Helper to create (256, 1, 3) LUT from colormap
+        def create_lut(colormap_id):
+            # Create 256x1 gradient
+            gradient = np.arange(256, dtype=np.uint8).reshape(256, 1)
+            return cv2.applyColorMap(gradient, colormap_id)
 
-        # Black Hot (inverted)
-        black_hot = np.arange(255, -1, -1, dtype=np.uint8)
-        palettes['black_hot'] = cv2.applyColorMap(black_hot.reshape(1, -1), cv2.COLORMAP_BONE)
+        # ========== ADAS-CRITICAL PALETTES (Simple Mode - 6 palettes) ==========
 
-        # Ironbow (classic thermal imaging palette)
-        palettes['ironbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_HOT)
+        # White Hot (default - FLIR standard, surveillance/security)
+        # Manual creation for white hot to ensure perfect grayscale
+        white_hot_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            white_hot_lut[i, 0, :] = i
+        palettes['white_hot'] = white_hot_lut
 
-        # Rainbow
-        palettes['rainbow'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_JET)
+        # Black Hot (inverted - law enforcement/hunting favorite)
+        black_hot_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            black_hot_lut[i, 0, :] = 255 - i
+        palettes['black_hot'] = black_hot_lut
 
-        # Arctic (blue-white)
-        palettes['arctic'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_WINTER)
+        # Ironbow (Hot) - Classic thermal gradient
+        palettes['ironbow'] = create_lut(cv2.COLORMAP_HOT)
 
-        # Lava (red-yellow)
-        palettes['lava'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_INFERNO)
+        # Arctic (Winter) - Blue-cyan gradient for cold environments
+        palettes['arctic'] = create_lut(cv2.COLORMAP_WINTER)
 
-        # Medical (green-based)
-        palettes['medical'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_VIRIDIS)
+        # Cividis - Colorblind-accessible (all CVD types), perceptually uniform
+        # Replaces medical/viridis for ADAS mode due to CVD accessibility
+        palettes['cividis'] = create_lut(cv2.COLORMAP_CIVIDIS)
 
-        # Plasma (purple-yellow)
-        palettes['plasma'] = cv2.applyColorMap(np.arange(256, dtype=np.uint8).reshape(1, -1), cv2.COLORMAP_PLASMA)
+        # Outdoor Alert - Custom blue→green/yellow→red gradient for driving
+        # Optimized for outdoor visibility and threat perception
+        outdoor_alert_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            # BGR format
+            if i < 85:  # Cold: Blue → Cyan
+                outdoor_alert_lut[i, 0, 0] = 255 - int(i * 1.5)  # Blue decreases
+                outdoor_alert_lut[i, 0, 1] = int(i * 3.0)        # Green increases
+                outdoor_alert_lut[i, 0, 2] = 0                   # Red stays low
+            elif i < 170:  # Warm: Cyan → Yellow
+                outdoor_alert_lut[i, 0, 0] = 0                   # Blue low
+                outdoor_alert_lut[i, 0, 1] = 255                 # Green high
+                outdoor_alert_lut[i, 0, 2] = int((i - 85) * 3.0) # Red increases
+            else:  # Hot: Yellow → Red
+                outdoor_alert_lut[i, 0, 0] = 0                          # Blue low
+                outdoor_alert_lut[i, 0, 1] = 255 - int((i - 170) * 3.0) # Green decreases
+                outdoor_alert_lut[i, 0, 2] = 255                        # Red high
+        palettes['outdoor_alert'] = outdoor_alert_lut
+
+        # ========== SCIENTIFIC / PERCEPTUALLY UNIFORM (6 palettes) ==========
+
+        # Viridis - Perceptually uniform, colorblind-friendly (renamed from 'medical')
+        palettes['viridis'] = create_lut(cv2.COLORMAP_VIRIDIS)
+
+        # Plasma - High-contrast perceptually uniform
+        palettes['plasma'] = create_lut(cv2.COLORMAP_PLASMA)
+
+        # Lava (Inferno) - Black→purple→red→yellow gradient
+        palettes['lava'] = create_lut(cv2.COLORMAP_INFERNO)
+
+        # Magma - Similar to inferno but with more purple/magenta
+        palettes['magma'] = create_lut(cv2.COLORMAP_MAGMA)
+
+        # Bone - X-ray style grayscale with blue tint
+        palettes['bone'] = create_lut(cv2.COLORMAP_BONE)
+
+        # Parula - MATLAB default, excellent perceptual uniformity
+        palettes['parula'] = create_lut(cv2.COLORMAP_PARULA)
+
+        # ========== GENERAL PURPOSE (7 palettes) ==========
+
+        # Rainbow (Jet) - Classic rainbow gradient
+        palettes['rainbow'] = create_lut(cv2.COLORMAP_JET)
+
+        # Rainbow HC (Turbo) - High contrast rainbow, Google Turbo
+        palettes['rainbow_hc'] = create_lut(cv2.COLORMAP_TURBO)
+
+        # Sepia (Autumn) - Warm red-yellow tones
+        palettes['sepia'] = create_lut(cv2.COLORMAP_AUTUMN)
+
+        # Gray - Pure grayscale for maximum detail
+        gray_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            gray_lut[i, 0, :] = i  # All channels equal = grayscale
+        palettes['gray'] = gray_lut
+
+        # Amber - Custom gold/amber gradient for firefighting
+        amber_lut = np.zeros((256, 1, 3), dtype=np.uint8)
+        for i in range(256):
+            # BGR format
+            amber_lut[i, 0, 0] = 0  # Blue (keep low for amber/gold)
+            amber_lut[i, 0, 1] = min(255, int(i * 0.8))   # Green
+            amber_lut[i, 0, 2] = min(255, int(i * 1.0))   # Red
+
+            # Add white tip for hottest values (>200)
+            if i > 200:
+                boost = (i - 200) * 5
+                amber_lut[i, 0, 0] = min(255, boost) # Bring up blue to create white
+                amber_lut[i, 0, 1] = min(255, int(i * 0.8) + boost)
+        palettes['amber'] = amber_lut
+
+        # Ocean - Blue-green gradient
+        palettes['ocean'] = create_lut(cv2.COLORMAP_OCEAN)
+
+        # Feather (Cool) - Cyan-magenta gradient
+        palettes['feather'] = create_lut(cv2.COLORMAP_COOL)
+
+        # ========== FUN / EXPERIMENTAL (5 palettes) ==========
+
+        # Twilight - Cyclic colormap (purple→pink→orange→purple)
+        palettes['twilight'] = create_lut(cv2.COLORMAP_TWILIGHT)
+
+        # Twilight Shifted - Twilight with shifted hues
+        palettes['twilight_shifted'] = create_lut(cv2.COLORMAP_TWILIGHT_SHIFTED)
+
+        # Deep Green - Dark green gradient
+        palettes['deepgreen'] = create_lut(cv2.COLORMAP_DEEPGREEN)
+
+        # HSV - Full hue spectrum (red→yellow→green→cyan→blue→magenta→red)
+        palettes['hsv'] = create_lut(cv2.COLORMAP_HSV)
+
+        # Pink - Purple-pink gradient
+        palettes['pink'] = create_lut(cv2.COLORMAP_PINK)
 
         return palettes
 
@@ -156,8 +222,11 @@ class VPIDetector:
             try:
                 import torch
                 yolo_device = 'cuda' if device == 'cuda' else 'cpu'
-                # YOLO models handle device switching via the device parameter in inference
-                # No need to reload the model, just update the device for next inference
+
+                # Explicitly move model to new device to prevent device mismatch
+                self.model.to(yolo_device)
+                logger.info(f"Model moved to device: {yolo_device}")
+
                 logger.info(f"Device switched from {old_device} to {device}")
                 logger.info(f"VPI backend: {self.vpi_backend}, YOLO device: {yolo_device}")
             except Exception as e:
@@ -238,6 +307,12 @@ class VPIDetector:
             from ultralytics import YOLO
             logger.info(f"Loading YOLO model: {model_path}")
             self.model = YOLO(model_path)
+
+            # Explicitly move model to the specified device
+            device_str = 'cuda' if self.device == 'cuda' else 'cpu'
+            self.model.to(device_str)
+            logger.info(f"YOLO model moved to device: {device_str}")
+
             self.model_path = model_path
             logger.info(f"YOLO model loaded successfully: {model_path}")
             # Clear cached detections when model changes
@@ -279,14 +354,20 @@ class VPIDetector:
             else:
                 gray = frame
 
+            # CRITICAL FIX: Convert 16-bit thermal images to 8-bit for colormap
+            # Thermal cameras output CV_16UC1, but cv2.applyColorMap only accepts CV_8UC1
+            if gray.dtype == np.uint16:
+                # Normalize 16-bit to 8-bit range
+                gray = cv2.convertScaleAbs(gray, alpha=(255.0/65535.0))
+
             # Apply palette directly on CPU (faster than VPI conversion overhead)
             # cv2.applyColorMap is highly optimized and fast enough
             if self.thermal_palette in self.color_palettes:
-                # Invert for black_hot
-                if self.thermal_palette == 'black_hot':
-                    gray = 255 - gray
-                return cv2.applyColorMap(gray, self._get_colormap_id(self.thermal_palette))
+                # Use pre-computed LUT directly
+                lut = self.color_palettes[self.thermal_palette]
+                return cv2.applyColorMap(gray, lut)
             else:
+                logger.warning(f"Palette {self.thermal_palette} not found, using fallback")
                 return cv2.applyColorMap(gray, cv2.COLORMAP_HOT)
 
         except Exception as e:
@@ -323,6 +404,12 @@ class VPIDetector:
                         logger.info(f"CUDA device: {torch.cuda.get_device_name(0)}")
 
                     self.model = YOLO(self.model_path)
+
+                    # Explicitly move model to the specified device
+                    device_str = 'cuda' if self.device == 'cuda' else 'cpu'
+                    self.model.to(device_str)
+                    logger.info(f"YOLO model moved to device: {device_str}")
+
                     logger.info("YOLO model loaded successfully")
                 except ImportError:
                     logger.error("ultralytics package not installed. Run: pip install ultralytics")
